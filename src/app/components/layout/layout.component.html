@@ -1,0 +1,95 @@
+<div class="flex h-screen">
+  <div
+  class="fixed top-0 left-0 h-full w-16 md:w-64 bg-gray-800 text-white p-4 md:p-10 flex flex-col rounded-r-3xl md:w-80 lg:w-96 transition-all duration-300 z-10"
+  [ngClass]="{'hidden': isMobileView }"
+>
+    <div class="flex flex-col items-center mb-10">
+      <div
+        class="w-12 h-12 md:w-24 md:h-24 bg-gray-600 rounded-full mb-4"
+      ></div>
+      <div class="hidden md:block text-xl font-semibold">{{currentUser?.name}}</div>
+      <div class="hidden md:block text-sm text-gray-400">&commat;{{currentUser?.username}}</div>
+    </div>
+    <ul class="md:ml-4">
+      <li class="mb-12 md:mb-6 flex items-center">
+        <a
+          routerLink="/home"
+          routerLinkActive="text-blue-500"
+          class="flex items-center hover:text-blue-400"
+        >
+          <span class="material-symbols-rounded align-sub text-2xl">home</span>
+          <span class="hidden md:inline ml-4 text-xl">Home</span>
+        </a>
+      </li>
+      <li class="mb-12 md:mb-6 flex items-center">
+        <a
+          routerLink="/explore"
+          routerLinkActive="text-blue-500"
+          class="flex items-center hover:text-blue-400"
+        >
+          <span class="material-symbols-rounded align-sub text-2xl"
+            >explore</span
+          >
+          <span class="hidden md:inline ml-4 text-xl">Explore</span>
+        </a>
+      </li>
+      <li class="mb-12 md:mb-6 flex items-center">
+        <a
+          routerLink="/inbox"
+          routerLinkActive="text-blue-500"
+          class="flex items-center hover:text-blue-400"
+        >
+          <span class="material-symbols-rounded align-sub text-2xl">inbox</span>
+          <span class="hidden md:inline ml-4 text-xl">Inbox</span>
+        </a>
+      </li>
+      <li class="mb-12 md:mb-6 flex items-center">
+        <a
+          routerLink="/saved"
+          routerLinkActive="text-blue-500"
+          class="flex items-center hover:text-blue-400"
+        >
+          <span class="material-symbols-rounded align-sub text-2xl"
+            >bookmark</span
+          >
+          <span class="hidden md:inline ml-4 text-xl">Saved</span>
+        </a>
+      </li>
+    </ul>
+    <ul class="md:ml-4 mt-auto">
+      <li class="mb-12 md:mb-6 flex items-center">
+        <a
+          href="#"
+          class="flex items-center hover:text-blue-400"
+          (click)="logout()"
+        >
+          <span class="material-symbols-rounded align-sub text-2xl"
+            >logout</span
+          >
+          <span class="hidden md:inline ml-4 text-xl">Logout</span>
+        </a>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Main Content -->
+  <div class="flex-grow p-4 transition-all duration-300" [ngStyle]="{'margin-left': sidebarWidth}">
+    <router-outlet></router-outlet>
+  </div>
+
+  <!-- Bottom Navigation for Mobile View -->
+  <div class="fixed bottom-0 left-0 w-full bg-gray-800 text-white p-4 flex justify-around md:hidden">
+    <a routerLink="/home" routerLinkActive="text-blue-500" class="text-center hover:text-blue-400">
+      <span class="material-symbols-rounded text-3xl">home</span>
+    </a>
+    <a routerLink="/explore" routerLinkActive="text-blue-500" class="text-center hover:text-blue-400">
+      <span class="material-symbols-rounded text-3xl">explore</span>
+    </a>
+    <a routerLink="/inbox" routerLinkActive="text-blue-500" class="text-center hover:text-blue-400">
+      <span class="material-symbols-rounded text-3xl">inbox</span>
+    </a>
+    <a routerLink="/saved" routerLinkActive="text-blue-500" class="text-center hover:text-blue-400">
+      <span class="material-symbols-rounded text-3xl">bookmark</span>
+    </a>
+  </div>
+</div>

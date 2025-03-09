@@ -1,0 +1,48 @@
+<div class="flex flex-col w-full max-w-md mx-auto sm:max-w-lg md:max-w-xl lg:max-w-2xl">
+  <div class="flex items-center gap-3 p-2">
+    <div class="w-12 h-12 bg-gray-600 rounded-full"></div>
+    <div class="flex-1">
+      <h1 class="text-lg font-bold">{{currentUser.name}}</h1>
+    </div>
+  </div>
+  <div class="relative">
+    <div class="w-full h-60 bg-gray-200 rounded-xl sm:h-72 md:h-80 lg:h-96"></div>
+    <div
+      class="absolute bottom-[-20px] right-5 w-24 h-10 bg-white shadow-lg rounded-full flex items-center justify-center gap-4"
+    >
+      <!-- Heart Icon with Animation -->
+      <span
+        class="material-symbols-rounded cursor-pointer transition-transform duration-200 ease-in-out"
+        [ngClass]="{'animate-pop': isLiked()}"
+        [ngStyle]="{
+          'font-variation-settings': '\'FILL\' ' + (isLiked() ? 1 : 0),
+          'color': isLiked() ? '#ff3040' : 'black'
+        }"
+        (click)="toggleLike()"
+      >
+        favorite
+      </span>
+
+      <!-- Save Icon with Animation -->
+      <span
+        class="material-symbols-rounded cursor-pointer transition-transform duration-200 ease-in-out"
+        [ngClass]="{'animate-pop': isSaved()}"
+        [ngStyle]="{
+          'font-variation-settings': '\'FILL\' ' + (isSaved() ? 1 : 0),
+          'color': isSaved() ? '#007bff' : 'black'
+        }"
+        (click)="toggleSave()"
+      >
+        bookmark
+      </span>
+    </div>
+  </div>
+  <div class="p-4">
+    <!-- Likes Counter -->
+    <div class="text-sm text-gray-600">{{likesCount()}} like{{likesCount() === 1 ? '' : 's'}}</div>
+    <div class="mt-2 text-sm text-gray-800">
+      Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+    </div>
+    <div class="mt-2 text-sm text-blue-500">View all 100 comments</div>
+  </div>
+</div>
