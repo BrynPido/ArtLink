@@ -25,7 +25,7 @@ class Auth extends GlobalMethods {
         $email = $data->email;
         $password = $data->password;
     
-        $sql = "SELECT * FROM users WHERE email = ?";
+        $sql = "SELECT * FROM user WHERE email = ?";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([$email]);
         $user = $stmt->fetch();

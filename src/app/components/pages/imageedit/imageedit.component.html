@@ -1,0 +1,14 @@
+<div class="flex flex-col items-center">
+    <h1 class="text-2xl font-bold mb-4">Edit Image</h1>
+
+    <img [src]="imageSrc" alt="Image Preview" class="rounded-lg max-h-96 mb-4" />
+
+    <textarea [(ngModel)]="caption" class="w-full h-24 p-2 border border-gray-300 rounded-lg"
+        placeholder="Add a caption..."></textarea>
+
+    <button (click)="applyFilter('grayscale')">Grayscale</button>
+    <button (click)="applyFilter('sepia')">Sepia</button>
+    <button (click)="applyFilter('blur')">Blur</button>
+
+    <button (click)="saveImage()" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg">Save</button>
+</div>

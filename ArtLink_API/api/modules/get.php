@@ -80,17 +80,44 @@
      }
 
 
-    /**
-     * Retrieve a list of employees.
-     *
-     * @return string
-     *   A string representing the list of employees.
-     */
-    public function get_employees($id=null){
-        $condition = null;
-        if($id != null){
-            $condition = "EMPLOYEE_ID=$id";
+     public function getPosts() {
+        // Fetch posts
+        $sql = "SELECT * FROM post";
+        $posts = $this->executeQuery($sql);
+    
+        if ($posts['code'] == self::HTTP_OK) {
+            // Fetch media for each post
+            foreach ($posts['data'] as &$post) {
+                $postId = $post['id'];
+                $mediaSql = "SELECT * FROM media WHERE postId = ?";
+                $media = $this->executeQuery($mediaSql, [$postId]);
+    
+                if ($media['code'] == self::HTTP_OK) {
+                    // Convert local file paths to HTTP URLs
+                    foreach ($media['data'] as &$mediaItem) {
+                        $mediaItem['url'] = $this->convertToHttpUrl($mediaItem['url']);
+                    }
+                    $post['media'] = $media['data'];
+                } else {
+                    $post['media'] = [];
+                }
+            }
+    
+            return $this->sendPayload($posts['data'], "success", "Posts retrieved successfully.", self::HTTP_OK);
         }
-        return $this->get_records("employees", $condition);
+    
+        return $this->sendPayload(null, "failed", "No posts found.", self::HTTP_NOT_FOUND);
+    }
+    
+    // Helper function to convert local file paths to HTTP URLs
+    private function convertToHttpUrl($localPath) {
+        // Replace backslashes with forward slashes
+        $localPath = str_replace('\\', '/', $localPath);
+    
+        // Extract the relative path (e.g., "uploads/67dc4a543ec7d.bin")
+        $relativePath = substr($localPath, strpos($localPath, 'uploads/'));
+    
+        // Construct the full HTTP URL
+        return "http://localhost/ArtLink/ArtLink_API/" . $relativePath;
     }
 }

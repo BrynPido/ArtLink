@@ -1,5 +1,6 @@
-<?php   
-    /**
+<?php
+
+/**
  * API Endpoint Router
  *
  * This PHP script serves as a simple API endpoint router, handling GET and POST requests for specific resources.
@@ -18,89 +19,99 @@
  * - POST request for adding jobs: API_URL/addjob (with JSON data in the request body)
  *
  */
-    header('Content-Type: application/json');
-    header("Access-Control-Allow-Origin: http://localhost:4200");
-    // Allow specific HTTP methods (GET, POST, OPTIONS, etc.)
-    header("Access-Control-Allow-Methods: POST, GET");
-    // Allow specific headers
-    header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header('Content-Type: application/json');
+header("Access-Control-Allow-Origin: http://localhost:4200");
+// Allow specific HTTP methods (GET, POST, OPTIONS, etc.)
+header("Access-Control-Allow-Methods: POST, GET");
+// Allow specific headers
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
 
-    // Handle preflight (OPTIONS) requests
-    if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
-        http_response_code(204); // No content for OPTIONS requests
-        exit;
-    }
+// Handle preflight (OPTIONS) requests
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    http_response_code(204); // No content for OPTIONS requests
+    exit;
+}
 
 
-    // Include required modules
-    require_once "./modules/get.php";
-    require_once "./modules/post.php";
-    require_once "./auth/auth.php";
-    require_once "./config/database.php";
-    require_once "./vendor/autoload.php";
+// Include required modules
+require_once "./modules/get.php";
+require_once "./modules/post.php";
+require_once "./auth/auth.php";
+require_once "./config/database.php";
+require_once "./vendor/autoload.php";
 
-    // Load environment variables from .env file
-    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/config');
-    $dotenv->load();
+// Load environment variables from .env file
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/config');
+$dotenv->load();
 
-    // var_dump($_ENV);
+// var_dump($_ENV);
 
-    $con = new Connection();
-    $pdo = $con->connect();
+$con = new Connection();
+$pdo = $con->connect();
 
-    // Initialize Get and Post objects
-    $get = new Get($pdo);
-    $post = new Post($pdo);
-    $auth = new Auth($pdo);
+// Initialize Get and Post objects
+$get = new Get($pdo);
+$post = new Post($pdo);
+$auth = new Auth($pdo);
 
-    // Check if 'request' parameter is set in the request
-    if(isset($_REQUEST['request'])){
-         // Split the request into an array based on '/'
-        $request = explode('/', $_REQUEST['request']);
-    }
-    else{
-         // If 'request' parameter is not set, return a 404 response
-        echo "Not Found";
-        http_response_code(404);
-    }
+// Check if 'request' parameter is set in the request
+if (isset($_REQUEST['request'])) {
+    // Split the request into an array based on '/'
+    $request = explode('/', $_REQUEST['request']);
+} else {
+    // If 'request' parameter is not set, return a 404 response
+    echo "Not Found";
+    http_response_code(404);
+}
 
-    // Handle requests based on HTTP method
-    switch($_SERVER['REQUEST_METHOD']){
-        // Handle GET requests
-        case 'GET':
-            switch($request[0]){
-                
-                default:
-                    // Return a 403 response for unsupported requests
-                    echo "This is forbidden";
-                    http_response_code(403);
-                    break;
-            }
-            break;
-        // Handle POST requests    
-        case 'POST':
-            // Retrieves JSON-decoded data from php://input using file_get_contents
-            $data = json_decode(file_get_contents("php://input"));
-            switch($request[0]){
-                case 'login':
-                    echo json_encode($auth->login($data));
-                    break;
-                case 'register':
-                    echo json_encode($post->register($data));
-                    break;
-                
-                default:
-                    // Return a 403 response for unsupported requests
-                    echo "This is forbidden";
-                    http_response_code(403);
-                    break;
-            }
-            break;
-        default:
-            // Return a 404 response for unsupported HTTP methods
-            echo "Method not available";
-            http_response_code(404);
+// Handle requests based on HTTP method
+switch ($_SERVER['REQUEST_METHOD']) {
+    // Handle GET requests
+    case 'GET':
+        switch ($request[0]) {
+            case 'getPosts':
+                $response = $get->getPosts();
+                echo json_encode($response, JSON_UNESCAPED_SLASHES); // Encode the response here
+                break;
+
+            default:
+                // Return a 403 response for unsupported requests
+                echo "This is forbidden";
+                http_response_code(403);
+                break;
+        }
         break;
-    }
+    // Handle POST requests    
+    case 'POST':
+        // Retrieves JSON-decoded data from php://input using file_get_contents
+        $data = json_decode(file_get_contents("php://input"));
+        switch ($request[0]) {
+            case 'login':
+                echo json_encode($auth->login($data));
+                break;
+            case 'register':
+                echo json_encode($post->register($data));
+                break;
+            case 'createPost':
+                echo json_encode($post->createPost($data));
+                break;
+            case 'likePost':
+                echo json_encode($post->likePost($data));
+                break;
+            case 'savePost':
+                echo json_encode($post->savePost($data));
+                break;
 
-?>
+            default:
+                // Return a 403 response for unsupported requests
+                echo "This is forbidden";
+                http_response_code(403);
+                break;
+        }
+        break;
+    default:
+        // Return a 404 response for unsupported HTTP methods
+        echo "Method not available";
+        http_response_code(404);
+        break;
+}

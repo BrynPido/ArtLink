@@ -35,6 +35,18 @@
       </li>
       <li class="mb-12 md:mb-6 flex items-center">
         <a
+          routerLink="/create"
+          routerLinkActive="text-blue-500"
+          class="flex items-center hover:text-blue-400"
+        >
+          <span class="material-symbols-rounded align-sub text-2xl"
+            >add_circle</span
+          >
+          <span class="hidden md:inline ml-4 text-xl">Create</span>
+        </a>
+      </li>
+      <li class="mb-12 md:mb-6 flex items-center">
+        <a
           routerLink="/inbox"
           routerLinkActive="text-blue-500"
           class="flex items-center hover:text-blue-400"
@@ -84,6 +96,9 @@
     </a>
     <a routerLink="/explore" routerLinkActive="text-blue-500" class="text-center hover:text-blue-400">
       <span class="material-symbols-rounded text-3xl">explore</span>
+    </a>
+    <a routerLink="/create" routerLinkActive="text-blue-500" class="text-center hover:text-blue-400">
+      <span class="material-symbols-rounded text-3xl">add_circle</span>
     </a>
     <a routerLink="/inbox" routerLinkActive="text-blue-500" class="text-center hover:text-blue-400">
       <span class="material-symbols-rounded text-3xl">inbox</span>

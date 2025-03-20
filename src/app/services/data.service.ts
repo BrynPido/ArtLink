@@ -9,7 +9,7 @@ import { catchError, throwError, Observable, of, tap } from 'rxjs';
 export class DataService {
   private apiUrl = 'http://localhost/ARTLINK/ArtLink_API/api/';
 
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(private http: HttpClient, private router: Router) { }
 
   // Method for login with error handling and saving JWT token
   login(credentials: { email: string; password: string }): Observable<any> {
@@ -30,7 +30,7 @@ export class DataService {
       }),
       catchError(this.handleError)
     );
-  }  
+  }
 
   // Method for registration with error handling
   register(data: {
@@ -48,6 +48,33 @@ export class DataService {
   getCurrentUser(): any {
     const user = localStorage.getItem('currentUser');
     return user ? JSON.parse(user) : null;
+  }
+
+  createPost(postData: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}createPost`, postData).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // Fetch posts from the backend
+  getPosts(): Observable<any> {
+    return this.http.get(`${this.apiUrl}getPosts`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  likePost(postId: number, userId: number): Observable<any> {
+    const data = { postId, userId };
+    return this.http.post(`${this.apiUrl}likePost`, data).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  savePost(postId: number, userId: number): Observable<any> {
+    const data = { postId, userId };
+    return this.http.post(`${this.apiUrl}savePost`, data).pipe(
+      catchError(this.handleError)
+    );
   }
 
   // Centralized error handling method
@@ -71,8 +98,8 @@ export class DataService {
 
   // Logout method
   logout() {
-    localStorage.removeItem('token'); 
-    localStorage.removeItem('currentUser'); 
+    localStorage.removeItem('token');
+    localStorage.removeItem('currentUser');
     this.router.navigate(['/login']);
   }
 

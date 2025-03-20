@@ -7,7 +7,9 @@ import { HomeComponent } from './components/pages/home/home.component';
 import { ExploreComponent } from './components/pages/explore/explore.component';
 import { InboxComponent } from './components/pages/inbox/inbox.component';
 import { SavedComponent } from './components/pages/saved/saved.component';
+import { CreatePostComponent } from './components/pages/createpost/createpost.component';
 import { AuthGuard } from './services/_auth/auth.guard';
+import { ImageeditComponent } from './components/pages/imageedit/imageedit.component';
 
 export const routes: Routes = [
     {
@@ -28,6 +30,8 @@ export const routes: Routes = [
           { path: 'explore', component: ExploreComponent },
           { path: 'inbox', component: InboxComponent },
           { path: 'saved', component: SavedComponent },
+          { path: 'create', component: CreatePostComponent },
+          { path: 'edit-image/:index', component: ImageeditComponent },
         ],
       },
       { path: '**', redirectTo: 'login' },

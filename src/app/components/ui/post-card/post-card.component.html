@@ -1,48 +1,84 @@
-<div class="flex flex-col w-full max-w-md mx-auto sm:max-w-lg md:max-w-xl lg:max-w-2xl">
+<div *ngFor="let post of posts" class="flex flex-col w-full max-w-md mx-auto sm:max-w-lg md:max-w-xl lg:max-w-2xl mb-8">
   <div class="flex items-center gap-3 p-2">
     <div class="w-12 h-12 bg-gray-600 rounded-full"></div>
     <div class="flex-1">
       <h1 class="text-lg font-bold">{{currentUser.name}}</h1>
     </div>
   </div>
+
   <div class="relative">
-    <div class="w-full h-60 bg-gray-200 rounded-xl sm:h-72 md:h-80 lg:h-96"></div>
+    <div class="w-full bg-gray-200 rounded-xl overflow-hidden">
+      <!-- Carousel container -->
+      <div *ngIf="post.media && post.media.length > 1" class="w-full relative" style="height: 0; padding-bottom: 75%;">
+        <div class="flex absolute inset-0 transition-transform duration-300 ease-in-out"
+          [ngStyle]="{'width': post.media.length * 100 + '%', 'transform': 'translateX(-' + (currentImageIndex[post.id] * (100/post.media.length)) + '%)'}">
+          <div *ngFor="let media of post.media" class="flex-shrink-0"
+            [ngStyle]="{'width': 'calc(100% / ' + post.media.length + ')'}" (click)="openModal(media.url)">
+            <img [src]="media.url" alt="Post image" class="w-full h-full object-contain cursor-pointer">
+          </div>
+        </div>
+
+        <!-- Controls -->
+        <button
+          class="absolute left-3 top-1/2 transform -translate-y-1/2 bg-white shadow-md p-2 rounded-full z-10 flex items-center justify-center cursor-pointer"
+          (click)="prevImage(post.id)">
+          <span class="material-symbols-rounded">chevron_left</span>
+        </button>
+        <button
+          class="absolute right-3 top-1/2 transform -translate-y-1/2 bg-white shadow-md p-2 rounded-full z-10 flex items-center justify-center cursor-pointer"
+          (click)="nextImage(post.id, post.media.length)">
+          <span class="material-symbols-rounded">chevron_right</span>
+        </button>
+      </div>
+
+      <!-- Single image display -->
+      <div *ngIf="post.media && post.media.length === 1" style="height: 0; padding-bottom: 75%;" class="relative">
+        <img [src]="post.media[0].url" alt="Post image"
+          class="absolute inset-0 w-full h-full object-contain cursor-pointer" (click)="openModal(post.media[0].url)">
+      </div>
+    </div>
+
+    <!-- Like and save controls -->
     <div
-      class="absolute bottom-[-20px] right-5 w-24 h-10 bg-white shadow-lg rounded-full flex items-center justify-center gap-4"
-    >
-      <!-- Heart Icon with Animation -->
-      <span
-        class="material-symbols-rounded cursor-pointer transition-transform duration-200 ease-in-out"
-        [ngClass]="{'animate-pop': isLiked()}"
-        [ngStyle]="{
-          'font-variation-settings': '\'FILL\' ' + (isLiked() ? 1 : 0),
-          'color': isLiked() ? '#ff3040' : 'black'
-        }"
-        (click)="toggleLike()"
-      >
+      class="absolute bottom-[-20px] right-5 w-24 h-10 bg-white shadow-lg rounded-full flex items-center justify-center gap-4">
+      <span class="material-symbols-rounded cursor-pointer transition-transform duration-200 ease-in-out select-none"
+        [ngClass]="{'animate-pop': isLiked(post.id)}" [ngStyle]="{
+        'font-variation-settings': '\'FILL\' ' + (isLiked(post.id) ? 1 : 0),
+        'color': isLiked(post.id) ? '#ff3040' : 'black'
+      }" (click)="toggleLike(post.id)">
         favorite
       </span>
 
-      <!-- Save Icon with Animation -->
-      <span
-        class="material-symbols-rounded cursor-pointer transition-transform duration-200 ease-in-out"
-        [ngClass]="{'animate-pop': isSaved()}"
-        [ngStyle]="{
-          'font-variation-settings': '\'FILL\' ' + (isSaved() ? 1 : 0),
-          'color': isSaved() ? '#007bff' : 'black'
-        }"
-        (click)="toggleSave()"
-      >
+      <span class="material-symbols-rounded cursor-pointer transition-transform duration-200 ease-in-out select-none"
+        [ngClass]="{'animate-pop': isSaved(post.id)}" [ngStyle]="{
+        'font-variation-settings': '\'FILL\' ' + (isSaved(post.id) ? 1 : 0),
+        'color': isSaved(post.id) ? '#007bff' : 'black'
+      }" (click)="toggleSave(post.id)">
         bookmark
       </span>
     </div>
   </div>
+
   <div class="p-4">
     <!-- Likes Counter -->
-    <div class="text-sm text-gray-600">{{likesCount()}} like{{likesCount() === 1 ? '' : 's'}}</div>
+    <div class="text-sm text-gray-600">{{likesCount(post.id)}} like{{likesCount(post.id) === 1 ? '' : 's'}}</div>
     <div class="mt-2 text-sm text-gray-800">
-      Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+      {{post.content}} <!-- Display the post content -->
     </div>
     <div class="mt-2 text-sm text-blue-500">View all 100 comments</div>
   </div>
+</div>
+
+<!-- Image Modal -->
+<div *ngIf="showModal"
+  class="fixed inset-0 bg-black/90 flex items-center justify-center z-50 transition-opacity duration-300"
+  [ngClass]="{'opacity-0': !showModal, 'opacity-100': showModal}" (click)="closeModal()">
+  <div class="relative" (click)="$event.stopPropagation()">
+    <img [src]="modalImageUrl" alt="Enlarged post image" class="max-w-full max-h-full object-contain">
+  </div>
+
+  <!-- Close button on top-right of the screen -->
+  <button class="absolute top-3 right-3 text-white text-2xl cursor-pointer" (click)="closeModal()">
+    <span class="material-symbols-rounded">close</span>
+  </button>
 </div>
