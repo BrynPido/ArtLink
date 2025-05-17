@@ -1,9 +1,11 @@
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 import { DataService } from '../../services/data.service';
+import { ToastService } from '../../services/toast.service';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-register',
@@ -16,7 +18,7 @@ export class RegisterComponent {
   passwordFieldType: string = 'password';
   errorMessage: string | null = null;
 
-  constructor(private fb: FormBuilder, private dataService: DataService) {
+  constructor(private fb: FormBuilder, private dataService: DataService, private router: Router, private toastService: ToastService) {
     this.registerForm = this.fb.group(
       {
         name: ['', Validators.required],
@@ -50,10 +52,14 @@ export class RegisterComponent {
         next: (response) => {
           console.log('Registration Successful', response);
           this.errorMessage = null; // Clear errors on success
+          this.registerForm.reset(); // Reset the form after successful registration
+          this.router.navigate(['/login']); // Redirect to login page after successful registration
+          this.toastService.showToast('Registration successful!', 'success');
         },
         error: (error) => {
           this.errorMessage = error.message;
           console.error('Registration Failed', error);
+          this.toastService.showToast('Registration failed!', 'error');
         },
       });
     }

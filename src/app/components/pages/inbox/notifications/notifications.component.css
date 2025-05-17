@@ -1,0 +1,16 @@
+/* Component-specific styles can be added here if needed */
+.notification-unread {
+    background-color: rgba(59, 130, 246, 0.05);
+}
+
+.notification-dot {
+    transition: all 0.2s ease-in-out;
+}
+
+.notification-item {
+    transition: transform 0.2s ease-in-out;
+}
+
+.notification-item:hover {
+    transform: translateX(4px);
+}

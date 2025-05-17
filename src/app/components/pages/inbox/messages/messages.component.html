@@ -1,1 +1,125 @@
-<p>messages works!</p>
+<div class="messaging-container h-full">
+  <!-- Conversations sidebar -->
+  <div class="conversations-sidebar">
+    <div class="search-box">
+      <input 
+        type="text" 
+        placeholder="Search conversations..." 
+        [(ngModel)]="searchTerm" 
+        (input)="onSearchChange()"
+      >
+    </div>
+    
+    <div class="conversations-list">
+      <div *ngIf="loading" class="loading-indicator">
+        <span>Loading conversations...</span>
+      </div>
+      
+      <ng-container *ngIf="!loading">
+        <div *ngIf="filteredConversations.length === 0" class="empty-state">
+          <p>No conversations found</p>
+        </div>
+        
+        <div 
+          *ngFor="let conversation of filteredConversations; trackBy: trackByConversationId" 
+          class="conversation-item" 
+          [class.active]="activeConversation?.id === conversation.id"
+          (click)="selectConversation(conversation)"
+        >
+          <div class="conversation-avatar">
+            <img [src]="getConversationImage(conversation)" alt="Profile">
+            <div class="online-indicator" *ngIf="conversation.otherUser?.online"></div>
+          </div>
+          
+          <div class="conversation-info">
+            <div class="conversation-header">
+              <h4 class="conversation-name">{{ getConversationName(conversation) }}</h4>
+              <span class="conversation-time" *ngIf="conversation.updatedAt">
+                {{ conversation.updatedAt | timeAgo }}
+              </span>
+            </div>
+            
+            <div class="conversation-preview">
+              <p>{{ conversation.lastMessage || 'No messages yet' }}</p>
+              <div *ngIf="conversation.unreadCount" class="unread-badge">
+                {{ conversation.unreadCount }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+  
+  <!-- Messages area -->
+  <div class="messages-area">
+    <ng-container *ngIf="!activeConversation">
+      <div class="no-conversation-selected">
+        <div class="content">
+          <img src="assets/images/Artlink_Logo.png" alt="ArtLink" class="logo mx-auto">
+          <h2 class="-mt-5">Your Messages</h2>
+          <p>Select a conversation to start chatting</p>
+        </div>
+      </div>
+    </ng-container>
+    
+    <ng-container *ngIf="activeConversation">
+      <!-- Conversation header -->
+      <div class="conversation-header">
+        <div class="conversation-info">
+          <div class="conversation-avatar">
+            <img [src]="getConversationImage(activeConversation)" alt="Profile">
+          </div>
+          <div class="conversation-details">
+            <h3>{{ getConversationName(activeConversation) }}</h3>
+            <span *ngIf="connectionStatus" class="status-indicator online">Online</span>
+            <span *ngIf="!connectionStatus" class="status-indicator offline">Offline</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Messages container -->
+      <div class="messages-container" #messageContainer>
+        <div *ngIf="messages.length === 0" class="empty-messages">
+          <p>No messages yet. Start the conversation!</p>
+        </div>
+        
+        <div class="message-list">
+          <div 
+            *ngFor="let message of messages; trackBy: trackByMessageId" 
+            class="message-item" 
+            [class.own-message]="isOwnMessage(message)"
+            [class.other-message]="!isOwnMessage(message)"
+          >
+            <div class="message-content">
+              <p>{{ message.content }}</p>
+              <span class="message-time">{{ message.createdAt | timeAgo }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Message input -->
+      <div class="message-input-container">
+        <div class="input-wrapper">
+          <input 
+            type="text" 
+            placeholder="Type a message..." 
+            [(ngModel)]="newMessage" 
+            (keyup.enter)="sendMessage()"
+          >
+          <button 
+            class="send-button" 
+            [disabled]="!newMessage.trim()" 
+            (click)="sendMessage()"
+          >
+            Send
+          </button>
+        </div>
+        <div *ngIf="!connectionStatus" class="connection-warning">
+          You are currently offline. Messages will be sent when you reconnect.
+        </div>
+      </div>
+    </ng-container>
+  </div>
+</div>

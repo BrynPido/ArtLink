@@ -1,0 +1,17 @@
+.image-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.primary-image {
+    grid-column: span 2;
+    grid-row: span 2;
+}
+
+@media (max-width: 640px) {
+    .primary-image {
+        grid-column: span 1;
+        grid-row: span 1;
+    }
+}

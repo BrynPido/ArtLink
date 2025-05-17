@@ -24,29 +24,49 @@ class Auth extends GlobalMethods {
     public function login($data) {
         $email = $data->email;
         $password = $data->password;
-    
-        $sql = "SELECT * FROM user WHERE email = ?";
+
+        // Updated query to join with profile table
+        $sql = "SELECT u.*, p.imageProfile, p.bio 
+                FROM user u 
+                LEFT JOIN profile p ON u.id = p.userId 
+                WHERE u.email = ?";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([$email]);
         $user = $stmt->fetch();
-    
+
         if ($user && password_verify($password, $user['password'])) {
             $token = $this->generateJWT($user);
-    
+
+            // Updated userPayload to include profile information
             $userPayload = [
                 "token" => $token,
                 "user" => [
                     "id" => $user['id'],
                     "name" => $user['name'],
                     "username" => $user['username'],
-                    "email" => $user['email']
+                    "email" => $user['email'],
+                    "profileImage" => $user['imageProfile'] ? $this->convertToHttpUrl($user['imageProfile']) : null,
+                    "bio" => $user['bio'] ?? ''
                 ]
             ];
-    
+
             return $this->sendPayload($userPayload, "success", "Login successful", 200);
         } else {
             return $this->sendPayload(null, "failed", "Invalid credentials", 401);
         }
+    }
+
+    // Helper function to convert local file paths to HTTP URLs
+    private function convertToHttpUrl($localPath)
+    {
+        // Replace backslashes with forward slashes
+        $localPath = str_replace('\\', '/', $localPath);
+
+        // Extract the relative path (e.g., "uploads/67dc4a543ec7d.bin")
+        $relativePath = substr($localPath, strpos($localPath, 'uploads/'));
+
+        // Construct the full HTTP URL using consistent casing
+        return "http://localhost/artlink/artlink_api/" . $relativePath;
     }
 
     /**

@@ -1,8 +1,20 @@
-<mat-tab-group>
-    <mat-tab label="Notifications">
-        <app-notifications></app-notifications>
-    </mat-tab>
-    <mat-tab label="Messages">
-        <app-messages></app-messages>
-    </mat-tab>
+<mat-tab-group [(selectedIndex)]="selectedTabIndex" animationDuration="0ms" class="inbox-tabs">
+    <mat-tab>
+    <ng-template mat-tab-label>
+      <div class="relative">
+        Messages
+        <span *ngIf="unreadMessages > 0" class="absolute -top-1 -right-3 h-2 w-2 bg-red-500 rounded-full"></span>
+      </div>
+    </ng-template>
+    <app-messages></app-messages>
+  </mat-tab>
+  <mat-tab>
+    <ng-template mat-tab-label>
+      <div class="relative">
+        Notifications
+        <span *ngIf="unreadNotifications > 0" class="absolute -top-1 -right-3 h-2 w-2 bg-red-500 rounded-full"></span>
+      </div>
+    </ng-template>
+    <app-notifications></app-notifications>
+  </mat-tab>
 </mat-tab-group>

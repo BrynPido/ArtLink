@@ -1,0 +1,225 @@
+<div class="container mx-auto px-4 py-8">
+  <!-- Loading State -->
+  <div *ngIf="loading" class="text-center py-8">
+    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+    <p class="mt-4 text-gray-600">Loading listing details...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error" class="text-center py-8">
+    <p class="text-red-600">{{ error }}</p>
+    <button (click)="goBack()" class="mt-4 text-blue-600 hover:text-blue-800">Go Back</button>
+  </div>
+
+  <!-- Listing Details -->
+  <div *ngIf="!loading && !error && listing" class="max-w-7xl mx-auto">
+    <!-- Back Button -->
+    <button 
+      (click)="goBack()"
+      class="mb-6 flex items-center text-gray-600 hover:text-gray-800"
+    >
+      <span class="material-symbols-outlined mr-1">arrow_back</span>
+      Back to Listings
+    </button>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <!-- Media Gallery -->
+      <div class="space-y-4">
+        <div class="relative aspect-w-4 aspect-h-3 bg-gray-100 rounded-lg overflow-hidden">
+          <img
+            *ngIf="listing.media && listing.media.length > 0"
+            [src]="listing.media[currentMediaIndex].url"
+            [alt]="listing.title"
+            class="object-contain w-full h-full"
+          >
+          <!-- Navigation Arrows -->
+          <div class="absolute inset-0 flex items-center justify-between p-4">
+            <button
+              *ngIf="currentMediaIndex > 0"
+              (click)="previousMedia()"
+              class="bg-black bg-opacity-50 text-white rounded-full p-2 hover:bg-opacity-75"
+            >
+              <span class="material-symbols-outlined">chevron_left</span>
+            </button>
+            <button
+              *ngIf="listing.media && currentMediaIndex < listing.media.length - 1"
+              (click)="nextMedia()"
+              class="bg-black bg-opacity-50 text-white rounded-full p-2 hover:bg-opacity-75"
+            >
+              <span class="material-symbols-outlined">chevron_right</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Thumbnail Strip -->
+        <div *ngIf="listing.media && listing.media.length > 1" class="flex space-x-2 overflow-x-auto">
+          <div
+            *ngFor="let media of listing.media; let i = index"
+            (click)="currentMediaIndex = i"
+            class="flex-shrink-0 w-20 h-20 cursor-pointer"
+            [class.ring-2]="currentMediaIndex === i"
+            [class.ring-blue-500]="currentMediaIndex === i"
+          >
+            <img
+              [src]="media.url"
+              [alt]="listing.title"
+              class="object-cover w-full h-full rounded"
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- Listing Info -->
+      <div class="space-y-6">
+        <div class="flex justify-between items-start">
+          <h1 class="text-3xl font-bold text-gray-900">{{ listing.title }}</h1>
+          <div *ngIf="currentUser?.id === listing.author.id" class="relative">
+            <button 
+              (click)="toggleActionMenu()"
+              class="text-gray-600 hover:text-gray-800 p-2 rounded-full hover:bg-gray-100"
+            >
+              <span class="material-symbols-outlined">settings</span>
+            </button>
+            
+            <!-- Dropdown Menu -->
+            <div *ngIf="showActionMenu" class="absolute z-20 right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 w-48">
+              <button
+                (click)="editListing()"
+                class="w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 flex items-center"
+              >
+                <span class="material-symbols-outlined mr-2 text-blue-600">edit</span>
+                Edit Listing
+              </button>
+              <button
+                (click)="deleteListing()"
+                class="w-full text-left px-4 py-3 text-red-600 hover:bg-gray-100 flex items-center border-t border-gray-100"
+              >
+                <span class="material-symbols-outlined mr-2">delete</span>
+                Delete Listing
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center space-x-4">
+          <p class="text-3xl font-bold text-blue-600">₱{{ listing.listingDetails.price }}</p>
+          <span class="text-gray-500">·</span>
+          <p class="text-gray-600">Listed {{ listing.createdAt | timeAgo }}</p>
+        </div>
+
+        <!-- Seller Info -->
+        <div class="flex items-center space-x-4 py-4 border-t border-b">
+          <img
+            [src]="listing.author.profileImage || 'assets/images/default-avatar.svg'"
+            [alt]="listing.author.name"
+            class="w-12 h-12 rounded-full object-cover cursor-pointer"
+            (click)="goToAuthorProfile()"
+          >
+          <div>
+            <p class="font-medium text-gray-900 cursor-pointer hover:text-blue-600" (click)="goToAuthorProfile()">
+              {{ listing.author.name }}
+            </p>
+            <p class="text-sm text-gray-500">{{ listing.author.username }}</p>
+          </div>
+        </div>
+
+        <!-- Listing Details -->
+        <div class="space-y-4">
+          <div>
+            <h2 class="text-lg font-semibold text-gray-900">Details</h2>
+            <div class="mt-2 grid grid-cols-2 gap-4">
+              <div>
+                <p class="text-sm text-gray-500">Category</p>
+                <p class="mt-1">{{ listing.listingDetails.category | titlecase }}</p>
+              </div>
+              <div>
+                <p class="text-sm text-gray-500">Condition</p>
+                <p class="mt-1">{{ listing.listingDetails.condition | titlecase }}</p>
+              </div>
+              <div>
+                <p class="text-sm text-gray-500">Location</p>
+                <p class="mt-1">{{ listing.listingDetails.location }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h2 class="text-lg font-semibold text-gray-900">Description</h2>
+            <p class="mt-2 text-gray-600 whitespace-pre-line">{{ listing.content }}</p>
+          </div>
+        </div>
+
+        <!-- Contact and Action Section -->
+        <div class="space-y-4 mt-6" *ngIf="currentUser?.id !== listing.author.id">
+          <!-- Contact Card -->
+          <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Contact Options</h3>
+            
+            <!-- Show if there's an existing conversation -->
+            <div *ngIf="existingConversation" class="mb-3">
+              <div class="flex items-center text-sm text-gray-600 mb-2">
+                <span class="material-symbols-outlined text-blue-600 mr-1">chat</span>
+                You already have a conversation about this listing
+              </div>
+              <button
+                (click)="viewConversation()"
+                class="w-full py-2.5 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                <div class="flex items-center justify-center">
+                  <span class="material-symbols-outlined mr-2">forum</span>
+                  View Messages
+                </div>
+              </button>
+            </div>
+        
+            <!-- Show if there's no existing conversation -->
+            <div *ngIf="!existingConversation">
+              <div class="flex items-center justify-between mb-3">
+                <button
+                  (click)="messageUser()"
+                  class="flex-1 py-2.5 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 mr-2"
+                >
+                  <div class="flex items-center justify-center">
+                    <span class="material-symbols-outlined mr-2">mail</span>
+                    Message Seller
+                  </div>
+                </button>
+                
+                <button
+                  (click)="toggleContactForm()"
+                  class="py-2.5 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
+                >
+                  <span class="material-symbols-outlined">{{ showContactForm ? 'expand_less' : 'expand_more' }}</span>
+                </button>
+              </div>
+              
+              <!-- Quick Message Form -->
+              <div *ngIf="showContactForm" class="mt-3 p-3 bg-white rounded-lg border border-gray-200">
+                <p class="text-sm text-gray-600 mb-2">Send a message about this listing:</p>
+                <div class="flex flex-col space-y-2">
+                  <textarea
+                    [(ngModel)]="messageText"
+                    rows="3"
+                    placeholder="I'm interested in this listing..."
+                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  ></textarea>
+                  <button
+                    [disabled]="sendingMessage || !messageText.trim()"
+                    (click)="sendMessage()"
+                    class="py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <div class="flex items-center justify-center">
+                      <span class="material-symbols-outlined mr-2" *ngIf="!sendingMessage">send</span>
+                      <div *ngIf="sendingMessage" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                      {{ sendingMessage ? 'Sending...' : 'Send' }}
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

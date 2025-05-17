@@ -1,0 +1,13 @@
+.inbox-tabs ::ng-deep .mat-mdc-tab {
+  min-width: 120px;
+  position: relative;
+}
+
+.inbox-tabs ::ng-deep .mat-mdc-tab-header {
+  margin-bottom: 1rem;
+}
+
+/* Style for the notification dot */
+.inbox-tabs .relative span {
+  transition: all 0.3s ease;
+}
