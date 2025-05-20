@@ -64,7 +64,7 @@ export class MessagingService {
 
     this.userId = userId;
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${wsProtocol}//localhost:8080`;
+    const wsUrl = `${wsProtocol}//artlink-f4jf.onrender.com`;
     
     try {
       this.socket = new WebSocket(wsUrl);
