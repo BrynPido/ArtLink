@@ -37,7 +37,8 @@ export class WebSocketService {
   constructor() {}
 
   connect(userId: number): void {
-    this.socket = new WebSocket('ws://localhost:8080');
+    const wsUrl = 'wss://artlink-f4jf.onrender.com';
+    this.socket = new WebSocket(wsUrl);
 
     this.socket.onopen = () => {
       console.log('WebSocket connection established');
