@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // Use environment variables for config
 const PORT = process.env.PORT || 8080;
-const PHP_API_BASE = process.env.PHP_API_BASE || 'https://api.art-link.site'; // <-- CHANGE THIS
+const PHP_API_BASE = process.env.PHP_API_BASE || 'https://api.art-link.site/routes.php?request='; // <-- CHANGE THIS
 
 // Map of userId to WebSocket
 const clients = new Map();
