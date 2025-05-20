@@ -7,7 +7,8 @@ import { catchError, throwError, Observable, of, tap, map, BehaviorSubject } fro
   providedIn: 'root',
 })
 export class DataService {
-  private apiUrl = 'http://localhost/artlink/artlink_api/api/';
+  // private apiUrl = 'http://localhost/artlink/artlink_api/api/';
+  private apiUrl = 'https://api.art-link.site/routes.php?request=';
 
   private currentUserSubject = new BehaviorSubject<any>(null);
   currentUser$ = this.currentUserSubject.asObservable();
