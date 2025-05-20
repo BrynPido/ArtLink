@@ -205,15 +205,27 @@ export class ProfileComponent implements OnInit {
       next: (response) => {
         if (response?.payload?.following) {
           // Now check if they are following us back
-          // Here userId is the follower, and currentUser.id is being followed
           this.dataService.isFollowing(this.currentUser.id, userId).subscribe({
             next: (mutualResponse) => {
               if (mutualResponse?.payload?.following) {
-                // If mutual follow, navigate to inbox with messages tab
-                this.router.navigate(['/inbox'], { 
-                  queryParams: { 
-                    tab: 'messages',
-                    userId: userId
+                // Create a regular conversation (not listing-specific)
+                this.dataService.createConversation(userId).subscribe({
+                  next: (convResponse) => {
+                    if (convResponse && convResponse.payload) {
+                      // Navigate to inbox with the conversation ID
+                      this.router.navigate(['/inbox'], { 
+                        queryParams: { 
+                          tab: 'messages',
+                          conversationId: convResponse.payload.id
+                        }
+                      });
+                    } else {
+                      this.toastService.showToast('Failed to start conversation', 'error');
+                    }
+                  },
+                  error: (error) => {
+                    console.error('Error creating conversation:', error);
+                    this.toastService.showToast('Failed to start conversation', 'error');
                   }
                 });
               } else {

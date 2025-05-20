@@ -258,33 +258,33 @@ switch ($method) {
                     echo json_encode(["status" => "failed", "message" => "Invalid notification ID"]);
                 }
                 break;
-            case 'conversations':
-                if (isset($request[1])) {
-                    if ($request[1] === 'create') {
-                        // Create a new conversation
-                        if (!isset($data['user1Id']) || !isset($data['recipientId'])) {
-                            http_response_code(400);
-                            echo json_encode([
-                                'status' => ['remarks' => 'failed', 'message' => 'Missing required user IDs'],
-                                'payload' => null,
-                                'prepared_by' => 'JFV',
-                                'timestamp' => [
-                                    'date' => date('Y-m-d H:i:s.u'),
-                                    'timezone_type' => 3,
-                                    'timezone' => 'Asia/Manila'
-                                ]
-                            ]);
-                            return;
-                        }
-                        echo json_encode($post->createConversation($data));
+        case 'conversations':
+            if (isset($request[1])) {
+                if ($request[1] === 'create') {
+                    // Create a new conversation
+                    if (!isset($data->user1Id) || !isset($data->recipientId)) {  // Changed from $data['user1Id']
+                        http_response_code(400);
+                        echo json_encode([
+                            'status' => ['remarks' => 'failed', 'message' => 'Missing required user IDs'],
+                            'payload' => null,
+                            'prepared_by' => 'JFV',
+                            'timestamp' => [
+                                'date' => date('Y-m-d H:i:s.u'),
+                                'timezone_type' => 3,
+                                'timezone' => 'Asia/Manila'
+                            ]
+                        ]);
+                        return;
                     }
+                    echo json_encode($post->createConversation($data));
+                }
                     else if (is_numeric($request[1]) && isset($request[2]) && $request[2] === 'read') {
                         // Mark a conversation as read
                         echo json_encode($post->markConversationAsRead($data));
                     }
                 } else {
                     // Handle basic conversation creation
-                    if (!isset($data['recipientId'])) {
+                    if (!isset($data->recipientId)) {  // Change from $data['recipientId'] to $data->recipientId
                         http_response_code(400);
                         echo json_encode([
                             'status' => ['remarks' => 'failed', 'message' => 'Missing recipientId'],

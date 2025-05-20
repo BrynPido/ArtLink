@@ -1,20 +1,29 @@
-<mat-tab-group [(selectedIndex)]="selectedTabIndex" animationDuration="0ms" class="inbox-tabs">
-    <mat-tab>
-    <ng-template mat-tab-label>
-      <div class="relative">
-        Messages
-        <span *ngIf="unreadMessages > 0" class="absolute -top-1 -right-3 h-2 w-2 bg-red-500 rounded-full"></span>
-      </div>
-    </ng-template>
+<div class="tabs flex items-center border-b border-gray-200 mb-4">
+  <button 
+    (click)="setActiveTab('messages')" 
+    [class.active]="activeTab === 'messages'"
+    class="py-3 px-6 font-medium text-gray-600 hover:text-blue-600 border-b-2 mr-2"
+    [class.border-blue-500]="activeTab === 'messages'"
+    [class.border-transparent]="activeTab !== 'messages'">
+    Messages
+  </button>
+  <button 
+    (click)="setActiveTab('notifications')" 
+    [class.active]="activeTab === 'notifications'"
+    class="py-3 px-6 font-medium text-gray-600 hover:text-blue-600 border-b-2"
+    [class.border-blue-500]="activeTab === 'notifications'"
+    [class.border-transparent]="activeTab !== 'notifications'">
+    Notifications
+  </button>
+</div>
+
+<div class="tab-content">
+  <div *ngIf="activeTab === 'messages'">
+    <!-- Messages component -->
     <app-messages></app-messages>
-  </mat-tab>
-  <mat-tab>
-    <ng-template mat-tab-label>
-      <div class="relative">
-        Notifications
-        <span *ngIf="unreadNotifications > 0" class="absolute -top-1 -right-3 h-2 w-2 bg-red-500 rounded-full"></span>
-      </div>
-    </ng-template>
+  </div>
+  <div *ngIf="activeTab === 'notifications'">
+    <!-- Notifications component -->
     <app-notifications></app-notifications>
-  </mat-tab>
-</mat-tab-group>
+  </div>
+</div>

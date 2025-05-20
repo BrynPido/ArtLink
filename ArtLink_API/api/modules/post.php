@@ -780,8 +780,9 @@ class Post extends GlobalMethods
     // Create a new conversation between two users
     public function createConversation($data) {
         try {
-            $user1Id = isset($data['user1Id']) ? $data['user1Id'] : null;
-            $user2Id = isset($data['recipientId']) ? $data['recipientId'] : null;
+            $user1Id = isset($data->user1Id) ? $data->user1Id : null;
+            $user2Id = isset($data->recipientId) ? $data->recipientId : null;
+            $listingId = isset($data->listingId) ? $data->listingId : null;
             
             if (!$user1Id) {
                 $user1Id = $this->getCurrentUserId();
@@ -791,13 +792,24 @@ class Post extends GlobalMethods
                 return $this->sendPayload(null, "failed", "Missing required user IDs", 400);
             }
 
-            // Check if a conversation already exists between these users
+            // Check if a conversation already exists between these users FOR THIS SPECIFIC LISTING
+            // If listingId is provided, we look for a conversation that has this exact listingId
+            // If listingId is null, we look for a conversation with null listingId
             $checkSql = "SELECT id FROM conversation 
-                        WHERE (user1Id = ? AND user2Id = ?) 
-                        OR (user1Id = ? AND user2Id = ?)";
+                        WHERE ((user1Id = ? AND user2Id = ?) 
+                        OR (user1Id = ? AND user2Id = ?))";
+            
+            // Add listing ID condition
+            $params = [$user1Id, $user2Id, $user2Id, $user1Id];
+            if ($listingId) {
+                $checkSql .= " AND listingId = ?";
+                $params[] = $listingId;
+            } else {
+                $checkSql .= " AND listingId IS NULL";
+            }
                         
             $checkStmt = $this->pdo->prepare($checkSql);
-            $checkStmt->execute([$user1Id, $user2Id, $user2Id, $user1Id]);
+            $checkStmt->execute($params);
             $existingConversation = $checkStmt->fetch();
             
             if ($existingConversation) {
@@ -810,10 +822,10 @@ class Post extends GlobalMethods
                 $updateStmt->execute([$conversationId]);
             } else {
                 // Create a new conversation
-                $sql = "INSERT INTO conversation (user1Id, user2Id, createdAt, updatedAt) 
-                        VALUES (?, ?, NOW(), NOW())";
+                $sql = "INSERT INTO conversation (user1Id, user2Id, listingId, createdAt, updatedAt) 
+                        VALUES (?, ?, ?, NOW(), NOW())";
                 $stmt = $this->pdo->prepare($sql);
-                $stmt->execute([$user1Id, $user2Id]);
+                $stmt->execute([$user1Id, $user2Id, $listingId]);
                 
                 $conversationId = $this->pdo->lastInsertId();
             }
@@ -832,28 +844,7 @@ class Post extends GlobalMethods
             $stmt->execute([$user1Id, $conversationId]);
             $conversation = $stmt->fetch(\PDO::FETCH_ASSOC);
             
-            if ($conversation) {
-                // Get other user details
-                $otherUserId = $conversation['otherUserId'];
-                
-                $userSql = "SELECT 
-                            u.id, u.name, u.username, u.email,
-                            p.imageProfile
-                            FROM user u
-                            LEFT JOIN profile p ON u.id = p.userId
-                            WHERE u.id = ?";
-                
-                $userStmt = $this->pdo->prepare($userSql);
-                $userStmt->execute([$otherUserId]);
-                $otherUser = $userStmt->fetch(\PDO::FETCH_ASSOC);
-
-                if ($otherUser && $otherUser['imageProfile']) {
-                    $otherUser['imageProfile'] = $this->convertToHttpUrl($otherUser['imageProfile']);
-                }
-                
-                $conversation['otherUser'] = $otherUser ?: ['id' => $otherUserId, 'name' => 'Unknown User'];
-                $conversation['unreadCount'] = 0;
-            }
+            // Rest of your method to fetch user details...
             
             return $this->sendPayload($conversation, "success", "Conversation created/retrieved successfully", 200);
             
@@ -910,44 +901,63 @@ class Post extends GlobalMethods
                 return $this->sendPayload(null, "failed", "Missing required fields", 400);
             }
             
-            // Find or create conversation
-            $conversationSql = "SELECT id FROM conversation 
-                              WHERE (user1Id = ? AND user2Id = ?) 
-                              OR (user1Id = ? AND user2Id = ?)";
-                              
-            $conversationStmt = $this->pdo->prepare($conversationSql);
-            $conversationStmt->execute([
-                $data->senderId, $data->receiverId,
-                $data->receiverId, $data->senderId
-            ]);
-            $conversation = $conversationStmt->fetch();
-            
             $conversationId = null;
-            if ($conversation) {
-                $conversationId = $conversation['id'];
+            
+            // Use provided conversation ID if available
+            if (isset($data->conversationId)) {
+                $conversationId = $data->conversationId;
                 
-                // Update conversation timestamp
-                $updateSql = "UPDATE conversation SET updatedAt = NOW() WHERE id = ?";
-                $updateStmt = $this->pdo->prepare($updateSql);
-                $updateStmt->execute([$conversationId]);
-            } else {
-                // Create new conversation
-                $createSql = "INSERT INTO conversation (user1Id, user2Id, createdAt, updatedAt) 
-                           VALUES (?, ?, NOW(), NOW())";
-                $createStmt = $this->pdo->prepare($createSql);
-                $createStmt->execute([$data->senderId, $data->receiverId]);
-                $conversationId = $this->pdo->lastInsertId();
+                // Verify the conversation exists and involves both users
+                $checkSql = "SELECT id FROM conversation 
+                            WHERE id = ? 
+                            AND ((user1Id = ? AND user2Id = ?) 
+                            OR (user1Id = ? AND user2Id = ?))";
+                $checkStmt = $this->pdo->prepare($checkSql);
+                $checkStmt->execute([$conversationId, $data->senderId, $data->receiverId, 
+                                   $data->receiverId, $data->senderId]);
+                $validConversation = $checkStmt->fetch();
+                
+                if (!$validConversation) {
+                    $conversationId = null; // Reset if conversation is invalid
+                }
             }
             
-            // Insert the message
-            $messageSql = "INSERT INTO message (
-                         content, conversationId, authorId, receiverId, createdAt, updatedAt
-                         ) VALUES (?, ?, ?, ?, NOW(), NOW())";
-                         
+            // If no valid conversation ID was provided, find or create one
+            if (!$conversationId) {
+                $conversationSql = "SELECT id FROM conversation 
+                                  WHERE ((user1Id = ? AND user2Id = ?) 
+                                  OR (user1Id = ? AND user2Id = ?))";
+                
+                $conversationStmt = $this->pdo->prepare($conversationSql);
+                $conversationStmt->execute([
+                    $data->senderId, $data->receiverId, 
+                    $data->receiverId, $data->senderId
+                ]);
+                $conversation = $conversationStmt->fetch();
+                
+                if ($conversation) {
+                    $conversationId = $conversation['id'];
+                    
+                    // Update the conversation's updatedAt timestamp
+                    $updateSql = "UPDATE conversation SET updatedAt = NOW() WHERE id = ?";
+                    $updateStmt = $this->pdo->prepare($updateSql);
+                    $updateStmt->execute([$conversationId]);
+                } else {
+                    // Create a new conversation if none exists
+                    $createSql = "INSERT INTO conversation (user1Id, user2Id, createdAt, updatedAt) VALUES (?, ?, NOW(), NOW())";
+                    $createStmt = $this->pdo->prepare($createSql);
+                    $createStmt->execute([$data->senderId, $data->receiverId]);
+                    $conversationId = $this->pdo->lastInsertId();
+                }
+            }
+            
+            // Insert the message with the correct conversation ID
+            $messageSql = "INSERT INTO message (conversationId, content, authorId, receiverId, createdAt) 
+                         VALUES (?, ?, ?, ?, NOW())";
             $messageStmt = $this->pdo->prepare($messageSql);
             $messageStmt->execute([
-                $data->content,
                 $conversationId,
+                $data->content,
                 $data->senderId,
                 $data->receiverId
             ]);
@@ -1139,8 +1149,8 @@ class Post extends GlobalMethods
 
             // Update listing details
             $detailsSql = "UPDATE listing_details 
-                        SET price = ?, category = ?, `condition` = ?, location = ? 
-                        WHERE listingId = ?";
+                          SET price = ?, category = ?, `condition` = ?, location = ? 
+                          WHERE listingId = ?";
             $detailsStmt = $this->pdo->prepare($detailsSql);
             $detailsStmt->execute([
                 $data->listingDetails->price,
@@ -1149,6 +1159,42 @@ class Post extends GlobalMethods
                 $data->listingDetails->location,
                 $listingId
             ]);
+            
+            // Handle image updates
+            if (isset($data->media) && is_array($data->media)) {
+                // 1. Get IDs of existing images to keep
+                $keepMediaIds = [];
+                $newMediaItems = [];
+                
+                foreach ($data->media as $media) {
+                    if (isset($media->id)) {
+                        // This is an existing image to keep
+                        $keepMediaIds[] = $media->id;
+                    } else {
+                        // This is a new image to add
+                        $newMediaItems[] = $media;
+                    }
+                }
+                
+                // 2. Delete media that's not in the keep list
+                if (!empty($keepMediaIds)) {
+                    $placeholders = implode(',', array_fill(0, count($keepMediaIds), '?'));
+                    $deleteSql = "DELETE FROM media WHERE listingId = ? AND id NOT IN ($placeholders)";
+                    $params = array_merge([$listingId], $keepMediaIds);
+                    $deleteStmt = $this->pdo->prepare($deleteSql);
+                    $deleteStmt->execute($params);
+                } else {
+                    // If no media to keep, delete all media for this listing
+                    $deleteAllSql = "DELETE FROM media WHERE listingId = ?";
+                    $deleteAllStmt = $this->pdo->prepare($deleteAllSql);
+                    $deleteAllStmt->execute([$listingId]);
+                }
+                
+                // 3. Add new media items using the existing method
+                if (!empty($newMediaItems)) {
+                    $this->createMediaForListing($listingId, $newMediaItems);
+                }
+            }
 
             $this->pdo->commit();
             return $this->sendPayload(['listingId' => $listingId], "success", "Listing updated successfully", 200);

@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MessagingService, Conversation, Message } from '../../../../services/messaging.service';
 import { DataService } from '../../../../services/data.service';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { TimeAgoPipe } from '../../../../utils/time-ago.pipe';
 
@@ -11,7 +11,7 @@ import { TimeAgoPipe } from '../../../../utils/time-ago.pipe';
 @Component({
   selector: 'app-messages',
   standalone: true,
-  imports: [CommonModule, FormsModule, TimeAgoPipe],
+  imports: [CommonModule, FormsModule, TimeAgoPipe, RouterModule],
   templateUrl: './messages.component.html',
   styleUrl: './messages.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -30,8 +30,15 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
   searchTerm: string = '';
   filteredConversations: Conversation[] = [];
   followingUsers: any[] = []; // List of users the current user is following
+  listingDetails: any = null;
+
+  // Separated conversation lists
+  listingConversations: Conversation[] = [];
+  regularConversations: Conversation[] = [];
 
   private subscriptions: Subscription[] = [];
+
+  activeTab: 'listings' | 'direct' = 'direct'; // Default to direct messages tab
 
   constructor(
     private messagingService: MessagingService,
@@ -103,6 +110,17 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
         this.scrollToBottom();
       })
     );
+
+    // Set default active tab based on available conversations
+    if (this.listingConversations.length > 0 && this.regularConversations.length === 0) {
+      this.activeTab = 'listings';
+    }
+    
+    // If there's any unread listing conversation, switch to listings tab
+    const hasUnreadListingConversation = this.listingConversations.some(c => (c.unreadCount ?? 0) > 0);
+    if (hasUnreadListingConversation) {
+      this.activeTab = 'listings';
+    }
   }
 
   ngAfterViewChecked() {
@@ -116,6 +134,34 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   selectConversation(conversation: Conversation): void {
     this.messagingService.setActiveConversation(conversation);
+
+    // // Log selection and type
+    // if (conversation.listingId) {
+    //   console.log(
+    //     `[MESSAGES] Selected LISTING conversation (listingId=${conversation.listingId}, conversationId=${conversation.id})`
+    //   );
+    // } else {
+    //   console.log(
+    //     `[MESSAGES] Selected REGULAR conversation (conversationId=${conversation.id})`
+    //   );
+    // }
+
+    // If this conversation is about a listing, get the listing details
+    if (conversation.listingId) {
+      this.dataService.getListingById(conversation.listingId.toString()).subscribe({
+        next: (response) => {
+          this.listingDetails = response.payload;
+          this.cdr.markForCheck();
+        },
+        error: (error) => {
+          console.error('Error fetching listing details:', error);
+          this.listingDetails = null;
+          this.cdr.markForCheck();
+        }
+      });
+    } else {
+      this.listingDetails = null;
+    }
   }
 
   getConversationName(conversation: Conversation): string {
@@ -124,8 +170,19 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   getConversationImage(conversation: Conversation): string {
-    if (!conversation.otherUser || !conversation.otherUser.profile) return 'assets/images/default-avatar.svg';
-    return conversation.otherUser.profile.imageProfile || 'assets/images/default-avatar.svg';
+    if (!conversation.otherUser) return 'assets/images/default-avatar.svg';
+    
+    // Handle direct imageProfile from API response
+    if (conversation.otherUser.imageProfile) {
+      return conversation.otherUser.imageProfile;
+    }
+    
+    // Fall back to profile.imageProfile if exists
+    if (conversation.otherUser.profile && conversation.otherUser.profile.imageProfile) {
+      return conversation.otherUser.profile.imageProfile;
+    }
+    
+    return 'assets/images/default-avatar.svg';
   }
 
   sendMessage(): void {
@@ -133,15 +190,37 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
       return;
     }
 
-    // Get the other user's ID from the active conversation
     const otherUserId = this.currentUser.id === this.activeConversation.user1Id 
       ? this.activeConversation.user2Id 
       : this.activeConversation.user1Id;
 
-    // Send message via WebSocket
-    this.messagingService.sendChatMessage(otherUserId, this.newMessage);
-    
-    // Add message to the current conversation (optimistic update)
+    // Log which type of conversation is being used
+    if (this.activeConversation.listingId) {
+      // console.log(
+      //   `[MESSAGES] Sending message in LISTING conversation (listingId=${this.activeConversation.listingId}, conversationId=${this.activeConversation.id}): "${this.newMessage}"`
+      // );
+      
+      // Send via WebSocket with listingId parameter
+      this.messagingService.sendChatMessage(
+        otherUserId,
+        this.newMessage,
+        this.activeConversation.id,
+        this.activeConversation.listingId // Pass the listingId
+      );
+    } else {
+      // console.log(
+      //   `[MESSAGES] Sending message in REGULAR conversation (conversationId=${this.activeConversation.id}): "${this.newMessage}"`
+      // );
+      
+      // Regular conversation - no listingId needed
+      this.messagingService.sendChatMessage(
+        otherUserId,
+        this.newMessage,
+        this.activeConversation.id
+      );
+    }
+
+    // Optimistic update - add message to UI immediately
     const message: Message = {
       content: this.newMessage,
       conversationId: this.activeConversation.id,
@@ -151,7 +230,7 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
     };
     
     this.messages = [...this.messages, message];
-    this.newMessage = ''; // Clear the input field
+    this.newMessage = '';
     this.cdr.markForCheck();
     this.scrollToBottom();
   }
@@ -161,10 +240,12 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.messagingService.startNewConversation(userId).subscribe({
       next: (conversation) => {
         if (conversation) {
-          this.activeConversation = conversation;
-          this.loading = false;
-          this.cdr.markForCheck();
+          // Set active tab to direct messages
+          this.activeTab = 'direct';
+          this.selectConversation(conversation);
         }
+        this.loading = false;
+        this.cdr.markForCheck();
       },
       error: (error) => {
         console.error('Error starting conversation:', error);
@@ -175,7 +256,24 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   startConversationWithUser(userId: number): void {
-    this.startNewConversation(userId);
+    // First check if we already have a conversation with this user
+    const existingConversation = this.conversations.find(c => 
+      ((c.user1Id === userId && c.user2Id === this.currentUser.id) || 
+      (c.user1Id === this.currentUser.id && c.user2Id === userId)) &&
+      !c.listingId // Make sure it's not a listing conversation
+    );
+    
+    if (existingConversation) {
+      // Set active tab to direct messages
+      this.activeTab = 'direct';
+      // If we already have a conversation, just select it
+      this.selectConversation(existingConversation);
+    } else {
+      // Set active tab to direct messages
+      this.activeTab = 'direct';
+      // Start a new direct message conversation
+      this.startNewConversation(userId);
+    }
   }
 
   onSearchChange(): void {
@@ -185,14 +283,19 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
   filterConversations(): void {
     if (!this.searchTerm.trim()) {
       this.filteredConversations = this.conversations;
-      return;
+      
+      // Separate conversations into listings and direct messages
+      this.listingConversations = this.conversations.filter(c => c.listingId);
+      this.regularConversations = this.conversations.filter(c => !c.listingId);
+    } else {
+      // Filter conversations by search term
+      const searchLower = this.searchTerm.toLowerCase();
+      this.filteredConversations = this.conversations.filter(conversation => {
+        const name = this.getConversationName(conversation).toLowerCase();
+        return name.includes(searchLower);
+      });
     }
-    
-    const term = this.searchTerm.toLowerCase();
-    this.filteredConversations = this.conversations.filter(conversation => {
-      const name = this.getConversationName(conversation).toLowerCase();
-      return name.includes(term);
-    });
+    this.cdr.markForCheck();
   }
 
   private scrollToBottom(): void {
@@ -215,5 +318,9 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   trackByMessageId(index: number, message: Message): number | string {
     return message.id || index;
+  }
+
+  setActiveTab(tab: 'listings' | 'direct'): void {
+    this.activeTab = tab;
   }
 }

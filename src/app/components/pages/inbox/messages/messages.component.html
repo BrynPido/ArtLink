@@ -10,43 +10,207 @@
       >
     </div>
     
+    <!-- NEW FRIENDS ROW -->
+    <div class="p-3 border-b border-gray-200">
+      <h3 class="text-xs font-medium text-gray-500 mb-2 px-1">Friends</h3>
+      <div class="overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+        <div *ngIf="loading" class="flex justify-center py-2">
+          <div class="w-5 h-5 border-2 border-gray-200 border-t-blue-500 rounded-full animate-spin"></div>
+        </div>
+        
+        <div *ngIf="!loading && followingUsers.length === 0" class="text-center py-2">
+          <p class="text-xs text-gray-400">Follow people to see them here</p>
+        </div>
+        
+        <div *ngIf="!loading" class="flex space-x-4 px-1">
+          <div *ngFor="let friend of followingUsers" 
+               class="flex flex-col items-center min-w-[60px] cursor-pointer hover:opacity-80 transition-opacity"
+               (click)="startConversationWithUser(friend.id)">
+            <div class="w-12 h-12 rounded-full overflow-hidden border-2 border-white shadow-sm mb-1">
+              <img [src]="friend.imageProfile || 'assets/images/default-avatar.svg'" 
+                   [alt]="friend.name" 
+                   class="w-full h-full object-cover">
+            </div>
+            <span class="text-xs text-gray-600 truncate w-full text-center">
+              {{friend.name || friend.username}}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- END NEW FRIENDS ROW -->
+    
     <div class="conversations-list">
       <div *ngIf="loading" class="loading-indicator">
         <span>Loading conversations...</span>
       </div>
       
       <ng-container *ngIf="!loading">
-        <div *ngIf="filteredConversations.length === 0" class="empty-state">
+        <!-- Empty state when no conversations exist -->
+        <div *ngIf="conversations.length === 0" class="empty-state">
           <p>No conversations found</p>
         </div>
         
-        <div 
-          *ngFor="let conversation of filteredConversations; trackBy: trackByConversationId" 
-          class="conversation-item" 
-          [class.active]="activeConversation?.id === conversation.id"
-          (click)="selectConversation(conversation)"
-        >
-          <div class="conversation-avatar">
-            <img [src]="getConversationImage(conversation)" alt="Profile">
-            <div class="online-indicator" *ngIf="conversation.otherUser?.online"></div>
+        <!-- Search results mode -->
+        <ng-container *ngIf="searchTerm.trim()">
+          <div *ngIf="filteredConversations.length === 0" class="empty-state">
+            <p>No conversations match your search</p>
           </div>
           
-          <div class="conversation-info">
-            <div class="conversation-header">
-              <h4 class="conversation-name">{{ getConversationName(conversation) }}</h4>
-              <span class="conversation-time" *ngIf="conversation.updatedAt">
-                {{ conversation.updatedAt | timeAgo }}
-              </span>
+          <div 
+            *ngFor="let conversation of filteredConversations; trackBy: trackByConversationId" 
+            class="conversation-item" 
+            [class.active]="activeConversation?.id === conversation.id"
+            (click)="selectConversation(conversation)"
+          >
+            <!-- Conversation item content -->
+            <div class="conversation-avatar">
+              <img [src]="getConversationImage(conversation)" alt="Profile" class="h-10 w-10 rounded-full object-cover">
+              <div class="online-indicator" *ngIf="conversation.otherUser?.online"></div>
             </div>
             
-            <div class="conversation-preview">
-              <p>{{ conversation.lastMessage || 'No messages yet' }}</p>
-              <div *ngIf="conversation.unreadCount" class="unread-badge">
-                {{ conversation.unreadCount }}
+            <div class="conversation-info">
+              <div class="conversation-header">
+                <h4 class="conversation-name">{{ getConversationName(conversation) }}</h4>
+                <span class="conversation-time text-xs text-gray-500" *ngIf="conversation.updatedAt">
+                  {{ conversation.updatedAt | timeAgo }}
+                </span>
+              </div>
+              
+              <div class="conversation-preview">
+                <p class="text-sm text-gray-600 truncate max-w-[180px]">
+                  <span *ngIf="conversation.listingId" 
+                        class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full mr-1">
+                    Listing
+                  </span>
+                  {{ conversation.lastMessage || 'No messages yet' }}
+                </p>
+                <div *ngIf="conversation.unreadCount" class="unread-badge">
+                  {{ conversation.unreadCount }}
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </ng-container>
+        
+        <!-- Normal browsing mode with sections -->
+        <ng-container *ngIf="!searchTerm.trim()">
+          <!-- Tab navigation -->
+          <div class="flex border-b">
+            <button 
+              class="flex items-center px-4 py-3 text-sm font-medium transition-colors"
+              [class.text-blue-600]="activeTab === 'direct'"
+              [class.border-b-2]="activeTab === 'direct'"
+              [class.border-blue-600]="activeTab === 'direct'"
+              [class.text-gray-500]="activeTab !== 'direct'"
+              [class.hover:text-gray-700]="activeTab !== 'direct'"
+              (click)="activeTab = 'direct'"
+            >
+              <span class="material-symbols-outlined text-sm mr-1.5">chat</span>
+              Direct Messages
+              <span *ngIf="regularConversations.length > 0" 
+                    class="ml-1.5 bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-0.5 rounded-full">
+                {{regularConversations.length}}
+              </span>
+            </button>
+
+            <button 
+              class="flex items-center px-4 py-3 text-sm font-medium transition-colors"
+              [class.text-blue-600]="activeTab === 'listings'"
+              [class.border-b-2]="activeTab === 'listings'"
+              [class.border-blue-600]="activeTab === 'listings'"
+              [class.text-gray-500]="activeTab !== 'listings'"
+              [class.hover:text-gray-700]="activeTab !== 'listings'"
+              (click)="activeTab = 'listings'"
+            >
+              <span class="material-symbols-outlined text-sm mr-1.5">sell</span>
+              Listing Messages
+              <span *ngIf="listingConversations.length > 0" 
+                    class="ml-1.5 bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-0.5 rounded-full">
+                {{listingConversations.length}}
+              </span>
+            </button>
+          </div>
+          
+          <!-- Listing conversations tab content -->
+          <div *ngIf="activeTab === 'listings'" class="pt-2">
+            <div *ngIf="listingConversations.length === 0" class="p-4 text-center text-gray-500">
+              No listing conversations yet
+            </div>
+            
+            <div 
+              *ngFor="let conversation of listingConversations; trackBy: trackByConversationId" 
+              class="conversation-item" 
+              [class.active]="activeConversation?.id === conversation.id"
+              (click)="selectConversation(conversation)"
+            >
+              <!-- Conversation item content -->
+              <div class="conversation-avatar">
+                <img [src]="getConversationImage(conversation)" alt="Profile" class="h-10 w-10 rounded-full object-cover">
+                <div class="online-indicator" *ngIf="conversation.otherUser?.online"></div>
+              </div>
+              
+              <div class="conversation-info">
+                <div class="conversation-header">
+                  <h4 class="conversation-name">{{ getConversationName(conversation) }}</h4>
+                  <span class="conversation-time text-xs text-gray-500" *ngIf="conversation.updatedAt">
+                    {{ conversation.updatedAt | timeAgo }}
+                  </span>
+                </div>
+                
+                <div class="conversation-preview">
+                  <p class="text-sm text-gray-600 truncate max-w-[180px]">
+                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full mr-1">
+                      Listing
+                    </span>
+                    {{ conversation.lastMessage || 'No messages yet' }}
+                  </p>
+                  <div *ngIf="conversation.unreadCount" class="unread-badge">
+                    {{ conversation.unreadCount }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Direct messages tab content -->
+          <div *ngIf="activeTab === 'direct'" class="pt-2">
+            <div *ngIf="regularConversations.length === 0" class="p-4 text-center text-gray-500">
+              No direct messages yet
+            </div>
+            
+            <div 
+              *ngFor="let conversation of regularConversations; trackBy: trackByConversationId" 
+              class="conversation-item" 
+              [class.active]="activeConversation?.id === conversation.id"
+              (click)="selectConversation(conversation)"
+            >
+              <!-- Conversation item content -->
+              <div class="conversation-avatar">
+                <img [src]="getConversationImage(conversation)" alt="Profile" class="h-10 w-10 rounded-full object-cover">
+                <div class="online-indicator" *ngIf="conversation.otherUser?.online"></div>
+              </div>
+              
+              <div class="conversation-info">
+                <div class="conversation-header">
+                  <h4 class="conversation-name">{{ getConversationName(conversation) }}</h4>
+                  <span class="conversation-time text-xs text-gray-500" *ngIf="conversation.updatedAt">
+                    {{ conversation.updatedAt | timeAgo }}
+                  </span>
+                </div>
+                
+                <div class="conversation-preview">
+                  <p class="text-sm text-gray-600 truncate max-w-[180px]">
+                    {{ conversation.lastMessage || 'No messages yet' }}
+                  </p>
+                  <div *ngIf="conversation.unreadCount" class="unread-badge">
+                    {{ conversation.unreadCount }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
       </ng-container>
     </div>
   </div>
@@ -75,6 +239,19 @@
             <span *ngIf="connectionStatus" class="status-indicator online">Online</span>
             <span *ngIf="!connectionStatus" class="status-indicator offline">Offline</span>
           </div>
+        </div>
+        
+        <!-- Add listing info banner -->
+        <div *ngIf="listingDetails" class="listing-info-banner mt-2 p-2 bg-blue-50 rounded-lg flex items-center">
+          <span class="material-symbols-outlined text-blue-600 mr-2">storefront</span>
+          <div class="flex-1">
+            <p class="text-sm text-blue-800 font-medium">Discussion about:</p>
+            <p class="text-sm truncate">{{ listingDetails.title }}</p>
+          </div>
+          <a [routerLink]="['/listing', listingDetails.id]" 
+             class="text-blue-600 ml-2 px-2 py-1 rounded-lg hover:bg-blue-100 text-sm">
+            View
+          </a>
         </div>
       </div>
       

@@ -318,7 +318,7 @@ export class DataService {
   }
 
   // Send a message (this is a fallback for when WebSocket is not available)
-  sendMessage(receiverId: number, content: string): Observable<any> {
+  sendMessage(receiverId: number, content: string, conversationId?: number): Observable<any> {
     const currentUser = this.getCurrentUser();
     if (!currentUser) {
       return throwError(() => new Error('User is not logged in'));
@@ -327,7 +327,8 @@ export class DataService {
     const data = {
       senderId: currentUser.id,
       receiverId: receiverId,
-      content: content
+      content: content,
+      conversationId: conversationId // Add this parameter
     };
     
     return this.http.post(`${this.apiUrl}messages/send`, data).pipe(
@@ -392,7 +393,7 @@ export class DataService {
   }
 
   // Update an existing listing
-  updateListing(listingId: number, listingData: any): Observable<any> {
+  updateListing(listingId: string, listingData: any): Observable<any> {
     return this.http.post(`${this.apiUrl}listings/${listingId}/update`, listingData).pipe(
       catchError(this.handleError)
     );

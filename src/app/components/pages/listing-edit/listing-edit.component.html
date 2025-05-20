@@ -1,1 +1,225 @@
-<p>listing-edit works!</p>
+<div class="container mx-auto px-4 py-8 max-w-5xl">
+  <!-- Header -->
+  <div class="mb-8">
+    <h1 class="text-2xl md:text-3xl font-bold text-gray-900">Edit Listing</h1>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="flex justify-center py-12">
+    <div class="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-blue-600"></div>
+  </div>
+
+  <!-- Main Form -->
+  <form *ngIf="!isLoading" (ngSubmit)="onSubmit()" #listingForm="ngForm" class="space-y-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
+      <!-- Left Column -->
+      <div class="space-y-6">
+        <!-- Title -->
+        <div>
+          <label for="title" class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+          <input 
+            type="text" 
+            id="title"
+            name="title"
+            [(ngModel)]="formData.title"
+            class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2.5 bg-white"
+            required
+          >
+        </div>
+
+        <!-- Description/Content -->
+        <div>
+          <label for="content" class="block text-sm font-medium text-gray-700 mb-1">
+            Description
+          </label>
+          <textarea 
+            id="content"
+            name="content"
+            [(ngModel)]="formData.content"
+            rows="6"
+            class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2.5 bg-white"
+            required
+          ></textarea>
+        </div>
+
+        <!-- Listing Details Section -->
+        <div class="space-y-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <h2 class="font-medium text-gray-900">Listing Details</h2>
+          
+          <!-- Price -->
+          <div>
+            <label for="price" class="block text-sm font-medium text-gray-700 mb-1">Price (₱)</label>
+            <input 
+              type="number" 
+              id="price"
+              name="price"
+              [(ngModel)]="formData.listingDetails.price"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2.5 bg-white"
+              min="0"
+              step="0.01"
+              required
+            >
+          </div>
+
+          <!-- Category -->
+          <div>
+            <label for="category" class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <div class="relative">
+              <select 
+                id="category"
+                name="category"
+                [(ngModel)]="formData.listingDetails.category"
+                class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2.5 bg-white appearance-none pr-10"
+                required
+              >
+                <option value="">Select a category</option>
+                <option value="art">Art</option>
+                <option value="supplies">Art Supplies</option>
+                <option value="tools">Tools</option>
+                <option value="other">Other</option>
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Condition -->
+          <div>
+            <label for="condition" class="block text-sm font-medium text-gray-700 mb-1">Condition</label>
+            <div class="relative">
+              <select 
+                id="condition"
+                name="condition"
+                [(ngModel)]="formData.listingDetails.condition"
+                class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2.5 bg-white appearance-none pr-10"
+                required
+              >
+                <option value="">Select condition</option>
+                <option value="new">New</option>
+                <option value="like-new">Like New</option>
+                <option value="good">Good</option>
+                <option value="fair">Fair</option>
+                <option value="poor">Poor</option>
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Location -->
+          <div>
+            <label for="location" class="block text-sm font-medium text-gray-700 mb-1">Location</label>
+            <input 
+              type="text" 
+              id="location"
+              name="location"
+              [(ngModel)]="formData.listingDetails.location"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2.5 bg-white"
+              required
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column -->
+      <div class="space-y-6">
+        <!-- Existing Images Section -->
+        <div *ngIf="existingMedia.length > 0">
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            Current Images
+          </label>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
+            <div *ngFor="let media of existingMedia; let i = index" class="relative overflow-hidden rounded-lg shadow-sm border border-gray-200 aspect-[4/3]">
+              <img [src]="media.url" class="w-full h-full object-cover" alt="Current image">
+              <button 
+                type="button"
+                (click)="removeExistingImage(i)"
+                class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-md hover:bg-red-600 transition-colors"
+              >
+                <span class="material-symbols-outlined text-lg font-medium">close</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Add New Images Section -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            Add New Images
+          </label>
+          <div class="mt-1 border-2 border-dashed border-gray-300 rounded-lg px-6 py-8 flex justify-center items-center bg-gray-50">
+            <div class="space-y-2 text-center">
+              <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <div class="flex text-sm text-gray-600 justify-center">
+                <label for="file-upload" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 px-2 py-1.5">
+                  <span>Upload files</span>
+                  <input 
+                    id="file-upload" 
+                    type="file" 
+                    class="sr-only" 
+                    (change)="onFileSelected($event)"
+                    accept="image/*"
+                    multiple
+                  >
+                </label>
+                <p class="pl-1 pt-1.5">or drag and drop</p>
+              </div>
+              <p class="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- New Image Preview Grid -->
+        <div *ngIf="imagePreviewUrls.length > 0" class="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
+          <div *ngFor="let url of imagePreviewUrls; let i = index" class="relative overflow-hidden rounded-lg shadow-sm border border-gray-200 aspect-[4/3]">
+            <img [src]="url" class="w-full h-full object-cover" alt="Preview">
+            <div class="absolute top-2 right-2 flex space-x-2">
+              <button 
+                type="button"
+                (click)="removeNewImage(i)"
+                class="bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-md hover:bg-red-600 transition-colors"
+                aria-label="Remove image"
+              >
+                <span class="material-symbols-outlined text-lg font-medium">close</span>
+              </button>
+            </div>
+            <button 
+              type="button"
+              (click)="editImage(i)"
+              class="absolute bottom-2 right-2 bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-md hover:bg-blue-600 transition-colors"
+              aria-label="Edit image"
+            >
+              <span class="material-symbols-outlined text-lg font-medium">edit</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Submit Button -->
+    <div class="flex justify-end space-x-3 mt-8">
+      <button 
+        type="button" 
+        (click)="cancelEdit()"
+        class="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+      >
+        Cancel
+      </button>
+      <button 
+        type="submit"
+        [disabled]="!listingForm.form.valid || (existingMedia.length === 0 && imagePreviewUrls.length === 0)"
+        class="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        Update Listing
+      </button>
+    </div>
+  </form>
+</div>

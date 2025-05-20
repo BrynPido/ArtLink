@@ -3,7 +3,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { MatTabsModule } from '@angular/material/tabs';
 import { NotificationsComponent } from './notifications/notifications.component';
 import { MessagesComponent } from './messages/messages.component';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { NotificationStateService } from '../../../services/notification-state.service';
 import { DataService } from '../../../services/data.service';
 import { Subscription } from 'rxjs';
@@ -16,7 +16,7 @@ import { Subscription } from 'rxjs';
   styleUrls: ['./inbox.component.css']
 })
 export class InboxComponent implements OnInit, OnDestroy {
-  selectedTabIndex = 0;
+  activeTab = 'messages'; // Set default tab
   unreadNotifications = 0;
   unreadMessages = 0;
   private notificationSubscription?: Subscription;
@@ -24,38 +24,23 @@ export class InboxComponent implements OnInit, OnDestroy {
 
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private notificationState: NotificationStateService,
     private dataService: DataService
-  ) {
-    // Check if we should open a specific tab based on route parameters
-    this.route.queryParams.subscribe(params => {
-      if (params['tab'] === 'messages') {
-        this.selectedTabIndex = 1;
-      } else if (params['tab'] === 'notifications') {
-        this.selectedTabIndex = 0;
-      }
-    });
-  }
+  ) {}
 
-  ngOnInit() {
-    // Subscribe to query parameters
+  ngOnInit(): void {
+    // Get query parameters and set the active tab based on the URL
     this.route.queryParams.subscribe(params => {
-      if (params['tab'] === 'messages') {
-        this.selectedTabIndex = 1;
-        // If a userId is provided, create a conversation with that user
-        if (params['userId']) {
-          this.dataService.createConversation(parseInt(params['userId'], 10)).subscribe({
-            next: () => {
-              // Conversation created or already exists
-              // MessagesComponent will handle showing the conversation
-            },
-            error: (error) => {
-              console.error('Error creating conversation:', error);
-            }
-          });
+      if (params['tab']) {
+        this.activeTab = params['tab'];
+        
+        // If we have a conversationId and we're on the messages tab,
+        // pass it to the messages component
+        if (params['conversationId'] && this.activeTab === 'messages') {
+          // This approach requires the messages component to listen for router events
+          // or you need to use a shared service to communicate between components
         }
-      } else if (params['tab'] === 'notifications') {
-        this.selectedTabIndex = 0;
       }
     });
 
@@ -77,5 +62,17 @@ export class InboxComponent implements OnInit, OnDestroy {
     if (this.messageSubscription) {
       this.messageSubscription.unsubscribe();
     }
+  }
+
+  // Method to change tabs
+  setActiveTab(tab: string): void {
+    this.activeTab = tab;
+    
+    // Update URL without reloading the page
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { tab: tab },
+      queryParamsHandling: 'merge'
+    });
   }
 }

@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { DataService } from '../../../services/data.service';
 import { ToastService } from '../../../services/toast.service';
 import Cropper from 'cropperjs';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-createpost',
@@ -135,9 +136,20 @@ export class CreatePostComponent implements OnDestroy {
   }
 
   discardPost() {
-    if (confirm('Are you sure you want to discard this ' + (this.isListingMode ? 'listing' : 'post') + '?')) {
-      this.router.navigate(['/home']);
-    }
+    Swal.fire({
+      title: 'Discard ' + (this.isListingMode ? 'Listing' : 'Post') + '?',
+      text: 'Are you sure you want to discard this? All your work will be lost.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, discard it',
+      cancelButtonText: 'No, keep editing'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.router.navigate(['/home']);
+      }
+    });
   }
 
   private fileToBase64(file: File): Promise<string> {

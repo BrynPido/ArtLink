@@ -40,8 +40,12 @@ class WebSocketServer implements MessageComponentInterface {
         $data = json_decode($msg);
         
         if (json_last_error() !== JSON_ERROR_NONE) {
+            echo "ERROR: JSON decode failed: " . json_last_error_msg() . "\n";
             return;
         }
+
+        // Add debug logging for all received messages
+        echo "RECEIVED: " . print_r($data, true) . "\n";
 
         switch ($data->type) {
             case 'auth':
@@ -50,7 +54,12 @@ class WebSocketServer implements MessageComponentInterface {
             
             case 'message':
                 if (isset($data->to) && isset($data->content)) {
-                    $this->handleDirectMessage($from, $data->to, $data->content);
+                    // Pass conversationId and listingId if they exist
+                    $conversationId = isset($data->conversationId) ? $data->conversationId : null;
+                    $listingId = isset($data->listingId) ? $data->listingId : null;
+                    
+                    echo "DEBUG: Processing message - conversationId=$conversationId, listingId=$listingId\n";
+                    $this->handleDirectMessage($from, $data->to, $data->content, $conversationId, $listingId);
                 }
                 break;
             
@@ -76,16 +85,55 @@ class WebSocketServer implements MessageComponentInterface {
         ]));
     }
 
-    protected function handleDirectMessage($from, $toUserId, $content) {
+    protected function handleDirectMessage($from, $toUserId, $content, $conversationId = null, $listingId = null) {
         try {
-            // Store message in database
+            // echo "CRITICAL DEBUG - Received message params:\n";
+            // echo "  from: " . $from->userId . "\n";
+            // echo "  to: " . $toUserId . "\n";
+            // echo "  content: " . $content . "\n";
+            // echo "  conversationId: " . ($conversationId === null ? "NULL" : $conversationId) . "\n";
+            // echo "  listingId: " . ($listingId === null ? "NULL" : $listingId) . "\n";
+            
+            // IMPORTANT: Use the provided conversationId instead of looking up
+            if ($conversationId) {
+                // echo "Using provided conversationId: $conversationId\n";
+                
+                // Verify the conversation exists and matches users
+                $verifyStmt = $this->db->prepare("
+                    SELECT id, user1Id, user2Id, listingId FROM conversation 
+                    WHERE id = :conversationId
+                    LIMIT 1
+                ");
+                $verifyStmt->execute([':conversationId' => $conversationId]);
+                $conv = $verifyStmt->fetch(PDO::FETCH_ASSOC);
+
+                if (!$conv) {
+                    // echo "ERROR: Conversation ID $conversationId does not exist! Creating new one...\n";
+                    $conversationId = $this->getOrCreateConversation($from->userId, $toUserId, $listingId);
+                } else {
+                    // echo "FOUND conversation ID $conversationId: user1Id={$conv['user1Id']}, user2Id={$conv['user2Id']}, listingId=" . 
+                         ($conv['listingId'] === null ? 'NULL' : $conv['listingId']) . "\n";
+                    
+                    // Check if users match
+                    $usersMatch = ($conv['user1Id'] == $from->userId && $conv['user2Id'] == $toUserId) || 
+                                  ($conv['user1Id'] == $toUserId && $conv['user2Id'] == $from->userId);
+                    
+                    if (!$usersMatch) {
+                        // echo "ERROR: Conversation users don't match! Using new conversation...\n";
+                        $conversationId = $this->getOrCreateConversation($from->userId, $toUserId, $listingId);
+                    }
+                }
+            } else {
+                // echo "No conversationId provided, getting or creating one\n";
+                $conversationId = $this->getOrCreateConversation($from->userId, $toUserId, $listingId);
+                // echo "Using new/found conversationId: $conversationId\n";
+            }
+
+            // Insert the message
             $stmt = $this->db->prepare("
                 INSERT INTO message (content, conversationId, authorId, receiverId, createdAt, updatedAt)
                 VALUES (:content, :conversationId, :authorId, :receiverId, NOW(), NOW())
             ");
-
-            // Get or create conversation
-            $conversationId = $this->getOrCreateConversation($from->userId, $toUserId);
 
             $stmt->execute([
                 ':content' => $content,
@@ -119,7 +167,7 @@ class WebSocketServer implements MessageComponentInterface {
                 ]));
             }
         } catch (\Exception $e) {
-            echo "Error handling message: " . $e->getMessage() . "\n";
+            // echo "Error handling message: " . $e->getMessage() . "\n";
             $from->send(json_encode([
                 'type' => 'error',
                 'message' => 'Failed to deliver message'
@@ -127,38 +175,62 @@ class WebSocketServer implements MessageComponentInterface {
         }
     }
 
-    private function getOrCreateConversation($user1Id, $user2Id) {
-        // First try to find existing conversation
-        $stmt = $this->db->prepare("
-            SELECT id FROM conversation 
-            WHERE (user1Id = :user1 AND user2Id = :user2)
-            OR (user1Id = :user2 AND user2Id = :user1)
-            LIMIT 1
-        ");
+    private function getOrCreateConversation($user1Id, $user2Id, $listingId = null) {
+        // echo "DEBUG: getOrCreateConversation called with user1Id=$user1Id, user2Id=$user2Id, listingId=" . 
+             ($listingId === null ? 'NULL' : $listingId) . "\n";
         
-        $stmt->execute([
-            ':user1' => $user1Id,
-            ':user2' => $user2Id
-        ]);
+        // Try with a more explicit handling of NULL values
+        if ($listingId === null) {
+            $stmt = $this->db->prepare("
+                SELECT id FROM conversation 
+                WHERE ((user1Id = :user1 AND user2Id = :user2)
+                   OR (user1Id = :user2 AND user2Id = :user1))
+                   AND listingId IS NULL
+                LIMIT 1
+            ");
+            $stmt->execute([
+                ':user1' => $user1Id,
+                ':user2' => $user2Id
+            ]);
+        } else {
+            $stmt = $this->db->prepare("
+                SELECT id FROM conversation 
+                WHERE ((user1Id = :user1 AND user2Id = :user2)
+                   OR (user1Id = :user2 AND user2Id = :user1))
+                   AND listingId = :listingId
+                LIMIT 1
+            ");
+            $stmt->execute([
+                ':user1' => $user1Id,
+                ':user2' => $user2Id,
+                ':listingId' => $listingId
+            ]);
+        }
         
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         
         if ($result) {
+            // echo "DEBUG: Found existing conversation id=" . $result['id'] . "\n";
             return $result['id'];
         }
         
-        // Create new conversation if none exists
+        // echo "DEBUG: No matching conversation found, creating new one\n";
+        
+        // Create new conversation
         $stmt = $this->db->prepare("
-            INSERT INTO conversation (user1Id, user2Id, createdAt, updatedAt)
-            VALUES (:user1, :user2, NOW(), NOW())
+            INSERT INTO conversation (user1Id, user2Id, listingId, createdAt, updatedAt)
+            VALUES (:user1, :user2, :listingId, NOW(), NOW())
         ");
         
         $stmt->execute([
             ':user1' => $user1Id,
-            ':user2' => $user2Id
+            ':user2' => $user2Id,
+            ':listingId' => $listingId
         ]);
         
-        return $this->db->lastInsertId();
+        $newId = $this->db->lastInsertId();
+        // echo "DEBUG: Created new conversation with id=$newId\n";
+        return $newId;
     }
 
     protected function handleNotification($from, $data) {

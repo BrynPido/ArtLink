@@ -84,7 +84,7 @@ export class ListingDetailsComponent implements OnInit {
     this.showContactForm = !this.showContactForm;
   }
 
-  // Send a direct message from the form
+  // Update the sendMessage method to pass the conversation ID
   sendMessage(): void {
     if (!this.messageText.trim()) {
       return;
@@ -96,8 +96,13 @@ export class ListingDetailsComponent implements OnInit {
     this.dataService.createConversation(this.listing.author.id, this.listing.id).subscribe({
       next: (response) => {
         const conversation = response.payload;
-        // Then send the message
-        this.dataService.sendMessage(this.listing.author.id, this.messageText).subscribe({
+        const conversationId = conversation.id;
+        
+        // Add listing context to the message
+        const messageText = `[Re: ${this.listing.title}] ${this.messageText}`;
+        
+        // Pass the conversation ID to ensure message goes to the right conversation
+        this.dataService.sendMessage(this.listing.author.id, messageText, conversationId).subscribe({
           next: () => {
             this.toastService.showToast('Message sent successfully', 'success');
             this.messageText = '';
@@ -216,6 +221,6 @@ export class ListingDetailsComponent implements OnInit {
   }
 
   goBack(): void {
-    window.history.back();
+    this.router.navigate(['/listings']);
   }
 }

@@ -5,6 +5,8 @@ import { DataService } from '../../../services/data.service';
 import { ToastService } from '../../../services/toast.service';
 import { WebSocketService } from '../../../services/websocket.service';
 import { TimeAgoPipe } from '../../../utils/time-ago.pipe';
+// Import SweetAlert2
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-post-card',
@@ -26,12 +28,7 @@ export class PostCardComponent implements OnInit {
   likedPosts: { [key: number]: boolean } = {};
   savedPosts: { [key: number]: boolean } = {};
   likesCountMap: { [key: number]: number } = {};
-
-  showConfirmationModal: boolean = false; // Track if the confirmation modal is open
-  postToDeleteId: number | null = null; // Track which post is to be deleted
-
   loading: boolean = true; // Track loading state
-
   imageLoaded: { [key: string]: boolean } = {}; // Track which images have loaded
   modalImageLoaded: boolean = false;
   modalZoom: number = 1.0;
@@ -204,25 +201,36 @@ export class PostCardComponent implements OnInit {
     }
   }
 
-  // Function to open the confirmation modal
+  // Replace the openConfirmationModal method with SweetAlert2
   openConfirmationModal(postId: number): void {
-    this.postToDeleteId = postId; // Set the post ID to delete
-    this.showConfirmationModal = true; // Show the confirmation modal
+    // Prevent post navigation when clicking delete button
+    event?.stopPropagation();
+    
+    Swal.fire({
+      title: 'Delete Post?',
+      text: 'This action cannot be undone. Are you sure you want to delete this post?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel',
+      backdrop: true,
+      customClass: {
+        container: 'swal-container',
+        popup: 'swal-popup',
+      },
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.deletePost(postId);
+      }
+      // Close the dropdown menu after the action is completed
+      this.menuOpenPostId = null;
+    });
   }
 
-  // Function to close the confirmation modal
-  closeConfirmationModal(): void {
-    this.showConfirmationModal = false; // Hide the confirmation modal
-    this.postToDeleteId = null; // Reset the post ID
-  }
-
-  // Function to confirm deletion
-  confirmDelete(): void {
-    if (this.postToDeleteId !== null) {
-      this.deletePost(this.postToDeleteId); // Call the delete function
-    }
-    this.closeConfirmationModal(); // Close the modal after confirming
-  }
+  // Delete original closeConfirmationModal and confirmDelete methods
+  // as they are no longer needed with SweetAlert2
 
   // Method to handle clicks outside the menu
   @HostListener('document:click', ['$event'])
