@@ -66,7 +66,8 @@ class Auth extends GlobalMethods {
         $relativePath = substr($localPath, strpos($localPath, 'uploads/'));
 
         // Construct the full HTTP URL using consistent casing
-        return "http://localhost/artlink/artlink_api/" . $relativePath;
+        // return "http://localhost/artlink/artlink_api/" . $relativePath;
+        return "https://image.art-link.site/" . $relativePath;
     }
 
     /**

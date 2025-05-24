@@ -115,13 +115,17 @@ export class LayoutComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Improve the adjustSidebarWidth method
   adjustSidebarWidth(screenWidth: number) {
-    if (screenWidth >= 1024) {
+    if (screenWidth >= 1280) {
+      // XL screen
+      this.sidebarWidth = '18rem';  // 72px
+    } else if (screenWidth >= 1024) {
       // Large screen (lg)
-      this.sidebarWidth = '25rem';
+      this.sidebarWidth = '16rem';  // 64px
     } else if (screenWidth >= 768) {
       // Medium screen (md)
-      this.sidebarWidth = '20rem';
+      this.sidebarWidth = '14rem';  // 56px
     } else {
       // Small screen (default)
       this.sidebarWidth = '0px';

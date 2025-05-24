@@ -1,20 +1,22 @@
-<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-  <button (click)="goBack()" class="mb-4 flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors">
-    <span class="material-symbols-rounded">arrow_back</span>
-    <span>Back</span>
+<div class="max-w-4xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 pb-24 md:pb-6">
+  <!-- Back Button - More compact on mobile -->
+  <button (click)="goBack()" class="mb-3 sm:mb-4 flex items-center gap-1 sm:gap-2 text-gray-600 hover:text-gray-900 transition-colors">
+    <span class="material-symbols-rounded text-lg sm:text-xl">arrow_back</span>
+    <span class="text-sm sm:text-base">Back</span>
   </button>
-  <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-    <!-- Author Header -->
-    <div class="p-4 flex items-center gap-4 border-b">
-      <div class="w-12 h-12 rounded-full bg-gray-200 overflow-hidden">
+  
+  <div class="bg-white rounded-lg sm:rounded-xl shadow-sm overflow-hidden">
+    <!-- Author Header - More compact on mobile -->
+    <div class="p-3 sm:p-4 flex items-center gap-3 sm:gap-4 border-b">
+      <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-200 overflow-hidden">
         <img [src]="post?.author?.profileImage || 'assets/images/default-avatar.svg'" alt="Author profile"
           class="w-full h-full object-cover cursor-pointer" (click)="goToAuthorProfile()">
       </div>
       <div class="cursor-pointer" (click)="goToAuthorProfile()">
-        <h2 class="font-medium text-gray-900">{{ post?.author?.name }}</h2>
-        <p class="text-sm text-gray-500">&commat;{{ post?.author?.username }}</p>
+        <h2 class="font-medium text-gray-900 text-sm sm:text-base">{{ post?.author?.name }}</h2>
+        <p class="text-xs sm:text-sm text-gray-500">&commat;{{ post?.author?.username }}</p>
       </div>
-      <button *ngIf="showFollowButton" class="ml-auto px-4 py-2 rounded-lg transition-colors"
+      <button *ngIf="showFollowButton" class="ml-auto px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg transition-colors text-xs sm:text-sm"
         [ngClass]="{
           'bg-indigo-600 text-white hover:bg-indigo-700': !isFollowing,
           'border border-gray-300 text-gray-700 hover:bg-gray-50': isFollowing
@@ -23,62 +25,55 @@
       </button>
     </div>
 
-    <!-- Media Carousel -->
+    <!-- Media Carousel - Responsive height -->
     <div class="relative">
       <div *ngIf="post?.media?.length > 1" class="relative">
         <div class="flex transition-transform duration-300"
           [style.transform]="'translateX(-' + (currentMediaIndex * 100) + '%)'">
           <div *ngFor="let media of post?.media" class="w-full flex-shrink-0">
             <img *ngIf="media.mediaType === 'image'" [src]="media.url" alt="Post media"
-              class="w-full h-[32rem] object-cover">
+              class="w-full h-[250px] sm:h-[350px] md:h-[450px] lg:h-[500px] object-cover">
             <video *ngIf="media.mediaType === 'video'" [src]="media.url" controls
-              class="w-full h-[32rem] object-contain bg-black">
+              class="w-full h-[250px] sm:h-[350px] md:h-[450px] lg:h-[500px] object-contain bg-black">
               Your browser does not support video playback.
             </video>
           </div>
         </div>
 
-        <!-- Carousel Controls -->
+        <!-- Carousel Controls - Smaller on mobile -->
         <button *ngIf="currentMediaIndex > 0" (click)="previousMedia()"
-          class="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 shadow-lg flex items-center justify-center hover:bg-white transition-colors">
-          <span class="material-symbols-rounded">chevron_left</span>
+          class="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/80 shadow-lg flex items-center justify-center hover:bg-white transition-colors">
+          <span class="material-symbols-rounded text-base sm:text-lg">chevron_left</span>
         </button>
         <button *ngIf="currentMediaIndex < (post?.media?.length || 0) - 1" (click)="nextMedia()"
-          class="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 shadow-lg flex items-center justify-center hover:bg-white transition-colors">
-          <span class="material-symbols-rounded">chevron_right</span>
+          class="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/80 shadow-lg flex items-center justify-center hover:bg-white transition-colors">
+          <span class="material-symbols-rounded text-base sm:text-lg">chevron_right</span>
         </button>
-
-        <!-- Dots Indicator -->
-        <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-          <div *ngFor="let media of post?.media; let i = index" class="w-2 h-2 rounded-full transition-colors"
-            [class.bg-white]="i === currentMediaIndex" [class.bg-white]="i !== currentMediaIndex">
-          </div>
-        </div>
       </div>
 
-      <!-- Single Media -->
+      <!-- Single Media - Responsive height -->
       <div *ngIf="post?.media?.length === 1">
         <img *ngIf="post?.media[0]?.mediaType === 'image'" [src]="post?.media[0]?.url" alt="Post media"
-          class="w-full h-[32rem] object-cover">
+          class="w-full h-[250px] sm:h-[350px] md:h-[450px] lg:h-[500px] object-cover">
         <video *ngIf="post?.media[0]?.mediaType === 'video'" [src]="post?.media[0]?.url" controls
-          class="w-full h-[32rem] object-contain bg-black">
+          class="w-full h-[250px] sm:h-[350px] md:h-[450px] lg:h-[500px] object-contain bg-black">
           Your browser does not support video playback.
         </video>
       </div>
     </div>
 
-    <!-- Post Content -->
-    <div class="p-4">
+    <!-- Post Content - Better padding on mobile -->
+    <div class="p-3 sm:p-4">
       <!-- Interaction Buttons -->
-      <div class="flex items-center gap-4 mb-4">
-        <span class="material-symbols-rounded cursor-pointer transition-transform duration-200 ease-in-out select-none"
+      <div class="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
+        <span class="material-symbols-rounded text-xl sm:text-2xl cursor-pointer transition-transform duration-200 ease-in-out select-none"
           [ngClass]="{'animate-pop': isLiked(post?.id)}" [ngStyle]="{
           'font-variation-settings': '\'FILL\' ' + (isLiked(post?.id) ? 1 : 0),
           'color': isLiked(post?.id) ? '#ff3040' : 'black'
         }" (click)="toggleLike(post?.id)">
           favorite
         </span>
-        <span class="material-symbols-rounded cursor-pointer transition-transform duration-200 ease-in-out select-none"
+        <span class="material-symbols-rounded text-xl sm:text-2xl cursor-pointer transition-transform duration-200 ease-in-out select-none"
           [ngClass]="{'animate-pop': isSaved(post?.id)}" [ngStyle]="{
           'font-variation-settings': '\'FILL\' ' + (isSaved(post?.id) ? 1 : 0),
           'color': isSaved(post?.id) ? '#007bff' : 'black'
@@ -88,63 +83,63 @@
       </div>
 
       <!-- Likes Count -->
-      <p class="font-medium mb-2">{{ likesCount(post?.id) }} likes</p>
+      <p class="font-medium mb-2 text-sm sm:text-base">{{ likesCount(post?.id) }} likes</p>
 
       <!-- Post Title & Description -->
-      <h1 class="text-xl font-bold mb-2">{{ post?.title }}</h1>
-      <p class="text-gray-600 whitespace-pre-line">{{ post?.content }}</p>
+      <h1 class="text-lg sm:text-xl font-bold mb-2">{{ post?.title }}</h1>
+      <p class="text-gray-600 whitespace-pre-line text-sm sm:text-base">{{ post?.content }}</p>
 
       <!-- Timestamp -->
-      <p class="text-sm text-gray-400 mt-2">
+      <p class="text-xs sm:text-sm text-gray-400 mt-2">
         {{ post?.createdAt | timeAgo:'full' }}
       </p>
 
       <!-- Comments Section -->
-      <div class="mt-6 border-t pt-4">
-        <h3 class="font-medium mb-4">Comments</h3>
+      <div class="mt-4 sm:mt-6 border-t pt-3 sm:pt-4">
+        <h3 class="font-medium mb-3 sm:mb-4 text-sm sm:text-base">Comments</h3>
 
-        <!-- Add Comment -->
-        <div class="mb-6 flex gap-3">
-          <div class="w-8 h-8 rounded-full bg-gray-200 flex-shrink-0 overflow-hidden">
+        <!-- Add Comment - More compact on mobile -->
+        <div class="mb-4 sm:mb-6 flex gap-2 sm:gap-3">
+          <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-200 flex-shrink-0 overflow-hidden">
             <img [src]="currentUser?.profileImage || 'assets/images/default-avatar.svg'" alt="Your profile"
               class="w-full h-full object-cover">
           </div>
           <form class="flex-1 flex gap-2" (ngSubmit)="addComment()">
             <input type="text" [(ngModel)]="newComment" name="comment"
-              class="flex-1 border rounded-full px-4 py-2 text-sm focus:outline-none focus:border-indigo-500"
+              class="flex-1 border rounded-full px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm focus:outline-none focus:border-indigo-500"
               placeholder="Add a comment...">
             <button type="submit"
-              class="px-4 py-2 bg-indigo-600 text-white rounded-full text-sm hover:bg-indigo-700 transition-colors">
+              class="px-3 py-1.5 sm:px-4 sm:py-2 bg-indigo-600 text-white rounded-full text-xs sm:text-sm hover:bg-indigo-700 transition-colors">
               Post
             </button>
           </form>
         </div>
 
         <!-- Comments List -->
-        <div class="space-y-6">
+        <div class="space-y-4 sm:space-y-6">
           <ng-container *ngFor="let comment of post?.comments">
             <ng-container *ngTemplateOutlet="commentTemplate; context: { $implicit: comment, level: 0 }">
             </ng-container>
           </ng-container>
         </div>
 
-        <!-- Comment Template -->
+        <!-- Comment Template - Responsive nesting -->
         <ng-template #commentTemplate let-comment let-level="level">
-          <div class="group" [ngStyle]="{'margin-left.px': level * 32}">
+          <div class="group" [ngStyle]="{'margin-left.px': level > 0 ? Math.min(level * 16, 48) : 0}">
             <!-- Comment -->
-            <div class="flex gap-3">
-              <div class="w-8 h-8 rounded-full bg-gray-200 flex-shrink-0 overflow-hidden">
+            <div class="flex gap-2 sm:gap-3">
+              <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-200 flex-shrink-0 overflow-hidden">
                 <img [src]="comment.author?.profileImage || 'assets/images/default-avatar.svg'" alt="Commenter profile"
                   class="w-full h-full object-cover">
               </div>
               <div class="flex-1">
-                <div class="bg-gray-50 rounded-2xl px-4 py-2">
-                  <p class="font-medium">{{ comment.author?.name }}</p>
-                  <p class="text-gray-600">{{ comment.content }}</p>
+                <div class="bg-gray-50 rounded-2xl px-3 py-1.5 sm:px-4 sm:py-2">
+                  <p class="font-medium text-xs sm:text-sm">{{ comment.author?.name }}</p>
+                  <p class="text-gray-600 text-xs sm:text-sm">{{ comment.content }}</p>
                 </div>
-                <div class="flex items-center gap-4 mt-2 text-sm">
+                <div class="flex items-center flex-wrap gap-2 sm:gap-4 mt-1 sm:mt-2 text-xs sm:text-sm">
                   <button class="text-gray-500 hover:text-gray-700" (click)="toggleCommentLike(comment.id)">
-                    <span class="material-symbols-rounded text-base" [ngStyle]="{
+                    <span class="material-symbols-rounded text-sm sm:text-base" [ngStyle]="{
                       'font-variation-settings': '\'FILL\' ' + (isCommentLiked(comment.id) ? 1 : 0),
                       'color': isCommentLiked(comment.id) ? '#ff3040' : 'inherit'
                     }">favorite</span>
@@ -156,30 +151,30 @@
                   <button *ngIf="canDeleteComment(comment)" 
                           class="text-red-500 hover:text-red-700" 
                           (click)="deleteComment(comment.id)">
-                    <span class="material-symbols-rounded text-base">delete</span>
+                    <span class="material-symbols-rounded text-sm sm:text-base">delete</span>
                   </button>
                   <span class="text-gray-400">{{ comment.createdAt | timeAgo }}</span>
                 </div>
 
-                <!-- Reply Form -->
-                <div *ngIf="replyingTo === comment.id" class="mt-3">
+                <!-- Reply Form - More compact on mobile -->
+                <div *ngIf="replyingTo === comment.id" class="mt-2 sm:mt-3">
                   <div class="flex gap-2">
                     <input type="text" [(ngModel)]="replyContent"
-                      class="flex-1 border rounded-full px-4 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                      class="flex-1 border rounded-full px-3 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm focus:outline-none focus:border-indigo-500"
                       placeholder="Write a reply...">
                     <button (click)="submitReply(comment.id)"
-                      class="px-4 py-2 bg-indigo-600 text-white rounded-full text-sm hover:bg-indigo-700">
+                      class="px-2 py-1 sm:px-4 sm:py-2 bg-indigo-600 text-white rounded-full text-xs sm:text-sm hover:bg-indigo-700">
                       Reply
                     </button>
                     <button (click)="cancelReply()"
-                      class="px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200">
+                      class="px-2 py-1 sm:px-4 sm:py-2 bg-gray-100 text-gray-700 rounded-full text-xs sm:text-sm hover:bg-gray-200">
                       Cancel
                     </button>
                   </div>
                 </div>
 
-                <!-- Nested Replies -->
-                <div *ngIf="comment.replies?.length" class="mt-3 space-y-3">
+                <!-- Nested Replies - Limit nesting indent on mobile -->
+                <div *ngIf="comment.replies?.length" class="mt-2 sm:mt-3 space-y-2 sm:space-y-3">
                   <ng-container *ngFor="let reply of comment.replies">
                     <ng-container *ngTemplateOutlet="commentTemplate; context: { $implicit: reply, level: level + 1 }">
                     </ng-container>

@@ -335,14 +335,24 @@ class Get extends GlobalMethods
         try {
             // First get the current user's ID from query parameters
             $currentUserId = isset($_GET['userId']) ? $_GET['userId'] : null;
-
+            
+            // DEBUG: Add direct check to verify follow status
+            if ($currentUserId) {
+                $checkSql = "SELECT COUNT(*) > 0 as is_following FROM follow WHERE followerId = ? AND followingId = ?";
+                $checkStmt = $this->pdo->prepare($checkSql);
+                $checkStmt->execute([$currentUserId, $userId]);
+                $followStatus = $checkStmt->fetch();
+                error_log("DEBUG FOLLOW CHECK: User $currentUserId following $userId = " . 
+                         ($followStatus['is_following'] ? 'TRUE' : 'FALSE'));
+            }
+            
             $sql = "SELECT u.*, 
                     (SELECT COUNT(*) FROM post WHERE authorId = u.id) as postCount,
                     (SELECT COUNT(*) FROM follow WHERE followingId = u.id) as followers,
                     (SELECT COUNT(*) FROM follow WHERE followerId = u.id) as following,
                     (SELECT imageProfile FROM profile WHERE userId = u.id LIMIT 1) as profileImage,
                     (SELECT bio FROM profile WHERE userId = u.id LIMIT 1) as bio,
-                    " . ($currentUserId ? "(SELECT COUNT(*) > 0 FROM follow WHERE followerId = ? AND followingId = u.id) as isFollowing" : "0 as isFollowing") . "
+                    " . ($currentUserId ? "(SELECT COUNT(*) FROM follow WHERE followerId = ? AND followingId = u.id) as followCount" : "0 as followCount") . "
                     FROM user u 
                     WHERE u.id = ?";
 
@@ -403,7 +413,7 @@ class Get extends GlobalMethods
                     'postCount' => $user['postCount'],
                     'followers' => $user['followers'],
                     'following' => $user['following'],
-                    'isFollowing' => (bool)$user['isFollowing'],
+                    'isFollowing' => ($user['followCount'] > 0),
                     'posts' => $formattedPosts
                 ];
 

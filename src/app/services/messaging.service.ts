@@ -63,10 +63,11 @@ export class MessagingService {
     }
 
     this.userId = userId;
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${wsProtocol}//artlink-f4jf.onrender.com`;
+    // Always use secure WebSocket connection for production server
+    const wsUrl = 'wss://artlink-f4jf.onrender.com';
     
     try {
+      console.log(`Connecting to WebSocket server at: ${wsUrl}`);
       this.socket = new WebSocket(wsUrl);
 
       this.socket.onopen = () => {

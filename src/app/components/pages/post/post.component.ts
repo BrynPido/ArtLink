@@ -35,6 +35,9 @@ export class PostComponent implements OnInit, OnDestroy {
   showFollowButton: boolean = false;
   private notificationSubscription?: Subscription;
 
+  // Add Math as a property to make it available in the template
+  Math = Math;
+
   constructor(
     private route: ActivatedRoute,
     private dataService: DataService,

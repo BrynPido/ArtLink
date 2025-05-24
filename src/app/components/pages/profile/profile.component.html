@@ -1,70 +1,67 @@
 <!-- Profile Header -->
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-  <div class="py-8">
-    <!-- Profile Info Section -->
-    <div class="flex flex-col md:flex-row items-start gap-8">
-      <!-- Profile Picture -->
-      <div class="w-32 h-32 md:w-40 md:h-40 rounded-full bg-gray-200 flex-shrink-0 overflow-hidden relative group"
+<div class="max-w-6xl mx-auto px-3 sm:px-4 lg:px-6 pb-20 md:pb-4">
+  <div class="py-3 sm:py-5">
+    <!-- Profile Info Section - Improved layout for medium screens -->
+    <div class="flex flex-col md:flex-row items-center md:items-start gap-3 md:gap-5">
+      <!-- Profile Picture with better responsive sizing -->
+      <div class="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 lg:w-36 lg:h-36 rounded-full bg-gray-200 flex-shrink-0 overflow-hidden relative group mx-auto md:mx-0"
            [class.cursor-pointer]="isOwnProfile"
            (click)="onProfilePicClick()">
         <img [src]="user?.profileImage || 'assets/images/default-avatar.svg'" 
-          alt="Profile picture" 
-          class="w-full h-full object-cover"
-          width="160" height="160">
+             alt="Profile picture" 
+             class="w-full h-full object-cover">
         <div *ngIf="isOwnProfile" class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-          <span class="text-white font-semibold">Change</span>
+          <span class="text-white text-sm font-semibold">Change</span>
         </div>
       </div>
 
-      <!-- Profile Details -->
-      <div class="flex-1">
-        <div class="flex flex-col md:flex-row md:items-center gap-4 mb-4">
-          <h1 class="text-3xl font-bold text-gray-900">{{ user?.name }}</h1>
-          <div class="flex gap-4">
+      <!-- Profile Details with improved responsive sizing -->
+      <div class="flex-1 w-full text-center md:text-left">
+        <!-- Username and Actions Row -->
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-4 mb-3">
+          <h1 class="text-xl sm:text-2xl font-bold text-gray-900 truncate">{{ user?.name }}</h1>
+          <div class="flex gap-2 justify-center md:justify-start">
             <button *ngIf="currentUser?.id !== user?.id"
-              (click)="toggleFollow()"
-              class="px-4 py-2 rounded-lg transition-colors group"
-              [ngClass]="{
-                'bg-indigo-600 text-white hover:bg-indigo-700': !isFollowing,
-                'border border-gray-300 text-gray-700 hover:bg-gray-50': isFollowing
-              }"
-              [attr.aria-label]="isFollowing ? 'Unfollow user' : 'Follow user'">
-              <span *ngIf="!isFollowing">Follow</span>
-              <span *ngIf="isFollowing" class="text-red-500">Unfollow</span>
+                    (click)="toggleFollow()"
+                    class="px-3 py-1 sm:px-4 sm:py-1.5 rounded-lg transition-colors text-xs sm:text-sm"
+                    [ngClass]="{
+                      'bg-indigo-600 text-white hover:bg-indigo-700': !isFollowing,
+                      'border border-gray-300 text-gray-700 hover:bg-gray-50': isFollowing
+                    }">
+              {{ isFollowing ? 'Following' : 'Follow' }}
             </button>
             <button *ngIf="currentUser?.id !== user?.id"
-              (click)="goToChat(user.id)"
-              class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    (click)="goToChat(user.id)"
+                    class="px-3 py-1 sm:px-4 sm:py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-xs sm:text-sm">
               Message
             </button>
           </div>
         </div>
 
-        <!-- Stats -->
-        <div class="flex gap-8 mb-6">
+        <!-- Stats Row - Better responsive sizing -->
+        <div class="flex justify-center md:justify-start gap-4 sm:gap-6 mb-3">
           <div class="text-center">
             <span class="block font-bold text-gray-900">{{ user?.postCount || 0 }}</span>
-            <span class="text-gray-600">posts</span>
+            <span class="text-gray-600 text-xs sm:text-sm">posts</span>
           </div>
           <div class="text-center">
             <span class="block font-bold text-gray-900">{{ user?.followers || 0 }}</span>
-            <span class="text-gray-600">followers</span>
+            <span class="text-gray-600 text-xs sm:text-sm">followers</span>
           </div>
           <div class="text-center">
             <span class="block font-bold text-gray-900">{{ user?.following || 0 }}</span>
-            <span class="text-gray-600">following</span>
+            <span class="text-gray-600 text-xs sm:text-sm">following</span>
           </div>
         </div>
 
         <!-- Bio -->
-        <!-- Bio - just making the text clickable -->
-        <div class="mb-4">
-          <h2 class="font-medium text-gray-900">{{ user?.username }}</h2>
+        <div class="mb-2 sm:mb-3">
+          <h2 class="font-medium text-sm text-gray-900">{{ user?.username }}</h2>
           <p *ngIf="!editingBio" 
              [class.cursor-pointer]="isOwnProfile"
              [class.hover:text-indigo-600]="isOwnProfile"
              (click)="isOwnProfile && startEditingBio()" 
-             class="text-gray-600 mt-1">
+             class="text-gray-600 mt-0.5 text-xs sm:text-sm max-w-md">
             {{ user?.bio || 'No bio yet' }}
           </p>
           
@@ -142,57 +139,59 @@
       </div>
     </div>
 
-    <!-- Posts Grid Section -->
-    <div class="mt-12">
-      <div class="border-b border-gray-200 mb-8">
-        <nav class="flex gap-8">
+    <!-- Tab Navigation - Improved for responsive design -->
+    <div class="mt-4 sm:mt-6">
+      <div class="border-b border-gray-200 mb-4 sm:mb-5 overflow-x-auto scrollbar-hide">
+        <nav class="flex gap-3 sm:gap-4 whitespace-nowrap pb-1 min-w-0">
           <button 
             (click)="switchTab('posts')"
-            class="pb-4 font-medium hover:text-gray-700 flex items-center"
+            class="pb-2 font-medium hover:text-gray-700 flex items-center text-xs sm:text-sm flex-shrink-0"
             [ngClass]="{
-              'border-b-2 border-indigo-600 text-indigo-600': activeTab === 'posts',
+              'border-b-2 border-indigo-600 text-indigo-600 font-semibold': activeTab === 'posts',
               'text-gray-500': activeTab !== 'posts'
             }">
-            <span class="material-symbols-rounded mr-2">grid_on</span>
+            <span class="material-symbols-rounded mr-1 text-base sm:text-lg">grid_on</span>
             Posts
           </button>
           <button 
             (click)="switchTab('listings')"
-            class="pb-4 font-medium hover:text-gray-700 flex items-center"
+            class="pb-2 font-medium hover:text-gray-700 flex items-center text-xs sm:text-sm flex-shrink-0"
             [ngClass]="{
               'border-b-2 border-indigo-600 text-indigo-600': activeTab === 'listings',
               'text-gray-500': activeTab !== 'listings'
             }">
-            <span class="material-symbols-rounded mr-2">storefront</span>
+            <span class="material-symbols-rounded mr-1 text-base sm:text-lg">storefront</span>
             Listings
           </button>
           <button 
             *ngIf="isOwnProfile"
             (click)="switchTab('liked')"
-            class="pb-4 font-medium hover:text-gray-700 flex items-center"
+            class="pb-2 font-medium hover:text-gray-700 flex items-center text-xs sm:text-sm flex-shrink-0"
             [ngClass]="{
               'border-b-2 border-indigo-600 text-indigo-600': activeTab === 'liked',
               'text-gray-500': activeTab !== 'liked'
             }">
-            <span class="material-symbols-rounded mr-2">thumb_up</span>
+            <span class="material-symbols-rounded mr-1 text-base sm:text-lg">thumb_up</span>
             Liked
           </button>
           <button 
             *ngIf="isOwnProfile"
             (click)="switchTab('saved')"
-            class="pb-4 font-medium hover:text-gray-700 flex items-center"
+            class="pb-2 font-medium hover:text-gray-700 flex items-center text-xs sm:text-sm flex-shrink-0"
             [ngClass]="{
               'border-b-2 border-indigo-600 text-indigo-600': activeTab === 'saved',
               'text-gray-500': activeTab !== 'saved'
             }">
-            <span class="material-symbols-rounded mr-2">bookmark</span>
+            <span class="material-symbols-rounded mr-1 text-base sm:text-lg">bookmark</span>
             Saved
           </button>
         </nav>
       </div>
 
-      <!-- Posts Grid -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <!-- Grid Layout - Consistent columns across all tabs -->
+      <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3">
+        
+        <!-- Posts layout stays the same - already looks good -->
         <ng-container *ngIf="activeTab === 'posts'">
           <div *ngFor="let post of user?.posts" 
                (click)="viewPost(post.id)"
@@ -201,70 +200,60 @@
                  [src]="post.media[0].url" 
                  alt="Post thumbnail" 
                  class="w-full h-full object-cover">
-            <div class="absolute inset-0 bg-black/75 bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-              <div class="text-white flex gap-6">
+            <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <div class="text-white flex gap-3 sm:gap-4">
                 <div class="flex items-center">
-                  <span class="material-symbols-rounded mr-2">favorite</span>
-                  <span>{{ post.likes || 0 }}</span>
+                  <span class="material-symbols-rounded mr-1 text-sm sm:text-base">favorite</span>
+                  <span class="text-xs sm:text-sm">{{ post.likes || 0 }}</span>
                 </div>
                 <div class="flex items-center">
-                  <span class="material-symbols-rounded mr-2">chat_bubble</span>
-                  <span>{{ post.comments || 0 }}</span>
+                  <span class="material-symbols-rounded mr-1 text-sm sm:text-base">chat_bubble</span>
+                  <span class="text-xs sm:text-sm">{{ post.comments || 0 }}</span>
                 </div>
               </div>
             </div>
           </div>
         </ng-container>
 
+        <!-- Update listings to use a more compact layout -->
         <ng-container *ngIf="activeTab === 'listings'">
           <div *ngFor="let listing of listings"
               (click)="viewListing(listing.id)"
-              class="bg-white rounded-lg shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-all duration-200 border border-gray-200">
-            <!-- Listing Image with New Badge for condition -->
-            <div class="relative">
+              class="relative aspect-square overflow-hidden cursor-pointer group rounded-lg shadow-sm">
+              
+              <!-- Image with overlay for price -->
               <img 
                 [src]="listing.media[0]?.url || 'assets/images/placeholder.jpg'"
                 [alt]="listing.title"
-                class="object-cover w-full h-[180px]">
-                
-              <!-- "New" Badge - shown only when condition is "new" -->
-              <!-- <div *ngIf="listing.listingDetails?.condition?.toLowerCase() === 'new'" 
-                  class="absolute top-2 right-2 bg-green-500 text-white text-xs font-medium px-2 py-0.5 rounded">
-                New Condition
-              </div> -->
-            </div>
-
-            <!-- Listing Details -->
-            <div class="p-4">
-              <!-- Title -->
-              <h3 class="font-semibold text-gray-900 text-lg mb-1 truncate">{{ listing.title }}</h3>
+                class="w-full h-full object-cover">
               
-              <!-- Price - Using ₱ symbol -->
-              <p class="text-xl font-bold text-blue-500 mb-2">
+              <!-- Price tag overlay -->
+              <div class="absolute top-0 right-0 bg-blue-600 text-white px-2 py-1 m-2 rounded font-medium text-sm">
                 ₱{{ listing.listingDetails.price }}
-              </p>
-              
-              <!-- Category with icon -->
-              <div class="flex items-center mb-1">
-                <span class="material-symbols-outlined text-gray-400 text-base mr-2">sell</span>
-                <span class="text-sm text-gray-600">{{ listing.listingDetails.category | titlecase }}</span>
               </div>
               
-              <!-- Location with icon -->
-              <div class="flex items-center mb-1">
-                <span class="material-symbols-outlined text-gray-400 text-base mr-2">location_on</span>
-                <span class="text-sm text-gray-600">{{ listing.listingDetails.location }}</span>
+              <!-- Title overlay at the bottom -->
+              <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                <h3 class="font-medium text-white text-sm truncate">{{ listing.title }}</h3>
+                <div class="flex items-center">
+                  <span class="material-symbols-outlined text-white/80 text-xs mr-1">sell</span>
+                  <span class="text-white/80 text-xs">{{ listing.listingDetails.category | titlecase }}</span>
+                </div>
               </div>
-              
-              <!-- Time ago with icon -->
-              <div class="flex items-center text-xs text-gray-500">
-                <span class="material-symbols-outlined text-gray-400 text-sm mr-1.5">schedule</span>
-                <span>{{ listing.createdAt | timeAgo }}</span>
+
+              <!-- Hover overlay with more details -->
+              <div class="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-center items-center p-2">
+                <h3 class="font-semibold text-white text-center mb-1">{{ listing.title }}</h3>
+                <p class="text-lg font-bold text-blue-400 mb-1">₱{{ listing.listingDetails.price }}</p>
+                <div class="flex items-center text-white/80 text-xs">
+                  <span class="material-symbols-outlined text-xs mr-1">location_on</span>
+                  <span>{{ listing.listingDetails.location }}</span>
+                </div>
               </div>
-            </div>
           </div>
         </ng-container>
 
+        <!-- Apply the same aspect ratio grid for saved and liked posts -->
         <ng-container *ngIf="activeTab === 'saved'">
           <div *ngFor="let post of user?.savedPosts" 
                (click)="viewPost(post.id)"
@@ -273,15 +262,15 @@
                  [src]="post.media[0].url" 
                  alt="Post thumbnail" 
                  class="w-full h-full object-cover">
-            <div class="absolute inset-0 bg-black/75 bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-              <div class="text-white flex gap-6">
+            <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <div class="text-white flex gap-3 sm:gap-4">
                 <div class="flex items-center">
-                  <span class="material-symbols-rounded mr-2">favorite</span>
-                  <span>{{ post.likes || 0 }}</span>
+                  <span class="material-symbols-rounded mr-1 text-sm sm:text-base">favorite</span>
+                  <span class="text-xs sm:text-sm">{{ post.likes || 0 }}</span>
                 </div>
                 <div class="flex items-center">
-                  <span class="material-symbols-rounded mr-2">chat_bubble</span>
-                  <span>{{ post.comments || 0 }}</span>
+                  <span class="material-symbols-rounded mr-1 text-sm sm:text-base">chat_bubble</span>
+                  <span class="text-xs sm:text-sm">{{ post.comments || 0 }}</span>
                 </div>
               </div>
             </div>
@@ -296,15 +285,15 @@
                  [src]="post.media[0].url" 
                  alt="Post thumbnail" 
                  class="w-full h-full object-cover">
-            <div class="absolute inset-0 bg-black/75 bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-              <div class="text-white flex gap-6">
+            <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <div class="text-white flex gap-3 sm:gap-4">
                 <div class="flex items-center">
-                  <span class="material-symbols-rounded mr-2">favorite</span>
-                  <span>{{ post.likes || 0 }}</span>
+                  <span class="material-symbols-rounded mr-1 text-sm sm:text-base">favorite</span>
+                  <span class="text-xs sm:text-sm">{{ post.likes || 0 }}</span>
                 </div>
                 <div class="flex items-center">
-                  <span class="material-symbols-rounded mr-2">chat_bubble</span>
-                  <span>{{ post.comments || 0 }}</span>
+                  <span class="material-symbols-rounded mr-1 text-sm sm:text-base">chat_bubble</span>
+                  <span class="text-xs sm:text-sm">{{ post.comments || 0 }}</span>
                 </div>
               </div>
             </div>
@@ -316,11 +305,11 @@
                     (activeTab === 'listings' && (!listings || listings.length === 0)) ||
                     (activeTab === 'saved' && (!user?.savedPosts || user.savedPosts.length === 0)) ||
                     (activeTab === 'liked' && (!user?.likedPosts || user.likedPosts.length === 0))"
-             class="col-span-full text-center py-12">
-          <span class="material-symbols-rounded text-4xl text-gray-400">
+             class="col-span-full text-center py-6 sm:py-12">
+          <span class="material-symbols-rounded text-3xl sm:text-4xl text-gray-400">
             {{ activeTab === 'posts' ? 'photo_library' : activeTab === 'listings' ? 'storefront' : activeTab === 'saved' ? 'bookmark' : 'thumb_up' }}
           </span>
-          <p class="mt-2 text-gray-500">
+          <p class="mt-2 text-gray-500 text-sm sm:text-base">
             {{ activeTab === 'posts' ? 'No posts yet' : activeTab === 'listings' ? 'No listings yet' : activeTab === 'saved' ? 'No saved posts' : 'No liked posts' }}
           </p>
         </div>

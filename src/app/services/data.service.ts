@@ -73,7 +73,7 @@ export class DataService {
   getPosts(): Observable<any> {
     const currentUser = this.getCurrentUser();
     const userId = currentUser ? currentUser.id : null;
-    return this.http.get(`${this.apiUrl}getPosts?userId=${userId}`).pipe(
+    return this.http.get(`${this.apiUrl}getPosts&userId=${userId}`).pipe(
       catchError(this.handleError)
     );
   }
@@ -102,7 +102,7 @@ export class DataService {
   getSavedPosts(): Observable<any> {
     const currentUser = this.getCurrentUser();
     const userId = currentUser ? currentUser.id : null; // Get user ID from local storage
-    return this.http.get(`${this.apiUrl}getSavedPosts?userId=${userId}`).pipe(
+    return this.http.get(`${this.apiUrl}getSavedPosts&userId=${userId}`).pipe(
       catchError(this.handleError)
     );
   }
@@ -110,13 +110,13 @@ export class DataService {
   getLikedPosts(): Observable<any> {
     const currentUser = this.getCurrentUser();
     const userId = currentUser ? currentUser.id : null; // Get user ID from local storage
-    return this.http.get(`${this.apiUrl}getLikedPosts?userId=${userId}`).pipe(
+    return this.http.get(`${this.apiUrl}getLikedPosts&userId=${userId}`).pipe(
       catchError(this.handleError)
     );
   }
 
   search(query: string): Observable<any> {
-    return this.http.get(`${this.apiUrl}search?query=${encodeURIComponent(query)}`).pipe(
+    return this.http.get(`${this.apiUrl}search&query=${encodeURIComponent(query)}`).pipe(
       catchError(this.handleError)
     );
   }
@@ -125,7 +125,7 @@ export class DataService {
   getUserProfile(userId: string): Observable<any> {
     const currentUser = this.getCurrentUser();
     const currentUserId = currentUser ? currentUser.id : null;
-    return this.http.get(`${this.apiUrl}user/${userId}?userId=${currentUserId}`).pipe(
+    return this.http.get(`${this.apiUrl}user/${userId}&userId=${currentUserId}`).pipe(
       catchError(this.handleError)
     );
   }
@@ -141,7 +141,7 @@ export class DataService {
   getPostById(postId: string): Observable<any> {
     const currentUser = this.getCurrentUser();
     const userId = currentUser ? currentUser.id : null;
-    return this.http.get(`${this.apiUrl}post/${postId}?userId=${userId}`).pipe(
+    return this.http.get(`${this.apiUrl}post/${postId}&userId=${userId}`).pipe(
       catchError(this.handleError)
     );
   }
@@ -202,7 +202,7 @@ export class DataService {
     // Otherwise check if current user is following userId
     const follower = followerId || currentUser;
     return this.http.get<{ status: any, payload: { following: boolean } }>(
-      `${this.apiUrl}following/${userId}?userId=${follower}`
+      `${this.apiUrl}following/${userId}&userId=${follower}`
     ).pipe(
       catchError(this.handleError)
     );
@@ -220,7 +220,7 @@ export class DataService {
     if (!userId) {
       return throwError(() => new Error('User ID is required'));
     }
-    return this.http.get(`${this.apiUrl}getNotifications?userId=${userId}`).pipe(
+    return this.http.get(`${this.apiUrl}getNotifications&userId=${userId}`).pipe(
       catchError(this.handleError)
     );
   }

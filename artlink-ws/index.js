@@ -9,7 +9,7 @@ const PHP_API_BASE = process.env.PHP_API_BASE || 'https://api.art-link.site/rout
 const clients = new Map();
 
 const wss = new WebSocketServer({ port: PORT }, () => {
-  console.log(`WebSocket bridge running on ws://localhost:${PORT}`);
+  console.log(`WebSocket bridge running on ws://artlink-f4jf.onrender.com:${PORT}`);
 });
 
 wss.on('connection', (ws) => {
