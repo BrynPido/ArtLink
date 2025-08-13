@@ -1,6 +1,6 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://your-api-domain.vercel.app/api/',  // Replace with your actual Vercel API URL
-  mediaBaseUrl: 'https://your-api-domain.vercel.app',  // Replace with your actual Vercel API URL
+  apiUrl: 'https://artlink-seven.vercel.app//api/',  
+  mediaBaseUrl: 'https://artlink-seven.vercel.app/',
   wsUrl: 'wss://artlink-f4jf.onrender.com'  // WebSocket URL for production
 };
