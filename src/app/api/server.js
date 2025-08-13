@@ -53,6 +53,7 @@ app.use(cors({
       'http://localhost:4200', 
       'https://art-link.site',
       'https://artlink-seven.vercel.app',  // Your frontend Vercel URL
+      'https://art-link-seven.vercel.app',  // Your actual frontend URL
       'https://artlink.vercel.app',  // In case you change the URL
       'https://art-link.vercel.app'  // Alternative frontend URL
     ];
