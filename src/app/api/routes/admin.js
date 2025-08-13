@@ -4,21 +4,39 @@ const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Add specific CORS handling for admin routes
+router.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control');
+  
+  // Handle preflight requests for admin routes
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
+  next();
+});
+
 // Middleware to check admin privileges
 const requireAdmin = async (req, res, next) => {
   try {
+    console.log('🔍 Admin middleware - checking privileges for user:', req.user?.email || req.user?.username);
+    
     // Check if user is authenticated and has admin privileges
-    // The user object is already available from the authenticateToken middleware
     if (!req.user || (req.user.email !== 'admin@artlink.com' && req.user.username !== 'admin')) {
+      console.log('🔍 Admin access denied for user:', req.user?.email || req.user?.username);
       return res.status(403).json({
         status: 'error',
         message: 'Admin privileges required'
       });
     }
     
+    console.log('🔍 Admin access granted for user:', req.user.email || req.user.username);
     next();
   } catch (error) {
-    console.error('Admin middleware error:', error);
+    console.error('🔍 Admin middleware error:', error);
     res.status(500).json({
       status: 'error',
       message: 'Error checking admin privileges'
@@ -33,19 +51,20 @@ router.use(requireAdmin);
 // Dashboard Statistics
 router.get('/dashboard/stats', async (req, res) => {
   try {
+    console.log('🔍 Fetching admin dashboard stats...');
     const stats = {};
     
     // Get total users
     const totalUsersResult = await queryOne('SELECT COUNT(*) as count FROM "user"');
-    stats.totalUsers = totalUsersResult.count;
+    stats.totalUsers = parseInt(totalUsersResult.count) || 0;
     
     // Get total posts
     const totalPostsResult = await queryOne('SELECT COUNT(*) as count FROM post WHERE published = true');
-    stats.totalPosts = totalPostsResult.count;
+    stats.totalPosts = parseInt(totalPostsResult.count) || 0;
     
     // Get total listings
     const totalListingsResult = await queryOne('SELECT COUNT(*) as count FROM listing WHERE published = true');
-    stats.totalListings = totalListingsResult.count;
+    stats.totalListings = parseInt(totalListingsResult.count) || 0;
     
     // Get total messages
     const totalMessagesResult = await queryOne('SELECT COUNT(*) as count FROM message');
@@ -400,13 +419,13 @@ router.get('/reports/users', async (req, res) => {
         DATE("createdAt") as date,
         COUNT(*) as users
       FROM "user" 
-      WHERE "createdAt" >= CURRENT_TIMESTAMP - INTERVAL '$1 days'
+      WHERE "createdAt" >= CURRENT_TIMESTAMP - INTERVAL '${days} days'
       GROUP BY DATE("createdAt")
       ORDER BY date ASC
-    `, [days]);
+    `);
     
     const labels = growthData.map(item => item.date);
-    const values = growthData.map(item => item.users);
+    const values = growthData.map(item => parseInt(item.users));
     
     res.json({
       status: 'success',
@@ -451,17 +470,10 @@ router.get('/reports/content', async (req, res) => {
 // Admin Notifications (system notifications for admin)
 router.get('/notifications', async (req, res) => {
   try {
-    // For now, return recent system activities as notifications
-    const notifications = await query(`
-      SELECT 
-        n.id, n.content, n.type, n."createdAt", n.read,
-        'System' as "senderName"
-      FROM notification n
-      WHERE n."recipientId" = 1 OR n.type IN ('FOLLOW', 'LIKE', 'COMMENT')
-      ORDER BY n."createdAt" DESC
-      LIMIT 20
-    `);
+    // Return a simple response for now - can be enhanced later
+    const notifications = [];
     
+    // You can add actual system notifications here when needed
     res.json({
       status: 'success',
       payload: notifications
