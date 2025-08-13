@@ -49,7 +49,14 @@ app.use(cors({
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
-    const allowedOrigins = ['http://localhost:4200', 'https://art-link.site'];
+    const allowedOrigins = [
+      'http://localhost:4200', 
+      'https://art-link.site',
+      'https://artlink-seven.vercel.app',  // Your frontend Vercel URL
+      'https://artlink.vercel.app',  // In case you change the URL
+      'https://art-link.vercel.app'  // Alternative frontend URL
+    ];
+    
     if (allowedOrigins.indexOf(origin) !== -1) {
       return callback(null, true);
     }

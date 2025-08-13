@@ -8,7 +8,7 @@ const dbConfig = {
   user: process.env.DB_USER,
   password: process.env.DB_PASS,
   database: process.env.DB_NAME,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  ssl: { rejectUnauthorized: false }, // Always use SSL for Supabase
   max: 10,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 60000,

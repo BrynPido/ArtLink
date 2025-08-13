@@ -1,6 +1,6 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://artlink-seven.vercel.app/api/',  
-  mediaBaseUrl: 'https://artlink-seven.vercel.app/',
-  wsUrl: 'wss://artlink-f4jf.onrender.com'  // WebSocket URL for production
+  apiUrl: 'https://art-link-api.vercel.app/api/',
+  mediaBaseUrl: 'https://art-link-api.vercel.app/',
+  wsUrl: 'wss://art-link-api.vercel.app'
 };
