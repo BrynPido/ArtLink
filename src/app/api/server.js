@@ -1,19 +1,9 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const compression = require('compression');
-const morgan = require('morgan');
-const rateLimit = require('express-rate-limit');
-const path = require('path');
-const http = require('http');
-const WebSocket = require('ws');
-const wsService = require('./services/websocket-service');
 require('dotenv').config();
 
 const app = express();
-const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
-const PORT = process.env.PORT || 3000;
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -24,24 +14,11 @@ const messageRoutes = require('./routes/messages');
 const notificationRoutes = require('./routes/notifications');
 const adminRoutes = require('./routes/admin');
 
-// Security middleware - adjusted for development
+// Security middleware - adjusted for serverless
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
   crossOriginEmbedderPolicy: false
 }));
-
-// Compression middleware
-app.use(compression());
-
-// Logging middleware
-app.use(morgan('combined'));
-
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
-});
-app.use(limiter);
 
 // CORS configuration - Enhanced for better compatibility
 app.use(cors({
@@ -74,7 +51,7 @@ app.use(cors({
 
 // Additional CORS headers for all requests
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin || 'http://localhost:4200');
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
@@ -92,29 +69,26 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Static files with proper headers
-app.use('/uploads', (req, res, next) => {
-  // Set CORS headers for images
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  res.header('Cross-Origin-Resource-Policy', 'cross-origin');
-  res.header('Cross-Origin-Embedder-Policy', 'unsafe-none');
-  
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    res.sendStatus(200);
-    return;
-  }
-  
-  next();
-}, express.static(path.join(__dirname, 'uploads'), {
-  // Configure static file serving
-  setHeaders: (res, filePath) => {
-    res.set('Cross-Origin-Resource-Policy', 'cross-origin');
-    res.set('Access-Control-Allow-Origin', '*');
-  }
-}));
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    version: '1.0.0',
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// Test environment variables endpoint
+app.get('/api/test-env', (req, res) => {
+  res.json({
+    hasDbHost: !!process.env.DB_HOST,
+    hasDbUser: !!process.env.DB_USER,
+    hasDbPass: !!process.env.DB_PASS,
+    nodeEnv: process.env.NODE_ENV,
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -125,45 +99,12 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin', adminRoutes);
 
-// Additional route for images with explicit CORS headers
-app.get('/uploads/*', (req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Cross-Origin-Resource-Policy', 'cross-origin');
-  next();
-});
-
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    timestamp: new Date().toISOString(),
-    version: '1.0.0'
-  });
-});
-
-// Test image endpoint
-app.get('/api/test-image/:filename', (req, res) => {
-  const filename = req.params.filename;
-  const imagePath = path.join(__dirname, 'uploads', filename);
-  
-  // Set CORS headers
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Cross-Origin-Resource-Policy', 'cross-origin');
-  res.header('Content-Type', 'image/jpeg');
-  
-  res.sendFile(imagePath, (err) => {
-    if (err) {
-      console.error('Error serving image:', err);
-      res.status(404).json({ error: 'Image not found' });
-    }
-  });
-});
-
 // 404 handler
 app.use('*', (req, res) => {
   res.status(404).json({
     status: 'error',
-    message: 'Route not found'
+    message: 'Route not found',
+    path: req.originalUrl
   });
 });
 
@@ -183,93 +124,3 @@ app.use((err, req, res, next) => {
 
 // Export the app for Vercel
 module.exports = app;
-
-// Start server only in development
-if (process.env.NODE_ENV !== 'production') {
-  server.listen(PORT, () => {
-    console.log(`🚀 ArtLink API Server running on port ${PORT}`);
-    console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
-  });
-}
-
-// WebSocket connection handling
-const clients = new Map(); // Store client connections with user IDs
-
-wss.on('connection', (ws) => {
-  console.log('New WebSocket connection established');
-  
-  ws.on('message', (message) => {
-    try {
-      const data = JSON.parse(message);
-      console.log('WebSocket message received:', data);
-      
-      switch (data.type) {
-        case 'auth':
-          // Store the connection with user ID
-          if (data.userId) {
-            clients.set(data.userId, ws);
-            wsService.addClient(data.userId, ws);
-            ws.userId = data.userId;
-            console.log(`User ${data.userId} authenticated via WebSocket`);
-          }
-          break;
-          
-        case 'message':
-          // Handle real-time messaging
-          const recipient = clients.get(data.to);
-          if (recipient && recipient.readyState === WebSocket.OPEN) {
-            recipient.send(JSON.stringify({
-              type: 'message',
-              from: data.from,
-              content: data.content,
-              timestamp: new Date().toISOString()
-            }));
-            
-            // Send delivery confirmation to sender
-            ws.send(JSON.stringify({
-              type: 'message_delivered',
-              to: data.to,
-              timestamp: data.timestamp
-            }));
-          }
-          break;
-          
-        case 'notification':
-          // Handle real-time notifications
-          const notificationRecipient = clients.get(data.to);
-          if (notificationRecipient && notificationRecipient.readyState === WebSocket.OPEN) {
-            notificationRecipient.send(JSON.stringify({
-              type: 'notification',
-              content: data.content
-            }));
-          }
-          break;
-      }
-    } catch (error) {
-      console.error('Error processing WebSocket message:', error);
-    }
-  });
-  
-  ws.on('close', () => {
-    // Remove client from map when connection closes
-    if (ws.userId) {
-      clients.delete(ws.userId);
-      wsService.removeClient(ws.userId);
-      console.log(`User ${ws.userId} disconnected from WebSocket`);
-    }
-  });
-  
-  ws.on('error', (error) => {
-    console.error('WebSocket error:', error);
-  });
-});
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down gracefully');
-  wss.close(() => {
-    server.close(() => {
-      console.log('Process terminated');
-    });
-  });
-});
