@@ -26,7 +26,7 @@ router.post('/register', validateRegister, handleValidationErrors, async (req, r
 
     // Check if user already exists
     const existingUser = await queryOne(
-      'SELECT id FROM user WHERE email = ? OR username = ?',
+      'SELECT id FROM "user" WHERE email = $1 OR username = $2',
       [email, username]
     );
 
@@ -43,15 +43,15 @@ router.post('/register', validateRegister, handleValidationErrors, async (req, r
 
     // Insert new user
     const result = await query(
-      'INSERT INTO user (name, username, email, password) VALUES (?, ?, ?, ?)',
+      'INSERT INTO "user" (name, username, email, password) VALUES ($1, $2, $3, $4) RETURNING id',
       [name, username, email, hashedPassword]
     );
 
-    const userId = result.insertId;
+    const userId = result[0].id;
 
     // Create user profile
     await query(
-      'INSERT INTO profile (userId, bio, profilePictureUrl) VALUES (?, ?, ?)',
+      'INSERT INTO profile (userId, bio, profilePictureUrl) VALUES ($1, $2, $3)',
       [userId, '', null]
     );
 
@@ -62,9 +62,9 @@ router.post('/register', validateRegister, handleValidationErrors, async (req, r
     const newUser = await queryOne(
       `SELECT u.id, u.name, u.username, u.email, 
               p.bio, p.profilePictureUrl
-       FROM user u 
+       FROM "user" u 
        LEFT JOIN profile p ON u.id = p.userId 
-       WHERE u.id = ?`,
+       WHERE u.id = $1`,
       [userId]
     );
 
@@ -95,9 +95,9 @@ router.post('/login', validateLogin, handleValidationErrors, async (req, res) =>
     const user = await queryOne(
       `SELECT u.id, u.name, u.username, u.email, u.password,
               p.bio, p.profilePictureUrl
-       FROM user u 
+       FROM "user" u 
        LEFT JOIN profile p ON u.id = p.userId 
-       WHERE u.email = ?`,
+       WHERE u.email = $1`,
       [email]
     );
 
@@ -148,9 +148,9 @@ router.get('/verify', authenticateToken, async (req, res) => {
     const user = await queryOne(
       `SELECT u.id, u.name, u.username, u.email,
               p.bio, p.profilePictureUrl
-       FROM user u 
+       FROM "user" u 
        LEFT JOIN profile p ON u.id = p.userId 
-       WHERE u.id = ?`,
+       WHERE u.id = $1`,
       [req.user.id]
     );
 

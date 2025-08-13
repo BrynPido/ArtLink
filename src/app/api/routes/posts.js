@@ -49,12 +49,12 @@ router.post('/createPost', authenticateToken, async (req, res) => {
 
     const result = await transaction(async (connection) => {
       // Insert post
-      const [postResult] = await connection.execute(
-        'INSERT INTO post (title, content, authorId, published, createdAt, updatedAt) VALUES (?, ?, ?, ?, NOW(), NOW())',
+      const postResult = await connection.query(
+        'INSERT INTO post (title, content, "authorId", published, "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id',
         [title, content || '', userId, true]
       );
 
-      const postId = postResult.insertId;
+      const postId = postResult.rows[0].id;
 
       // Handle media if provided
       if (media && Array.isArray(media) && media.length > 0) {
@@ -92,8 +92,8 @@ router.post('/createPost', authenticateToken, async (req, res) => {
             }
           }
 
-          await connection.execute(
-            'INSERT INTO media (postId, mediaUrl, mediaType, createdAt, updatedAt) VALUES (?, ?, ?, NOW(), NOW())',
+          await connection.query(
+            'INSERT INTO media ("postId", "mediaUrl", "mediaType", "createdAt", "updatedAt") VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
             [postId, mediaUrl, mediaType]
           );
         }
@@ -126,18 +126,18 @@ router.post('/createPostFile', authenticateToken, upload.array('media', 5), asyn
 
     const result = await transaction(async (connection) => {
       // Insert post
-      const [postResult] = await connection.execute(
-        'INSERT INTO post (title, content, authorId, published, createdAt, updatedAt) VALUES (?, ?, ?, ?, NOW(), NOW())',
+      const postResult = await connection.query(
+        'INSERT INTO post (title, content, "authorId", published, "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id',
         [title, content || '', userId, true]
       );
 
-      const postId = postResult.insertId;
+      const postId = postResult.rows[0].id;
 
       // Insert media if files were uploaded
       if (files.length > 0) {
         for (const file of files) {
-          await connection.execute(
-            'INSERT INTO media (postId, mediaUrl, mediaType, createdAt, updatedAt) VALUES (?, ?, ?, NOW(), NOW())',
+          await connection.query(
+            'INSERT INTO media ("postId", "mediaUrl", "mediaType", "createdAt", "updatedAt") VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
             [postId, `/uploads/${file.filename}`, file.mimetype]
           );
         }
@@ -171,26 +171,26 @@ router.get('/getPosts', optionalAuth, async (req, res) => {
 
     const posts = await query(`
       SELECT 
-        p.id, p.title, p.content, p.createdAt, p.updatedAt,
-        u.id as authorId, u.name as authorName, u.username as authorUsername,
-        pr.profilePictureUrl as authorProfilePicture,
-        GROUP_CONCAT(DISTINCT m.mediaUrl) as mediaUrls,
-        COUNT(DISTINCT l.id) as likesCount,
-        COUNT(DISTINCT c.id) as commentsCount,
-        COUNT(DISTINCT s.id) as savesCount,
-        ${userId ? 'MAX(CASE WHEN l.userId = ? THEN 1 ELSE 0 END)' : '0'} as isLiked,
-        ${userId ? 'MAX(CASE WHEN s.userId = ? THEN 1 ELSE 0 END)' : '0'} as isSaved
+        p.id, p.title, p.content, p."createdAt", p."updatedAt",
+        u.id as "authorId", u.name as "authorName", u.username as "authorUsername",
+        pr."profilePictureUrl" as "authorProfilePicture",
+        STRING_AGG(DISTINCT m."mediaUrl", ',') as "mediaUrls",
+        COUNT(DISTINCT l.id) as "likesCount",
+        COUNT(DISTINCT c.id) as "commentsCount",
+        COUNT(DISTINCT s.id) as "savesCount",
+        ${userId ? 'MAX(CASE WHEN l."userId" = $1 THEN 1 ELSE 0 END)' : '0'} as "isLiked",
+        ${userId ? 'MAX(CASE WHEN s."userId" = $2 THEN 1 ELSE 0 END)' : '0'} as "isSaved"
       FROM post p
-      LEFT JOIN user u ON p.authorId = u.id
-      LEFT JOIN profile pr ON u.id = pr.userId
-      LEFT JOIN media m ON p.id = m.postId
-      LEFT JOIN \`like\` l ON p.id = l.postId
-      LEFT JOIN comment c ON p.id = c.postId
-      LEFT JOIN save s ON p.id = s.postId
-      WHERE p.published = 1
-      GROUP BY p.id, u.id, pr.profilePictureUrl
-      ORDER BY p.createdAt DESC
-      LIMIT ? OFFSET ?
+      LEFT JOIN "user" u ON p."authorId" = u.id
+      LEFT JOIN profile pr ON u.id = pr."userId"
+      LEFT JOIN media m ON p.id = m."postId"
+      LEFT JOIN "like" l ON p.id = l."postId"
+      LEFT JOIN comment c ON p.id = c."postId"
+      LEFT JOIN save s ON p.id = s."postId"
+      WHERE p.published = true
+      GROUP BY p.id, u.id, pr."profilePictureUrl"
+      ORDER BY p."createdAt" DESC
+      LIMIT $${userId ? '3' : '1'} OFFSET $${userId ? '4' : '2'}
     `, userId ? [userId, userId, limit, offset] : [limit, offset]);
 
     // Process media URLs
@@ -230,24 +230,24 @@ router.get('/post/:id', optionalAuth, async (req, res) => {
 
     const post = await queryOne(`
       SELECT 
-        p.id, p.title, p.content, p.createdAt, p.updatedAt,
-        u.id as authorId, u.name as authorName, u.username as authorUsername,
-        pr.profilePictureUrl as authorProfilePicture,
-        GROUP_CONCAT(DISTINCT m.mediaUrl) as mediaUrls,
-        COUNT(DISTINCT l.id) as likesCount,
-        COUNT(DISTINCT c.id) as commentsCount,
-        COUNT(DISTINCT s.id) as savesCount,
-        ${userId ? 'MAX(CASE WHEN l.userId = ? THEN 1 ELSE 0 END)' : '0'} as isLiked,
-        ${userId ? 'MAX(CASE WHEN s.userId = ? THEN 1 ELSE 0 END)' : '0'} as isSaved
+        p.id, p.title, p.content, p."createdAt", p."updatedAt",
+        u.id as "authorId", u.name as "authorName", u.username as "authorUsername",
+        pr."profilePictureUrl" as "authorProfilePicture",
+        STRING_AGG(DISTINCT m."mediaUrl", ',') as "mediaUrls",
+        COUNT(DISTINCT l.id) as "likesCount",
+        COUNT(DISTINCT c.id) as "commentsCount",
+        COUNT(DISTINCT s.id) as "savesCount",
+        ${userId ? 'MAX(CASE WHEN l."userId" = $1 THEN 1 ELSE 0 END)' : '0'} as "isLiked",
+        ${userId ? 'MAX(CASE WHEN s."userId" = $2 THEN 1 ELSE 0 END)' : '0'} as "isSaved"
       FROM post p
-      LEFT JOIN user u ON p.authorId = u.id
-      LEFT JOIN profile pr ON u.id = pr.userId
-      LEFT JOIN media m ON p.id = m.postId
-      LEFT JOIN \`like\` l ON p.id = l.postId
-      LEFT JOIN comment c ON p.id = c.postId
-      LEFT JOIN save s ON p.id = s.postId
-      WHERE p.id = ? AND p.published = 1
-      GROUP BY p.id, u.id, pr.profilePictureUrl
+      LEFT JOIN "user" u ON p."authorId" = u.id
+      LEFT JOIN profile pr ON u.id = pr."userId"
+      LEFT JOIN media m ON p.id = m."postId"
+      LEFT JOIN "like" l ON p.id = l."postId"
+      LEFT JOIN comment c ON p.id = c."postId"
+      LEFT JOIN save s ON p.id = s."postId"
+      WHERE p.id = $${userId ? '3' : '1'} AND p.published = true
+      GROUP BY p.id, u.id, pr."profilePictureUrl"
     `, userId ? [userId, userId, postId] : [postId]);
 
     if (!post) {
@@ -260,18 +260,18 @@ router.get('/post/:id', optionalAuth, async (req, res) => {
     // Get comments for this post
     const comments = await query(`
       SELECT 
-        c.id, c.content, c.createdAt, c.parentId,
-        u.id as authorId, u.name as authorName, u.username as authorUsername,
-        pr.profilePictureUrl as authorProfilePicture,
-        COUNT(DISTINCT cl.id) as likesCount,
-        ${userId ? 'MAX(CASE WHEN cl.userId = ? THEN 1 ELSE 0 END)' : '0'} as isLiked
+        c.id, c.content, c."createdAt", c."parentId",
+        u.id as "authorId", u.name as "authorName", u.username as "authorUsername",
+        pr."profilePictureUrl" as "authorProfilePicture",
+        COUNT(DISTINCT cl.id) as "likesCount",
+        ${userId ? 'MAX(CASE WHEN cl."userId" = $1 THEN 1 ELSE 0 END)' : '0'} as "isLiked"
       FROM comment c
-      LEFT JOIN user u ON c.authorId = u.id
-      LEFT JOIN profile pr ON u.id = pr.userId
-      LEFT JOIN \`like\` cl ON c.id = cl.commentId
-      WHERE c.postId = ?
-      GROUP BY c.id, u.id, pr.profilePictureUrl
-      ORDER BY c.createdAt ASC
+      LEFT JOIN "user" u ON c."authorId" = u.id
+      LEFT JOIN profile pr ON u.id = pr."userId"
+      LEFT JOIN "like" cl ON c.id = cl."commentId"
+      WHERE c."postId" = $${userId ? '2' : '1'}
+      GROUP BY c.id, u.id, pr."profilePictureUrl"
+      ORDER BY c."createdAt" ASC
     `, userId ? [userId, postId] : [postId]);
 
     const processedPost = {
@@ -307,13 +307,13 @@ router.post('/likePost', authenticateToken, async (req, res) => {
 
     // Check if already liked
     const existingLike = await queryOne(
-      'SELECT id FROM `like` WHERE postId = ? AND userId = ?',
+      'SELECT id FROM "like" WHERE "postId" = $1 AND "userId" = $2',
       [postId, userId]
     );
 
     if (existingLike) {
       // Unlike
-      await query('DELETE FROM `like` WHERE id = ?', [existingLike.id]);
+      await query('DELETE FROM "like" WHERE id = $1', [existingLike.id]);
       res.json({
         status: 'success',
         message: 'Post unliked',
@@ -322,7 +322,7 @@ router.post('/likePost', authenticateToken, async (req, res) => {
     } else {
       // Like
       await query(
-        'INSERT INTO `like` (postId, userId, createdAt, updatedAt) VALUES (?, ?, NOW(), NOW())',
+        'INSERT INTO "like" ("postId", "userId", "createdAt", "updatedAt") VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
         [postId, userId]
       );
       res.json({
@@ -349,13 +349,13 @@ router.post('/savePost', authenticateToken, async (req, res) => {
 
     // Check if already saved
     const existingSave = await queryOne(
-      'SELECT id FROM save WHERE postId = ? AND userId = ?',
+      'SELECT id FROM save WHERE "postId" = $1 AND "userId" = $2',
       [postId, userId]
     );
 
     if (existingSave) {
       // Unsave
-      await query('DELETE FROM save WHERE id = ?', [existingSave.id]);
+      await query('DELETE FROM save WHERE id = $1', [existingSave.id]);
       res.json({
         status: 'success',
         message: 'Post unsaved',
@@ -364,7 +364,7 @@ router.post('/savePost', authenticateToken, async (req, res) => {
     } else {
       // Save
       await query(
-        'INSERT INTO save (postId, userId, createdAt, updatedAt) VALUES (?, ?, NOW(), NOW())',
+        'INSERT INTO save ("postId", "userId", "createdAt", "updatedAt") VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
         [postId, userId]
       );
       res.json({
@@ -391,7 +391,7 @@ router.post('/deletePost', authenticateToken, async (req, res) => {
 
     // Check if user owns the post
     const post = await queryOne(
-      'SELECT id, authorId FROM post WHERE id = ?',
+      'SELECT id, "authorId" FROM post WHERE id = $1',
       [postId]
     );
 
@@ -410,7 +410,7 @@ router.post('/deletePost', authenticateToken, async (req, res) => {
     }
 
     // Delete post (CASCADE will handle related records)
-    await query('DELETE FROM post WHERE id = ?', [postId]);
+    await query('DELETE FROM post WHERE id = $1', [postId]);
 
     res.json({
       status: 'success',
@@ -433,21 +433,21 @@ router.post('/addComment', authenticateToken, validateComment, handleValidationE
     const authorId = req.user.id;
 
     const result = await query(
-      'INSERT INTO comment (content, postId, authorId, parentId, createdAt, updatedAt) VALUES (?, ?, ?, ?, NOW(), NOW())',
+      'INSERT INTO comment (content, "postId", "authorId", "parentId", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id',
       [content, postId, authorId, parentId || null]
     );
 
     // Get the created comment with user info
     const comment = await queryOne(`
       SELECT 
-        c.id, c.content, c.createdAt, c.parentId,
-        u.id as authorId, u.name as authorName, u.username as authorUsername,
-        pr.profilePictureUrl as authorProfilePicture
+        c.id, c.content, c."createdAt", c."parentId",
+        u.id as "authorId", u.name as "authorName", u.username as "authorUsername",
+        pr."profilePictureUrl" as "authorProfilePicture"
       FROM comment c
-      LEFT JOIN user u ON c.authorId = u.id
-      LEFT JOIN profile pr ON u.id = pr.userId
-      WHERE c.id = ?
-    `, [result.insertId]);
+      LEFT JOIN "user" u ON c."authorId" = u.id
+      LEFT JOIN profile pr ON u.id = pr."userId"
+      WHERE c.id = $1
+    `, [result.rows[0].id]);
 
     res.status(201).json({
       status: 'success',
@@ -472,13 +472,13 @@ router.post('/likeComment', authenticateToken, async (req, res) => {
 
     // Check if already liked
     const existingLike = await queryOne(
-      'SELECT id FROM `like` WHERE commentId = ? AND userId = ?',
+      'SELECT id FROM "like" WHERE "commentId" = $1 AND "userId" = $2',
       [commentId, userId]
     );
 
     if (existingLike) {
       // Unlike
-      await query('DELETE FROM `like` WHERE id = ?', [existingLike.id]);
+      await query('DELETE FROM "like" WHERE id = $1', [existingLike.id]);
       res.json({
         status: 'success',
         message: 'Comment unliked',
@@ -487,7 +487,7 @@ router.post('/likeComment', authenticateToken, async (req, res) => {
     } else {
       // Like
       await query(
-        'INSERT INTO `like` (commentId, userId, createdAt, updatedAt) VALUES (?, ?, NOW(), NOW())',
+        'INSERT INTO "like" ("commentId", "userId", "createdAt", "updatedAt") VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
         [commentId, userId]
       );
       res.json({
@@ -514,7 +514,7 @@ router.post('/deleteComment', authenticateToken, async (req, res) => {
 
     // Check if user owns the comment
     const comment = await queryOne(
-      'SELECT id, authorId FROM comment WHERE id = ?',
+      'SELECT id, "authorId" FROM comment WHERE id = $1',
       [commentId]
     );
 
@@ -533,7 +533,7 @@ router.post('/deleteComment', authenticateToken, async (req, res) => {
     }
 
     // Delete comment
-    await query('DELETE FROM comment WHERE id = ?', [commentId]);
+    await query('DELETE FROM comment WHERE id = $1', [commentId]);
 
     res.json({
       status: 'success',
@@ -556,19 +556,19 @@ router.get('/getSavedPosts', authenticateToken, async (req, res) => {
 
     const savedPosts = await query(`
       SELECT 
-        p.id, p.title, p.content, p.createdAt, p.updatedAt,
-        u.id as authorId, u.name as authorName, u.username as authorUsername,
-        pr.profilePictureUrl as authorProfilePicture,
-        GROUP_CONCAT(DISTINCT m.mediaUrl) as mediaUrls,
-        s.createdAt as savedAt
+        p.id, p.title, p.content, p."createdAt", p."updatedAt",
+        u.id as "authorId", u.name as "authorName", u.username as "authorUsername",
+        pr."profilePictureUrl" as "authorProfilePicture",
+        STRING_AGG(DISTINCT m."mediaUrl", ',') as "mediaUrls",
+        s."createdAt" as "savedAt"
       FROM save s
-      LEFT JOIN post p ON s.postId = p.id
-      LEFT JOIN user u ON p.authorId = u.id
-      LEFT JOIN profile pr ON u.id = pr.userId
-      LEFT JOIN media m ON p.id = m.postId
-      WHERE s.userId = ? AND p.published = 1
-      GROUP BY p.id, u.id, pr.profilePictureUrl, s.createdAt
-      ORDER BY s.createdAt DESC
+      LEFT JOIN post p ON s."postId" = p.id
+      LEFT JOIN "user" u ON p."authorId" = u.id
+      LEFT JOIN profile pr ON u.id = pr."userId"
+      LEFT JOIN media m ON p.id = m."postId"
+      WHERE s."userId" = $1 AND p.published = true
+      GROUP BY p.id, u.id, pr."profilePictureUrl", s."createdAt"
+      ORDER BY s."createdAt" DESC
     `, [userId]);
 
     const processedPosts = savedPosts.map(post => ({
@@ -597,19 +597,19 @@ router.get('/getLikedPosts', authenticateToken, async (req, res) => {
 
     const likedPosts = await query(`
       SELECT 
-        p.id, p.title, p.content, p.createdAt, p.updatedAt,
-        u.id as authorId, u.name as authorName, u.username as authorUsername,
-        pr.profilePictureUrl as authorProfilePicture,
-        GROUP_CONCAT(DISTINCT m.mediaUrl) as mediaUrls,
-        l.createdAt as likedAt
-      FROM \`like\` l
-      LEFT JOIN post p ON l.postId = p.id
-      LEFT JOIN user u ON p.authorId = u.id
-      LEFT JOIN profile pr ON u.id = pr.userId
-      LEFT JOIN media m ON p.id = m.postId
-      WHERE l.userId = ? AND p.published = 1
-      GROUP BY p.id, u.id, pr.profilePictureUrl, l.createdAt
-      ORDER BY l.createdAt DESC
+        p.id, p.title, p.content, p."createdAt", p."updatedAt",
+        u.id as "authorId", u.name as "authorName", u.username as "authorUsername",
+        pr."profilePictureUrl" as "authorProfilePicture",
+        STRING_AGG(DISTINCT m."mediaUrl", ',') as "mediaUrls",
+        l."createdAt" as "likedAt"
+      FROM "like" l
+      LEFT JOIN post p ON l."postId" = p.id
+      LEFT JOIN "user" u ON p."authorId" = u.id
+      LEFT JOIN profile pr ON u.id = pr."userId"
+      LEFT JOIN media m ON p.id = m."postId"
+      WHERE l."userId" = $1 AND p.published = true
+      GROUP BY p.id, u.id, pr."profilePictureUrl", l."createdAt"
+      ORDER BY l."createdAt" DESC
     `, [userId]);
 
     const processedPosts = likedPosts.map(post => ({
@@ -646,29 +646,29 @@ router.get('/search', optionalAuth, async (req, res) => {
 
     const posts = await query(`
       SELECT 
-        p.id, p.title, p.content, p.createdAt, p.updatedAt,
-        u.id as authorId, u.name as authorName, u.username as authorUsername,
-        pr.profilePictureUrl as authorProfilePicture,
-        GROUP_CONCAT(DISTINCT m.mediaUrl) as mediaUrls,
-        COUNT(DISTINCT l.id) as likesCount,
-        COUNT(DISTINCT c.id) as commentsCount,
-        ${userId ? 'MAX(CASE WHEN l.userId = ? THEN 1 ELSE 0 END)' : '0'} as isLiked,
-        ${userId ? 'MAX(CASE WHEN s.userId = ? THEN 1 ELSE 0 END)' : '0'} as isSaved
+        p.id, p.title, p.content, p."createdAt", p."updatedAt",
+        u.id as "authorId", u.name as "authorName", u.username as "authorUsername",
+        pr."profilePictureUrl" as "authorProfilePicture",
+        STRING_AGG(DISTINCT m."mediaUrl", ',') as "mediaUrls",
+        COUNT(DISTINCT l.id) as "likesCount",
+        COUNT(DISTINCT c.id) as "commentsCount",
+        ${userId ? 'MAX(CASE WHEN l."userId" = $1 THEN 1 ELSE 0 END)' : '0'} as "isLiked",
+        ${userId ? 'MAX(CASE WHEN s."userId" = $2 THEN 1 ELSE 0 END)' : '0'} as "isSaved"
       FROM post p
-      LEFT JOIN user u ON p.authorId = u.id
-      LEFT JOIN profile pr ON u.id = pr.userId
-      LEFT JOIN media m ON p.id = m.postId
-      LEFT JOIN \`like\` l ON p.id = l.postId
-      LEFT JOIN comment c ON p.id = c.postId
-      LEFT JOIN save s ON p.id = s.postId
-      WHERE p.published = 1 AND (
-        p.title LIKE ? OR 
-        p.content LIKE ? OR 
-        u.name LIKE ? OR 
-        u.username LIKE ?
+      LEFT JOIN "user" u ON p."authorId" = u.id
+      LEFT JOIN profile pr ON u.id = pr."userId"
+      LEFT JOIN media m ON p.id = m."postId"
+      LEFT JOIN "like" l ON p.id = l."postId"
+      LEFT JOIN comment c ON p.id = c."postId"
+      LEFT JOIN save s ON p.id = s."postId"
+      WHERE p.published = true AND (
+        p.title ILIKE $${userId ? '3' : '1'} OR 
+        p.content ILIKE $${userId ? '4' : '2'} OR 
+        u.name ILIKE $${userId ? '5' : '3'} OR 
+        u.username ILIKE $${userId ? '6' : '4'}
       )
-      GROUP BY p.id, u.id, pr.profilePictureUrl
-      ORDER BY p.createdAt DESC
+      GROUP BY p.id, u.id, pr."profilePictureUrl"
+      ORDER BY p."createdAt" DESC
       LIMIT 50
     `, userId ? 
       [userId, userId, `%${searchQuery}%`, `%${searchQuery}%`, `%${searchQuery}%`, `%${searchQuery}%`] : 
@@ -701,62 +701,34 @@ router.get('/trending', optionalAuth, async (req, res) => {
   try {
     const currentUserId = req.user?.id || null;
     
-    // Get posts ordered by likes and recent activity
-    let sql = `
+    const posts = await query(`
       SELECT 
         p.id,
         p.title,
         p.content,
-        p.createdAt,
-        p.updatedAt,
-        p.authorId,
-        u.name as authorName,
-        u.username as authorUsername,
-        u.profilePictureUrl as authorProfilePicture,
-        GROUP_CONCAT(DISTINCT CONCAT('/uploads/', pm.filename)) as mediaUrls,
-        COUNT(DISTINCT l.id) as likesCount,
-        COUNT(DISTINCT c.id) as commentsCount
-    `;
-    
-    const params = [];
-    
-    if (currentUserId) {
-      sql += `,
-        MAX(CASE WHEN l.userId = ? THEN 1 ELSE 0 END) as isLiked,
-        MAX(CASE WHEN s.userId = ? THEN 1 ELSE 0 END) as isSaved
-      `;
-      params.push(currentUserId, currentUserId);
-    } else {
-      sql += `,
-        0 as isLiked,
-        0 as isSaved
-      `;
-    }
-    
-    sql += `
-      FROM posts p
-      LEFT JOIN users u ON p.authorId = u.id
-      LEFT JOIN post_media pm ON p.id = pm.postId
-      LEFT JOIN likes l ON p.id = l.postId
-      LEFT JOIN comments c ON p.id = c.postId
-    `;
-    
-    if (currentUserId) {
-      sql += `
-        LEFT JOIN likes l2 ON p.id = l2.postId AND l2.userId = ?
-        LEFT JOIN saved_posts s ON p.id = s.postId AND s.userId = ?
-      `;
-      params.push(currentUserId, currentUserId);
-    }
-    
-    sql += `
-      WHERE p.createdAt >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-      GROUP BY p.id, p.title, p.content, p.createdAt, p.updatedAt, p.authorId, u.name, u.username, u.profilePictureUrl
-      ORDER BY (COUNT(DISTINCT l.id) * 2 + COUNT(DISTINCT c.id)) DESC, p.createdAt DESC
+        p."createdAt",
+        p."updatedAt",
+        p."authorId",
+        u.name as "authorName",
+        u.username as "authorUsername",
+        pr."profilePictureUrl" as "authorProfilePicture",
+        STRING_AGG(DISTINCT m."mediaUrl", ',') as "mediaUrls",
+        COUNT(DISTINCT l.id) as "likesCount",
+        COUNT(DISTINCT c.id) as "commentsCount",
+        ${currentUserId ? 'MAX(CASE WHEN l."userId" = $1 THEN 1 ELSE 0 END)' : '0'} as "isLiked",
+        ${currentUserId ? 'MAX(CASE WHEN s."userId" = $2 THEN 1 ELSE 0 END)' : '0'} as "isSaved"
+      FROM post p
+      LEFT JOIN "user" u ON p."authorId" = u.id
+      LEFT JOIN profile pr ON u.id = pr."userId"
+      LEFT JOIN media m ON p.id = m."postId"
+      LEFT JOIN "like" l ON p.id = l."postId"
+      LEFT JOIN comment c ON p.id = c."postId"
+      LEFT JOIN save s ON p.id = s."postId"
+      WHERE p."createdAt" >= CURRENT_DATE - INTERVAL '7 days' AND p.published = true
+      GROUP BY p.id, p.title, p.content, p."createdAt", p."updatedAt", p."authorId", u.name, u.username, pr."profilePictureUrl"
+      ORDER BY (COUNT(DISTINCT l.id) * 2 + COUNT(DISTINCT c.id)) DESC, p."createdAt" DESC
       LIMIT 20
-    `;
-
-    const posts = await query(sql, params);
+    `, currentUserId ? [currentUserId, currentUserId] : []);
 
     const processedPosts = posts.map(post => ({
       ...post,
