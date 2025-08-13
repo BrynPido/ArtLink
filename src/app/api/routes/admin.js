@@ -4,21 +4,7 @@ const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
 
-/    const user = await queryOne(`
-      SELECT 
-        u.id, u.name, u.username, u.email, u."createdAt", u."updatedAt",
-        p."profilePictureUrl", p.bio,
-        COUNT(DISTINCT po.id) as "postsCount",
-        COUNT(DISTINCT f.id) as "followersCount",
-        COUNT(DISTINCT fo.id) as "followingCount"
-      FROM "user" u
-      LEFT JOIN profile p ON u.id = p."userId"
-      LEFT JOIN post po ON u.id = po."authorId" AND po.published = true
-      LEFT JOIN follow f ON u.id = f."followingId"
-      LEFT JOIN follow fo ON u.id = fo."followerId"
-      WHERE u.id = $1
-      GROUP BY u.id, u.name, u.username, u.email, u."createdAt", u."updatedAt", p."profilePictureUrl", p.bio
-    `, [userId]); check admin privileges
+// Middleware to check admin privileges
 const requireAdmin = async (req, res, next) => {
   try {
     // Check if user is authenticated and has admin privileges
@@ -261,31 +247,31 @@ router.get('/posts', async (req, res) => {
     
     let whereClause = 'WHERE 1=1';
     if (filter === 'published') {
-      whereClause += ' AND p.published = 1';
+      whereClause += ' AND p.published = true';
     } else if (filter === 'hidden') {
-      whereClause += ' AND p.published = 0';
+      whereClause += ' AND p.published = false';
     }
     
     const posts = await query(`
       SELECT 
-        p.id, p.title, p.content, p.published, p.createdAt, p.updatedAt,
-        u.name as authorName, u.username as authorUsername,
-        COUNT(DISTINCT l.id) as likesCount,
-        COUNT(DISTINCT c.id) as commentsCount
+        p.id, p.title, p.content, p.published, p."createdAt", p."updatedAt",
+        u.name as "authorName", u.username as "authorUsername",
+        COUNT(DISTINCT l.id) as "likesCount",
+        COUNT(DISTINCT c.id) as "commentsCount"
       FROM post p
-      JOIN user u ON p.authorId = u.id
-      LEFT JOIN \`like\` l ON p.id = l.postId
-      LEFT JOIN comment c ON p.id = c.postId
+      JOIN "user" u ON p."authorId" = u.id
+      LEFT JOIN "like" l ON p.id = l."postId"
+      LEFT JOIN comment c ON p.id = c."postId"
       ${whereClause}
-      GROUP BY p.id, p.title, p.content, p.published, p.createdAt, p.updatedAt, 
+      GROUP BY p.id, p.title, p.content, p.published, p."createdAt", p."updatedAt", 
                u.name, u.username
-      ORDER BY p.createdAt DESC
-      LIMIT ? OFFSET ?
+      ORDER BY p."createdAt" DESC
+      LIMIT $1 OFFSET $2
     `, [limit, offset]);
 
     // Get media files for each post
     for (let post of posts) {
-      const media = await query('SELECT mediaUrl, mediaType FROM media WHERE postId = ?', [post.id]);
+      const media = await query('SELECT "mediaUrl", "mediaType" FROM media WHERE "postId" = $1', [post.id]);
       post.media = media;
       // For backward compatibility, set the first media as mediaUrl
       post.mediaUrl = media.length > 0 ? media[0].mediaUrl : null;
@@ -322,7 +308,7 @@ router.delete('/posts/:id', async (req, res) => {
     const { reason } = req.body;
     
     // Check if post exists
-    const post = await queryOne('SELECT * FROM post WHERE id = ?', [postId]);
+    const post = await queryOne('SELECT * FROM post WHERE id = $1', [postId]);
     if (!post) {
       return res.status(404).json({
         status: 'error',
@@ -331,14 +317,14 @@ router.delete('/posts/:id', async (req, res) => {
     }
     
     // Delete related data first (due to foreign key constraints)
-    await query('DELETE FROM `like` WHERE postId = ?', [postId]);
-    await query('DELETE FROM comment WHERE postId = ?', [postId]);
-    await query('DELETE FROM save WHERE postId = ?', [postId]);
-    await query('DELETE FROM media WHERE postId = ?', [postId]);
-    await query('DELETE FROM notification WHERE postId = ?', [postId]);
+    await query('DELETE FROM "like" WHERE "postId" = $1', [postId]);
+    await query('DELETE FROM comment WHERE "postId" = $1', [postId]);
+    await query('DELETE FROM save WHERE "postId" = $1', [postId]);
+    await query('DELETE FROM media WHERE "postId" = $1', [postId]);
+    await query('DELETE FROM notification WHERE "postId" = $1', [postId]);
     
     // Delete the post
-    await query('DELETE FROM post WHERE id = ?', [postId]);
+    await query('DELETE FROM post WHERE id = $1', [postId]);
     
     // Log admin action (you might want to create an admin_actions table)
     console.log(`Admin deleted post ${postId}. Reason: ${reason}`);
@@ -362,7 +348,7 @@ router.post('/posts/:id/hide', async (req, res) => {
     const postId = req.params.id;
     const { reason } = req.body;
     
-    await query('UPDATE post SET published = 0 WHERE id = ?', [postId]);
+    await query('UPDATE post SET published = false WHERE id = $1', [postId]);
     
     console.log(`Admin hid post ${postId}. Reason: ${reason}`);
     
@@ -383,7 +369,7 @@ router.post('/posts/:id/unhide', async (req, res) => {
   try {
     const postId = req.params.id;
     
-    await query('UPDATE post SET published = 1 WHERE id = ?', [postId]);
+    await query('UPDATE post SET published = true WHERE id = $1', [postId]);
     
     console.log(`Admin unhid post ${postId}`);
     
@@ -411,11 +397,11 @@ router.get('/reports/users', async (req, res) => {
     
     const growthData = await query(`
       SELECT 
-        DATE(createdAt) as date,
+        DATE("createdAt") as date,
         COUNT(*) as users
-      FROM user 
-      WHERE createdAt >= DATE_SUB(NOW(), INTERVAL ? DAY)
-      GROUP BY DATE(createdAt)
+      FROM "user" 
+      WHERE "createdAt" >= CURRENT_TIMESTAMP - INTERVAL '$1 days'
+      GROUP BY DATE("createdAt")
       ORDER BY date ASC
     `, [days]);
     
@@ -441,8 +427,8 @@ router.get('/reports/users', async (req, res) => {
 // Content Stats
 router.get('/reports/content', async (req, res) => {
   try {
-    const postsCount = await queryOne('SELECT COUNT(*) as count FROM post WHERE published = 1');
-    const listingsCount = await queryOne('SELECT COUNT(*) as count FROM listing WHERE published = 1');
+    const postsCount = await queryOne('SELECT COUNT(*) as count FROM post WHERE published = true');
+    const listingsCount = await queryOne('SELECT COUNT(*) as count FROM listing WHERE published = true');
     const commentsCount = await queryOne('SELECT COUNT(*) as count FROM comment');
     
     res.json({
@@ -468,11 +454,11 @@ router.get('/notifications', async (req, res) => {
     // For now, return recent system activities as notifications
     const notifications = await query(`
       SELECT 
-        n.id, n.content, n.type, n.createdAt, n.read,
-        'System' as senderName
+        n.id, n.content, n.type, n."createdAt", n.read,
+        'System' as "senderName"
       FROM notification n
-      WHERE n.recipientId = 1 OR n.type IN ('FOLLOW', 'LIKE', 'COMMENT')
-      ORDER BY n.createdAt DESC
+      WHERE n."recipientId" = 1 OR n.type IN ('FOLLOW', 'LIKE', 'COMMENT')
+      ORDER BY n."createdAt" DESC
       LIMIT 20
     `);
     
@@ -494,7 +480,7 @@ router.put('/notifications/:id/read', async (req, res) => {
   try {
     const notificationId = req.params.id;
     
-    await query('UPDATE notification SET `read` = 1 WHERE id = ?', [notificationId]);
+    await query('UPDATE notification SET read = true WHERE id = $1', [notificationId]);
     
     res.json({
       status: 'success',
@@ -521,22 +507,22 @@ router.get('/listings', async (req, res) => {
     let queryParams = [];
 
     if (status !== 'all') {
-      whereClause = 'WHERE published = ?';
-      queryParams.push(status === 'active' ? 1 : 0);
+      whereClause = 'WHERE published = $1';
+      queryParams.push(status === 'active' ? true : false);
     }
 
     // Get listings with user info and listing details
     const listings = await query(`
       SELECT l.*, u.username, u.email,
         ld.price, ld.category, ld.condition, ld.location,
-        (SELECT COUNT(*) FROM media WHERE listingId = l.id) as image_count,
-        (SELECT mediaUrl FROM media WHERE listingId = l.id LIMIT 1) as image_url
+        (SELECT COUNT(*) FROM media WHERE "listingId" = l.id) as "image_count",
+        (SELECT "mediaUrl" FROM media WHERE "listingId" = l.id LIMIT 1) as "image_url"
       FROM listing l
-      LEFT JOIN user u ON l.authorId = u.id
-      LEFT JOIN listing_details ld ON l.id = ld.listingId
+      LEFT JOIN "user" u ON l."authorId" = u.id
+      LEFT JOIN listing_details ld ON l.id = ld."listingId"
       ${whereClause}
-      ORDER BY l.createdAt DESC
-      LIMIT ? OFFSET ?
+      ORDER BY l."createdAt" DESC
+      LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}
     `, [...queryParams, limit, offset]);
 
     // Get total count
@@ -572,10 +558,10 @@ router.delete('/listings/:id', async (req, res) => {
     const listingId = req.params.id;
     
     // Delete listing media first
-    await query('DELETE FROM media WHERE listingId = ?', [listingId]);
+    await query('DELETE FROM media WHERE "listingId" = $1', [listingId]);
     
     // Delete the listing
-    await query('DELETE FROM listing WHERE id = ?', [listingId]);
+    await query('DELETE FROM listing WHERE id = $1', [listingId]);
     
     res.json({
       status: 'success',
@@ -600,13 +586,13 @@ router.get('/messages', async (req, res) => {
     // Get messages with sender and receiver info
     const messages = await query(`
       SELECT m.*, 
-        s.username as sender_username, s.email as sender_email,
-        r.username as receiver_username, r.email as receiver_email
+        s.username as "sender_username", s.email as "sender_email",
+        r.username as "receiver_username", r.email as "receiver_email"
       FROM message m
-      LEFT JOIN user s ON m.authorId = s.id
-      LEFT JOIN user r ON m.receiverId = r.id
-      ORDER BY m.createdAt DESC
-      LIMIT ? OFFSET ?
+      LEFT JOIN "user" s ON m."authorId" = s.id
+      LEFT JOIN "user" r ON m."receiverId" = r.id
+      ORDER BY m."createdAt" DESC
+      LIMIT $1 OFFSET $2
     `, [limit, offset]);
 
     // Get total count
@@ -638,7 +624,7 @@ router.delete('/messages/:id', async (req, res) => {
   try {
     const messageId = req.params.id;
     
-    await query('DELETE FROM message WHERE id = ?', [messageId]);
+    await query('DELETE FROM message WHERE id = $1', [messageId]);
     
     res.json({
       status: 'success',
@@ -678,12 +664,12 @@ router.get('/reports', async (req, res) => {
     let dateParams = [];
     
     if (start && end) {
-      dateFilter = 'WHERE DATE(createdAt) >= ? AND DATE(createdAt) <= ?';
+      dateFilter = 'WHERE DATE("createdAt") >= $1 AND DATE("createdAt") <= $2';
       dateParams = [start, end];
     }
 
     // Get user count
-    const userCount = await queryOne(`SELECT COUNT(*) as count FROM user ${dateFilter}`, dateParams);
+    const userCount = await queryOne(`SELECT COUNT(*) as count FROM "user" ${dateFilter}`, dateParams);
     reports.overview.totalUsers = userCount.count;
 
     // Get post count

@@ -51,7 +51,7 @@ router.post('/register', validateRegister, handleValidationErrors, async (req, r
 
     // Create user profile
     await query(
-      'INSERT INTO profile (userId, bio, profilePictureUrl) VALUES ($1, $2, $3)',
+      'INSERT INTO profile ("userId", bio, "profilePictureUrl") VALUES ($1, $2, $3)',
       [userId, '', null]
     );
 
@@ -61,9 +61,9 @@ router.post('/register', validateRegister, handleValidationErrors, async (req, r
     // Get created user (without password)
     const newUser = await queryOne(
       `SELECT u.id, u.name, u.username, u.email, 
-              p.bio, p.profilePictureUrl
+              p.bio, p."profilePictureUrl"
        FROM "user" u 
-       LEFT JOIN profile p ON u.id = p.userId 
+       LEFT JOIN profile p ON u.id = p."userId" 
        WHERE u.id = $1`,
       [userId]
     );
@@ -94,9 +94,9 @@ router.post('/login', validateLogin, handleValidationErrors, async (req, res) =>
     // Find user by email
     const user = await queryOne(
       `SELECT u.id, u.name, u.username, u.email, u.password,
-              p.bio, p.profilePictureUrl
+              p.bio, p."profilePictureUrl"
        FROM "user" u 
-       LEFT JOIN profile p ON u.id = p.userId 
+       LEFT JOIN profile p ON u.id = p."userId" 
        WHERE u.email = $1`,
       [email]
     );
@@ -147,9 +147,9 @@ router.get('/verify', authenticateToken, async (req, res) => {
   try {
     const user = await queryOne(
       `SELECT u.id, u.name, u.username, u.email,
-              p.bio, p.profilePictureUrl
+              p.bio, p."profilePictureUrl"
        FROM "user" u 
-       LEFT JOIN profile p ON u.id = p.userId 
+       LEFT JOIN profile p ON u.id = p."userId" 
        WHERE u.id = $1`,
       [req.user.id]
     );
