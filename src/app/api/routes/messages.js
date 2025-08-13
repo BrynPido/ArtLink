@@ -11,55 +11,55 @@ router.get('/conversations/:userId', authenticateToken, async (req, res) => {
 
     const conversations = await query(`
       SELECT 
-        c.id, c.user1Id, c.user2Id, c.createdAt, c.updatedAt, c.listingId,
+        c.id, c."user1Id", c."user2Id", c."createdAt", c."updatedAt", c."listingId",
         CASE 
-          WHEN c.user1Id = ? THEN u2.id
+          WHEN c."user1Id" = $1 THEN u2.id
           ELSE u1.id
-        END as otherUserId,
+        END as "otherUserId",
         CASE 
-          WHEN c.user1Id = ? THEN u2.name
+          WHEN c."user1Id" = $2 THEN u2.name
           ELSE u1.name
-        END as otherUserName,
+        END as "otherUserName",
         CASE 
-          WHEN c.user1Id = ? THEN u2.username
+          WHEN c."user1Id" = $3 THEN u2.username
           ELSE u1.username
-        END as otherUserUsername,
+        END as "otherUserUsername",
         CASE 
-          WHEN c.user1Id = ? THEN p2.profilePictureUrl
-          ELSE p1.profilePictureUrl
-        END as otherUserProfilePicture,
-        l.title as listingTitle,
-        lm.content as lastMessageContent,
-        lm.createdAt as lastMessageTime,
-        lm.authorId as lastMessageAuthorId,
+          WHEN c."user1Id" = $4 THEN p2."profilePictureUrl"
+          ELSE p1."profilePictureUrl"
+        END as "otherUserProfilePicture",
+        l.title as "listingTitle",
+        lm.content as "lastMessageContent",
+        lm."createdAt" as "lastMessageTime",
+        lm."authorId" as "lastMessageAuthorId",
         (
           SELECT COUNT(*) 
           FROM message m 
-          WHERE m.conversationId = c.id 
-            AND m.receiverId = ? 
-            AND m.readAt IS NULL
-        ) as unreadCount
+          WHERE m."conversationId" = c.id 
+            AND m."receiverId" = $5 
+            AND m."readAt" IS NULL
+        ) as "unreadCount"
       FROM conversation c
-      LEFT JOIN user u1 ON c.user1Id = u1.id
-      LEFT JOIN user u2 ON c.user2Id = u2.id
-      LEFT JOIN profile p1 ON u1.id = p1.userId
-      LEFT JOIN profile p2 ON u2.id = p2.userId
-      LEFT JOIN listing l ON c.listingId = l.id
+      LEFT JOIN "user" u1 ON c."user1Id" = u1.id
+      LEFT JOIN "user" u2 ON c."user2Id" = u2.id
+      LEFT JOIN profile p1 ON u1.id = p1."userId"
+      LEFT JOIN profile p2 ON u2.id = p2."userId"
+      LEFT JOIN listing l ON c."listingId" = l.id
       LEFT JOIN (
         SELECT 
-          m1.conversationId,
+          m1."conversationId",
           m1.content,
-          m1.createdAt,
-          m1.authorId
+          m1."createdAt",
+          m1."authorId"
         FROM message m1
         INNER JOIN (
-          SELECT conversationId, MAX(createdAt) as maxTime
+          SELECT "conversationId", MAX("createdAt") as "maxTime"
           FROM message
-          GROUP BY conversationId
-        ) m2 ON m1.conversationId = m2.conversationId AND m1.createdAt = m2.maxTime
-      ) lm ON c.id = lm.conversationId
-      WHERE c.user1Id = ? OR c.user2Id = ?
-      ORDER BY COALESCE(lm.createdAt, c.createdAt) DESC
+          GROUP BY "conversationId"
+        ) m2 ON m1."conversationId" = m2."conversationId" AND m1."createdAt" = m2."maxTime"
+      ) lm ON c.id = lm."conversationId"
+      WHERE c."user1Id" = $6 OR c."user2Id" = $7
+      ORDER BY COALESCE(lm."createdAt", c."createdAt") DESC
     `, [userId, userId, userId, userId, userId, userId, userId]);
 
     // Transform the data to match frontend expectations
@@ -122,7 +122,7 @@ router.get('/conversations/:conversationId/messages', authenticateToken, async (
 
     // Verify user is part of this conversation
     const conversation = await queryOne(
-      'SELECT id FROM conversation WHERE id = ? AND (user1Id = ? OR user2Id = ?)',
+      'SELECT id FROM conversation WHERE id = $1 AND ("user1Id" = $2 OR "user2Id" = $3)',
       [conversationId, userId, userId]
     );
 
@@ -135,15 +135,15 @@ router.get('/conversations/:conversationId/messages', authenticateToken, async (
 
     const messages = await query(`
       SELECT 
-        m.id, m.content, m.createdAt, m.readAt,
-        m.authorId, m.receiverId,
-        u.name as authorName, u.username as authorUsername,
-        p.profilePictureUrl as authorProfilePicture
+        m.id, m.content, m."createdAt", m."readAt",
+        m."authorId", m."receiverId",
+        u.name as "authorName", u.username as "authorUsername",
+        p."profilePictureUrl" as "authorProfilePicture"
       FROM message m
-      LEFT JOIN user u ON m.authorId = u.id
-      LEFT JOIN profile p ON u.id = p.userId
-      WHERE m.conversationId = ?
-      ORDER BY m.createdAt ASC
+      LEFT JOIN "user" u ON m."authorId" = u.id
+      LEFT JOIN profile p ON u.id = p."userId"
+      WHERE m."conversationId" = $1
+      ORDER BY m."createdAt" ASC
     `, [conversationId]);
 
     res.json({
@@ -175,9 +175,9 @@ router.post('/conversations/create', authenticateToken, async (req, res) => {
 
     // Check if conversation already exists
     const existingConversation = await queryOne(`
-      SELECT id, user1Id, user2Id, listingId, createdAt, updatedAt FROM conversation 
-      WHERE ((user1Id = ? AND user2Id = ?) OR (user1Id = ? AND user2Id = ?))
-        ${listingId ? 'AND listingId = ?' : 'AND listingId IS NULL'}
+      SELECT id, "user1Id", "user2Id", "listingId", "createdAt", "updatedAt" FROM conversation 
+      WHERE (("user1Id" = $1 AND "user2Id" = $2) OR ("user1Id" = $3 AND "user2Id" = $4))
+        ${listingId ? 'AND "listingId" = $5' : 'AND "listingId" IS NULL'}
     `, listingId ? 
       [user1Id, recipientId, recipientId, user1Id, listingId] : 
       [user1Id, recipientId, recipientId, user1Id]
@@ -187,10 +187,10 @@ router.post('/conversations/create', authenticateToken, async (req, res) => {
       // Get the other user's info for the existing conversation
       const otherUserId = existingConversation.user1Id === user1Id ? existingConversation.user2Id : existingConversation.user1Id;
       const otherUser = await queryOne(`
-        SELECT u.id, u.name, u.username, p.profilePictureUrl
-        FROM user u
-        LEFT JOIN profile p ON u.id = p.userId
-        WHERE u.id = ?
+        SELECT u.id, u.name, u.username, p."profilePictureUrl"
+        FROM "user" u
+        LEFT JOIN profile p ON u.id = p."userId"
+        WHERE u.id = $1
       `, [otherUserId]);
 
       let imageProfile = null;
@@ -224,16 +224,16 @@ router.post('/conversations/create', authenticateToken, async (req, res) => {
 
     // Create new conversation
     const result = await query(
-      'INSERT INTO conversation (user1Id, user2Id, listingId, createdAt, updatedAt) VALUES (?, ?, ?, NOW(), NOW())',
+      'INSERT INTO conversation ("user1Id", "user2Id", "listingId", "createdAt", "updatedAt") VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id',
       [user1Id, recipientId, listingId || null]
     );
 
     // Get the other user's info for the new conversation
     const otherUser = await queryOne(`
-      SELECT u.id, u.name, u.username, p.profilePictureUrl
-      FROM user u
-      LEFT JOIN profile p ON u.id = p.userId
-      WHERE u.id = ?
+      SELECT u.id, u.name, u.username, p."profilePictureUrl"
+      FROM "user" u
+      LEFT JOIN profile p ON u.id = p."userId"
+      WHERE u.id = $1
     `, [recipientId]);
 
     let imageProfile = null;
@@ -248,7 +248,7 @@ router.post('/conversations/create', authenticateToken, async (req, res) => {
       status: 'success',
       message: 'Conversation created successfully',
       payload: {
-        id: result.insertId,
+        id: result.rows[0].id,
         user1Id: user1Id,
         user2Id: recipientId,
         createdAt: new Date().toISOString(),
@@ -292,8 +292,8 @@ router.post('/send', authenticateToken, async (req, res) => {
     if (!finalConversationId) {
       const existingConversation = await queryOne(`
         SELECT id FROM conversation 
-        WHERE (user1Id = ? AND user2Id = ?) OR (user1Id = ? AND user2Id = ?)
-          AND listingId IS NULL
+        WHERE ("user1Id" = $1 AND "user2Id" = $2) OR ("user1Id" = $3 AND "user2Id" = $4)
+          AND "listingId" IS NULL
       `, [senderId, receiverId, receiverId, senderId]);
 
       if (existingConversation) {
@@ -301,16 +301,16 @@ router.post('/send', authenticateToken, async (req, res) => {
       } else {
         // Create new conversation
         const newConversation = await query(
-          'INSERT INTO conversation (user1Id, user2Id, createdAt, updatedAt) VALUES (?, ?, NOW(), NOW())',
+          'INSERT INTO conversation ("user1Id", "user2Id", "createdAt", "updatedAt") VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id',
           [senderId, receiverId]
         );
-        finalConversationId = newConversation.insertId;
+        finalConversationId = newConversation.rows[0].id;
       }
     }
 
     // Verify user is part of the conversation
     const conversation = await queryOne(
-      'SELECT id FROM conversation WHERE id = ? AND (user1Id = ? OR user2Id = ?)',
+      'SELECT id FROM conversation WHERE id = $1 AND ("user1Id" = $2 OR "user2Id" = $3)',
       [finalConversationId, senderId, senderId]
     );
 
@@ -323,28 +323,28 @@ router.post('/send', authenticateToken, async (req, res) => {
 
     // Insert message
     const result = await query(
-      'INSERT INTO message (content, conversationId, authorId, receiverId, createdAt, updatedAt) VALUES (?, ?, ?, ?, NOW(), NOW())',
+      'INSERT INTO message (content, "conversationId", "authorId", "receiverId", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id',
       [content.trim(), finalConversationId, senderId, receiverId]
     );
 
     // Update conversation timestamp
     await query(
-      'UPDATE conversation SET updatedAt = NOW() WHERE id = ?',
+      'UPDATE conversation SET "updatedAt" = CURRENT_TIMESTAMP WHERE id = $1',
       [finalConversationId]
     );
 
     // Get the created message with user info
     const message = await queryOne(`
       SELECT 
-        m.id, m.content, m.createdAt, m.readAt,
-        m.authorId, m.receiverId, m.conversationId,
-        u.name as authorName, u.username as authorUsername,
-        p.profilePictureUrl as authorProfilePicture
+        m.id, m.content, m."createdAt", m."readAt",
+        m."authorId", m."receiverId", m."conversationId",
+        u.name as "authorName", u.username as "authorUsername",
+        p."profilePictureUrl" as "authorProfilePicture"
       FROM message m
-      LEFT JOIN user u ON m.authorId = u.id
-      LEFT JOIN profile p ON u.id = p.userId
-      WHERE m.id = ?
-    `, [result.insertId]);
+      LEFT JOIN "user" u ON m."authorId" = u.id
+      LEFT JOIN profile p ON u.id = p."userId"
+      WHERE m.id = $1
+    `, [result.rows[0].id]);
 
     res.status(201).json({
       status: 'success',
@@ -369,7 +369,7 @@ router.post('/conversations/:conversationId/read', authenticateToken, async (req
 
     // Verify user is part of this conversation
     const conversation = await queryOne(
-      'SELECT id FROM conversation WHERE id = ? AND (user1Id = ? OR user2Id = ?)',
+      'SELECT id FROM conversation WHERE id = $1 AND ("user1Id" = $2 OR "user2Id" = $3)',
       [conversationId, userId, userId]
     );
 
@@ -382,7 +382,7 @@ router.post('/conversations/:conversationId/read', authenticateToken, async (req
 
     // Mark all unread messages in this conversation as read for this user
     await query(
-      'UPDATE message SET readAt = NOW() WHERE conversationId = ? AND receiverId = ? AND readAt IS NULL',
+      'UPDATE message SET "readAt" = CURRENT_TIMESTAMP WHERE "conversationId" = $1 AND "receiverId" = $2 AND "readAt" IS NULL',
       [conversationId, userId]
     );
 
@@ -407,9 +407,9 @@ router.get('/unread-count/:userId', authenticateToken, async (req, res) => {
 
     // Count conversations with unread messages, not individual messages
     const result = await queryOne(`
-      SELECT COUNT(DISTINCT conversationId) as count 
+      SELECT COUNT(DISTINCT "conversationId") as count 
       FROM message 
-      WHERE receiverId = ? AND readAt IS NULL
+      WHERE "receiverId" = $1 AND "readAt" IS NULL
     `, [userId]);
 
     res.json({
@@ -436,7 +436,7 @@ router.delete('/conversations/:conversationId', authenticateToken, async (req, r
 
     // Verify user is part of this conversation
     const conversation = await queryOne(
-      'SELECT id FROM conversation WHERE id = ? AND (user1Id = ? OR user2Id = ?)',
+      'SELECT id FROM conversation WHERE id = $1 AND ("user1Id" = $2 OR "user2Id" = $3)',
       [conversationId, userId, userId]
     );
 
@@ -448,7 +448,7 @@ router.delete('/conversations/:conversationId', authenticateToken, async (req, r
     }
 
     // Delete conversation (CASCADE will handle messages)
-    await query('DELETE FROM conversation WHERE id = ?', [conversationId]);
+    await query('DELETE FROM conversation WHERE id = $1', [conversationId]);
 
     res.json({
       status: 'success',
@@ -472,7 +472,7 @@ router.delete('/:messageId', authenticateToken, async (req, res) => {
 
     // Check if user owns the message
     const message = await queryOne(
-      'SELECT id, authorId FROM message WHERE id = ?',
+      'SELECT id, "authorId" FROM message WHERE id = $1',
       [messageId]
     );
 
@@ -491,7 +491,7 @@ router.delete('/:messageId', authenticateToken, async (req, res) => {
     }
 
     // Delete message
-    await query('DELETE FROM message WHERE id = ?', [messageId]);
+    await query('DELETE FROM message WHERE id = $1', [messageId]);
 
     res.json({
       status: 'success',

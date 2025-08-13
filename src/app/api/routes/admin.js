@@ -4,7 +4,21 @@ const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Middleware to check admin privileges
+/    const user = await queryOne(`
+      SELECT 
+        u.id, u.name, u.username, u.email, u."createdAt", u."updatedAt",
+        p."profilePictureUrl", p.bio,
+        COUNT(DISTINCT po.id) as "postsCount",
+        COUNT(DISTINCT f.id) as "followersCount",
+        COUNT(DISTINCT fo.id) as "followingCount"
+      FROM "user" u
+      LEFT JOIN profile p ON u.id = p."userId"
+      LEFT JOIN post po ON u.id = po."authorId" AND po.published = true
+      LEFT JOIN follow f ON u.id = f."followingId"
+      LEFT JOIN follow fo ON u.id = fo."followerId"
+      WHERE u.id = $1
+      GROUP BY u.id, u.name, u.username, u.email, u."createdAt", u."updatedAt", p."profilePictureUrl", p.bio
+    `, [userId]); check admin privileges
 const requireAdmin = async (req, res, next) => {
   try {
     // Check if user is authenticated and has admin privileges
@@ -36,15 +50,15 @@ router.get('/dashboard/stats', async (req, res) => {
     const stats = {};
     
     // Get total users
-    const totalUsersResult = await queryOne('SELECT COUNT(*) as count FROM user');
+    const totalUsersResult = await queryOne('SELECT COUNT(*) as count FROM "user"');
     stats.totalUsers = totalUsersResult.count;
     
     // Get total posts
-    const totalPostsResult = await queryOne('SELECT COUNT(*) as count FROM post WHERE published = 1');
+    const totalPostsResult = await queryOne('SELECT COUNT(*) as count FROM post WHERE published = true');
     stats.totalPosts = totalPostsResult.count;
     
     // Get total listings
-    const totalListingsResult = await queryOne('SELECT COUNT(*) as count FROM listing WHERE published = 1');
+    const totalListingsResult = await queryOne('SELECT COUNT(*) as count FROM listing WHERE published = true');
     stats.totalListings = totalListingsResult.count;
     
     // Get total messages
@@ -53,7 +67,7 @@ router.get('/dashboard/stats', async (req, res) => {
     
     // Get active users (users who logged in within last 24 hours)
     const activeUsersResult = await queryOne(
-      'SELECT COUNT(*) as count FROM user WHERE updatedAt >= DATE_SUB(NOW(), INTERVAL 24 HOUR)'
+      'SELECT COUNT(*) as count FROM "user" WHERE "updatedAt" >= CURRENT_TIMESTAMP - INTERVAL \'24 hours\''
     );
     stats.activeUsers = activeUsersResult.count;
     
@@ -77,32 +91,32 @@ router.get('/dashboard/activity', async (req, res) => {
     
     // Get recent user registrations
     const recentUsers = await query(`
-      SELECT 'user_registered' as type, u.name as userName, u.createdAt, 
+      SELECT 'user_registered' as type, u.name as "userName", u."createdAt", 
              CONCAT(u.name, ' (@', u.username, ') joined ArtLink') as description
-      FROM user u 
-      ORDER BY u.createdAt DESC 
+      FROM "user" u 
+      ORDER BY u."createdAt" DESC 
       LIMIT 5
     `);
     
     // Get recent posts
     const recentPosts = await query(`
-      SELECT 'post_created' as type, u.name as userName, p.createdAt,
+      SELECT 'post_created' as type, u.name as "userName", p."createdAt",
              CONCAT(u.name, ' created a new post: "', SUBSTRING(p.title, 1, 50), '"') as description
       FROM post p 
-      JOIN user u ON p.authorId = u.id 
-      WHERE p.published = 1
-      ORDER BY p.createdAt DESC 
+      JOIN "user" u ON p."authorId" = u.id 
+      WHERE p.published = true
+      ORDER BY p."createdAt" DESC 
       LIMIT 5
     `);
     
     // Get recent listings
     const recentListings = await query(`
-      SELECT 'listing_created' as type, u.name as userName, l.createdAt,
+      SELECT 'listing_created' as type, u.name as "userName", l."createdAt",
              CONCAT(u.name, ' created a new listing: "', SUBSTRING(l.title, 1, 50), '"') as description
       FROM listing l 
-      JOIN user u ON l.authorId = u.id 
-      WHERE l.published = 1
-      ORDER BY l.createdAt DESC 
+      JOIN "user" u ON l."authorId" = u.id 
+      WHERE l.published = true
+      ORDER BY l."createdAt" DESC 
       LIMIT 5
     `);
     
@@ -137,32 +151,32 @@ router.get('/users', async (req, res) => {
     let params = [];
     
     if (search) {
-      whereClause = 'WHERE u.name LIKE ? OR u.username LIKE ? OR u.email LIKE ?';
+      whereClause = 'WHERE u.name ILIKE $1 OR u.username ILIKE $2 OR u.email ILIKE $3';
       params = [`%${search}%`, `%${search}%`, `%${search}%`];
     }
     
     // Get users with additional info
     const users = await query(`
       SELECT 
-        u.id, u.name, u.username, u.email, u.createdAt, u.updatedAt,
-        p.profilePictureUrl,
-        COUNT(DISTINCT po.id) as postsCount,
-        COUNT(DISTINCT f.id) as followersCount,
-        CASE WHEN u.id IS NOT NULL THEN true ELSE false END as isActive
-      FROM user u
-      LEFT JOIN profile p ON u.id = p.userId
-      LEFT JOIN post po ON u.id = po.authorId AND po.published = 1
-      LEFT JOIN follow f ON u.id = f.followingId
+        u.id, u.name, u.username, u.email, u."createdAt", u."updatedAt",
+        p."profilePictureUrl",
+        COUNT(DISTINCT po.id) as "postsCount",
+        COUNT(DISTINCT f.id) as "followersCount",
+        CASE WHEN u.id IS NOT NULL THEN true ELSE false END as "isActive"
+      FROM "user" u
+      LEFT JOIN profile p ON u.id = p."userId"
+      LEFT JOIN post po ON u.id = po."authorId" AND po.published = true
+      LEFT JOIN follow f ON u.id = f."followingId"
       ${whereClause}
-      GROUP BY u.id, u.name, u.username, u.email, u.createdAt, u.updatedAt, p.profilePictureUrl
-      ORDER BY u.createdAt DESC
-      LIMIT ? OFFSET ?
-    `, [...params, limit, offset]);
+      GROUP BY u.id, u.name, u.username, u.email, u."createdAt", u."updatedAt", p."profilePictureUrl"
+      ORDER BY u."createdAt" DESC
+      LIMIT $${search ? 4 : 1} OFFSET $${search ? 5 : 2}
+    `, search ? [...params, limit, offset] : [limit, offset]);
     
     // Get total count
     const totalResult = await queryOne(`
       SELECT COUNT(*) as total 
-      FROM user u 
+      FROM "user" u 
       ${whereClause}
     `, params);
     
@@ -198,18 +212,18 @@ router.get('/users/:id', async (req, res) => {
     
     const user = await queryOne(`
       SELECT 
-        u.id, u.name, u.username, u.email, u.createdAt, u.updatedAt,
-        p.profilePictureUrl, p.bio,
-        COUNT(DISTINCT po.id) as postsCount,
-        COUNT(DISTINCT f.id) as followersCount,
-        COUNT(DISTINCT f2.id) as followingCount
-      FROM user u
-      LEFT JOIN profile p ON u.id = p.userId
-      LEFT JOIN post po ON u.id = po.authorId AND po.published = 1
-      LEFT JOIN follow f ON u.id = f.followingId
-      LEFT JOIN follow f2 ON u.id = f2.followerId
-      WHERE u.id = ?
-      GROUP BY u.id, u.name, u.username, u.email, u.createdAt, u.updatedAt, p.profilePictureUrl, p.bio
+        u.id, u.name, u.username, u.email, u."createdAt", u."updatedAt",
+        p."profilePictureUrl", p.bio,
+        COUNT(DISTINCT po.id) as "postsCount",
+        COUNT(DISTINCT f.id) as "followersCount",
+        COUNT(DISTINCT f2.id) as "followingCount"
+      FROM "user" u
+      LEFT JOIN profile p ON u.id = p."userId"
+      LEFT JOIN post po ON u.id = po."authorId" AND po.published = true
+      LEFT JOIN follow f ON u.id = f."followingId"
+      LEFT JOIN follow f2 ON u.id = f2."followerId"
+      WHERE u.id = $1
+      GROUP BY u.id, u.name, u.username, u.email, u."createdAt", u."updatedAt", p."profilePictureUrl", p.bio
     `, [userId]);
     
     if (!user) {

@@ -52,18 +52,18 @@ router.get('/user/:id', optionalAuth, async (req, res) => {
     const user = await queryOne(`
       SELECT 
         u.id, u.name, u.username, u.email,
-        p.bio, p.profilePictureUrl,
-        (SELECT COUNT(*) FROM follow WHERE followingId = u.id) as followersCount,
-        (SELECT COUNT(*) FROM follow WHERE followerId = u.id) as followingCount,
-        (SELECT COUNT(*) FROM post WHERE authorId = u.id AND published = 1) as postsCount,
-        (SELECT COUNT(*) FROM listing WHERE authorId = u.id) as listingsCount,
+        p.bio, p."profilePictureUrl",
+        (SELECT COUNT(*) FROM follow WHERE "followingId" = u.id) as "followersCount",
+        (SELECT COUNT(*) FROM follow WHERE "followerId" = u.id) as "followingCount",
+        (SELECT COUNT(*) FROM post WHERE "authorId" = u.id AND published = true) as "postsCount",
+        (SELECT COUNT(*) FROM listing WHERE "authorId" = u.id) as "listingsCount",
         ${currentUserId ? 
-          '(SELECT COUNT(*) FROM follow WHERE followerId = ? AND followingId = u.id) as isFollowing' : 
-          '0 as isFollowing'
+          '(SELECT COUNT(*) FROM follow WHERE "followerId" = $1 AND "followingId" = u.id) as "isFollowing"' : 
+          '0 as "isFollowing"'
         }
-      FROM user u
-      LEFT JOIN profile p ON u.id = p.userId
-      WHERE u.id = ?
+      FROM "user" u
+      LEFT JOIN profile p ON u.id = p."userId"
+      WHERE u.id = $${currentUserId ? '2' : '1'}
     `, currentUserId ? [currentUserId, userId] : [userId]);
 
     if (!user) {
@@ -76,21 +76,21 @@ router.get('/user/:id', optionalAuth, async (req, res) => {
     // Get user's posts
     const posts = await query(`
       SELECT 
-        p.id, p.title, p.content, p.createdAt, p.updatedAt,
-        GROUP_CONCAT(DISTINCT m.mediaUrl) as mediaUrls,
-        COUNT(DISTINCT l.id) as likesCount,
-        COUNT(DISTINCT c.id) as commentsCount,
-        COUNT(DISTINCT s.id) as savesCount,
-        ${currentUserId ? 'MAX(CASE WHEN l.userId = ? THEN 1 ELSE 0 END)' : '0'} as isLiked,
-        ${currentUserId ? 'MAX(CASE WHEN s.userId = ? THEN 1 ELSE 0 END)' : '0'} as isSaved
+        p.id, p.title, p.content, p."createdAt", p."updatedAt",
+        STRING_AGG(DISTINCT m."mediaUrl", ',') as "mediaUrls",
+        COUNT(DISTINCT l.id) as "likesCount",
+        COUNT(DISTINCT c.id) as "commentsCount",
+        COUNT(DISTINCT s.id) as "savesCount",
+        ${currentUserId ? 'MAX(CASE WHEN l."userId" = $1 THEN 1 ELSE 0 END)' : '0'} as "isLiked",
+        ${currentUserId ? 'MAX(CASE WHEN s."userId" = $2 THEN 1 ELSE 0 END)' : '0'} as "isSaved"
       FROM post p
-      LEFT JOIN media m ON p.id = m.postId
-      LEFT JOIN \`like\` l ON p.id = l.postId
-      LEFT JOIN comment c ON p.id = c.postId
-      LEFT JOIN save s ON p.id = s.postId
-      WHERE p.authorId = ? AND p.published = 1
+      LEFT JOIN media m ON p.id = m."postId"
+      LEFT JOIN "like" l ON p.id = l."postId"
+      LEFT JOIN comment c ON p.id = c."postId"
+      LEFT JOIN save s ON p.id = s."postId"
+      WHERE p."authorId" = $${currentUserId ? '3' : '1'} AND p.published = true
       GROUP BY p.id
-      ORDER BY p.createdAt DESC
+      ORDER BY p."createdAt" DESC
     `, currentUserId ? [currentUserId, currentUserId, userId] : [userId]);
 
     const processedPosts = posts.map(post => ({
@@ -135,13 +135,13 @@ router.post('/toggleFollow', authenticateToken, async (req, res) => {
 
     // Check if already following
     const existingFollow = await queryOne(
-      'SELECT id FROM follow WHERE followerId = ? AND followingId = ?',
+      'SELECT id FROM follow WHERE "followerId" = $1 AND "followingId" = $2',
       [followerId, followingId]
     );
 
     if (existingFollow) {
       // Unfollow
-      await query('DELETE FROM follow WHERE id = ?', [existingFollow.id]);
+      await query('DELETE FROM follow WHERE id = $1', [existingFollow.id]);
       res.json({
         status: 'success',
         message: 'User unfollowed',
@@ -150,13 +150,13 @@ router.post('/toggleFollow', authenticateToken, async (req, res) => {
     } else {
       // Follow
       const result = await query(
-        'INSERT INTO follow (followerId, followingId, createdAt, updatedAt) VALUES (?, ?, NOW(), NOW())',
+        'INSERT INTO follow ("followerId", "followingId", "createdAt", "updatedAt") VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
         [followerId, followingId]
       );
 
       // Get follower's info for notification
       const follower = await queryOne(
-        'SELECT name, username FROM user WHERE id = ?',
+        'SELECT name, username FROM "user" WHERE id = $1',
         [followerId]
       );
 
@@ -205,7 +205,7 @@ router.get('/following/:userId', authenticateToken, async (req, res) => {
     const followerId = req.user.id;
 
     const following = await queryOne(
-      'SELECT id FROM follow WHERE followerId = ? AND followingId = ?',
+      'SELECT id FROM follow WHERE "followerId" = $1 AND "followingId" = $2',
       [followerId, userId]
     );
 
@@ -233,13 +233,13 @@ router.get('/:userId/following', optionalAuth, async (req, res) => {
     const following = await query(`
       SELECT 
         u.id, u.name, u.username,
-        p.profilePictureUrl,
-        f.createdAt as followedAt
+        p."profilePictureUrl",
+        f."createdAt" as "followedAt"
       FROM follow f
-      LEFT JOIN user u ON f.followingId = u.id
-      LEFT JOIN profile p ON u.id = p.userId
-      WHERE f.followerId = ?
-      ORDER BY f.createdAt DESC
+      LEFT JOIN "user" u ON f."followingId" = u.id
+      LEFT JOIN profile p ON u.id = p."userId"
+      WHERE f."followerId" = $1
+      ORDER BY f."createdAt" DESC
     `, [userId]);
 
     // Transform the data to fix image URLs
@@ -291,13 +291,13 @@ router.get('/:userId/followers', optionalAuth, async (req, res) => {
     const followers = await query(`
       SELECT 
         u.id, u.name, u.username,
-        p.profilePictureUrl,
-        f.createdAt as followedAt
+        p."profilePictureUrl",
+        f."createdAt" as "followedAt"
       FROM follow f
-      LEFT JOIN user u ON f.followerId = u.id
-      LEFT JOIN profile p ON u.id = p.userId
-      WHERE f.followingId = ?
-      ORDER BY f.createdAt DESC
+      LEFT JOIN "user" u ON f."followerId" = u.id
+      LEFT JOIN profile p ON u.id = p."userId"
+      WHERE f."followingId" = $1
+      ORDER BY f."createdAt" DESC
     `, [userId]);
 
     // Transform the data to fix image URLs
@@ -394,7 +394,7 @@ router.post('/updateProfile', authenticateToken, upload.single('profilePicture')
 
     // Update profile
     await query(
-      'UPDATE profile SET profilePictureUrl = ?, updatedAt = NOW() WHERE userId = ?',
+      'UPDATE profile SET "profilePictureUrl" = $1, "updatedAt" = CURRENT_TIMESTAMP WHERE "userId" = $2',
       [profilePictureUrl, userId]
     );
 
@@ -430,7 +430,7 @@ router.post('/updateBio', authenticateToken, async (req, res) => {
     }
 
     await query(
-      'UPDATE profile SET bio = ?, updatedAt = NOW() WHERE userId = ?',
+      'UPDATE profile SET bio = $1, "updatedAt" = CURRENT_TIMESTAMP WHERE "userId" = $2',
       [bio || '', userId]
     );
 
@@ -466,15 +466,15 @@ router.get('/search', optionalAuth, async (req, res) => {
     const users = await query(`
       SELECT 
         u.id, u.name, u.username,
-        p.profilePictureUrl,
-        (SELECT COUNT(*) FROM follow WHERE followingId = u.id) as followersCount,
-        (SELECT COUNT(*) FROM post WHERE authorId = u.id AND published = 1) as postsCount
-      FROM user u
-      LEFT JOIN profile p ON u.id = p.userId
-      WHERE (u.name LIKE ? OR u.username LIKE ?)
+        p."profilePictureUrl",
+        (SELECT COUNT(*) FROM follow WHERE "followingId" = u.id) as "followersCount",
+        (SELECT COUNT(*) FROM post WHERE "authorId" = u.id AND published = true) as "postsCount"
+      FROM "user" u
+      LEFT JOIN profile p ON u.id = p."userId"
+      WHERE (u.name ILIKE $1 OR u.username ILIKE $2)
       AND u.id != 1
       AND u.username != 'admin'
-      ORDER BY followersCount DESC, postsCount DESC
+      ORDER BY "followersCount" DESC, "postsCount" DESC
       LIMIT 20
     `, [`%${searchQuery}%`, `%${searchQuery}%`]);
 
@@ -557,26 +557,26 @@ router.get('/suggested', optionalAuth, async (req, res) => {
         
       FROM user u
       LEFT JOIN profile p ON u.id = p.userId
-      LEFT JOIN follow f_all ON u.id = f_all.followingId
-      LEFT JOIN post posts ON u.id = posts.authorId
+      LEFT JOIN follow f_all ON u.id = f_all."followingId"
+      LEFT JOIN post posts ON u.id = posts."authorId"
       
       -- Find users who are followed by people that the current user follows
       LEFT JOIN follow mutual_connections ON (
-        u.id = mutual_connections.followingId 
-        AND mutual_connections.followerId IN (
-          SELECT followingId FROM follow WHERE followerId = ?
+        u.id = mutual_connections."followingId" 
+        AND mutual_connections."followerId" IN (
+          SELECT "followingId" FROM follow WHERE "followerId" = $1
         )
       )
-      LEFT JOIN user mutual_friends ON mutual_connections.followerId = mutual_friends.id
+      LEFT JOIN "user" mutual_friends ON mutual_connections."followerId" = mutual_friends.id
       
-      WHERE u.id != ?  -- Exclude current user
+      WHERE u.id != $2  -- Exclude current user
       AND u.id != 1   -- Exclude admin user
       AND u.username != 'admin'  -- Extra safety check for admin
       AND u.id NOT IN (  -- Exclude users already followed
-        SELECT followingId FROM follow WHERE followerId = ?
+        SELECT "followingId" FROM follow WHERE "followerId" = $3
       )
       
-      GROUP BY u.id, u.name, u.username, p.profilePictureUrl
+      GROUP BY u.id, u.name, u.username, p."profilePictureUrl"
       
       -- Order by: friends of friends first, then by engagement
       ORDER BY 

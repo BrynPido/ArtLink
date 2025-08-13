@@ -14,29 +14,30 @@ router.get('/getNotifications', authenticateToken, async (req, res) => {
 
     const notifications = await query(`
       SELECT 
-        n.id, n.content, n.type, n.createdAt, n.read,
-        n.postId, n.commentId, n.followId, n.messageId,
-        s.id as senderId, s.name as senderName, s.username as senderUsername,
-        sp.profilePictureUrl as senderProfilePicture,
-        p.title as postTitle,
-        c.content as commentContent,
-        m.content as messageContent
+        n.id, n.content, n.type, n."createdAt", n.read,
+        n."postId", n."commentId", n."followId", n."messageId",
+        s.id as "senderId", s.name as "senderName", s.username as "senderUsername",
+        sp."profilePictureUrl" as "senderProfilePicture",
+        p.title as "postTitle",
+        c.content as "commentContent",
+        m.content as "messageContent"
       FROM notification n
-      LEFT JOIN user s ON n.senderId = s.id
-      LEFT JOIN profile sp ON s.id = sp.userId
-      LEFT JOIN post p ON n.postId = p.id
-      LEFT JOIN comment c ON n.commentId = c.id
-      LEFT JOIN message m ON n.messageId = m.id
-      WHERE n.recipientId = ?
-      ORDER BY n.createdAt DESC
-      LIMIT ? OFFSET ?
+      LEFT JOIN "user" s ON n."senderId" = s.id
+      LEFT JOIN profile sp ON s.id = sp."userId"
+      LEFT JOIN post p ON n."postId" = p.id
+      LEFT JOIN comment c ON n."commentId" = c.id
+      LEFT JOIN message m ON n."messageId" = m.id
+      WHERE n."recipientId" = $1
+      ORDER BY n."createdAt" DESC
+      LIMIT $2 OFFSET $3
     `, [userId, limit, offset]);
 
     // Mark notifications as read when fetched
     if (notifications.length > 0) {
       const notificationIds = notifications.map(n => n.id);
+      const placeholders = notificationIds.map((_, index) => `$${index + 1}`).join(',');
       await query(
-        `UPDATE notification SET \`read\` = 1 WHERE id IN (${notificationIds.map(() => '?').join(',')})`,
+        `UPDATE notification SET read = true WHERE id IN (${placeholders})`,
         notificationIds
       );
     }
@@ -71,7 +72,7 @@ router.get('/unread-count', authenticateToken, async (req, res) => {
     const userId = req.user.id;
 
     const result = await queryOne(
-      'SELECT COUNT(*) as count FROM notification WHERE recipientId = ? AND `read` = 0',
+      'SELECT COUNT(*) as count FROM notification WHERE "recipientId" = $1 AND read = false',
       [userId]
     );
 
@@ -99,7 +100,7 @@ router.post('/:notificationId/read', authenticateToken, async (req, res) => {
 
     // Verify notification belongs to user
     const notification = await queryOne(
-      'SELECT id FROM notification WHERE id = ? AND recipientId = ?',
+      'SELECT id FROM notification WHERE id = $1 AND "recipientId" = $2',
       [notificationId, userId]
     );
 
@@ -112,7 +113,7 @@ router.post('/:notificationId/read', authenticateToken, async (req, res) => {
 
     // Mark as read
     await query(
-      'UPDATE notification SET `read` = 1 WHERE id = ?',
+      'UPDATE notification SET read = true WHERE id = $1',
       [notificationId]
     );
 
@@ -136,7 +137,7 @@ router.post('/mark-all-read', authenticateToken, async (req, res) => {
     const userId = req.user.id;
 
     await query(
-      'UPDATE notification SET `read` = 1 WHERE recipientId = ? AND `read` = 0',
+      'UPDATE notification SET read = true WHERE "recipientId" = $1 AND read = false',
       [userId]
     );
 
@@ -162,7 +163,7 @@ router.post('/:notificationId/delete', authenticateToken, async (req, res) => {
 
     // Verify notification belongs to user
     const notification = await queryOne(
-      'SELECT id FROM notification WHERE id = ? AND recipientId = ?',
+      'SELECT id FROM notification WHERE id = $1 AND "recipientId" = $2',
       [notificationId, userId]
     );
 
@@ -174,7 +175,7 @@ router.post('/:notificationId/delete', authenticateToken, async (req, res) => {
     }
 
     // Delete notification
-    await query('DELETE FROM notification WHERE id = ?', [notificationId]);
+    await query('DELETE FROM notification WHERE id = $1', [notificationId]);
 
     res.json({
       status: 'success',
@@ -195,7 +196,7 @@ router.delete('/clear-all', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
 
-    await query('DELETE FROM notification WHERE recipientId = ?', [userId]);
+    await query('DELETE FROM notification WHERE "recipientId" = $1', [userId]);
 
     res.json({
       status: 'success',
@@ -219,7 +220,7 @@ async function createNotification(type, recipientId, senderId, content, relatedI
     console.log(`Creating notification: type=${type}, recipientId=${recipientId}, senderId=${senderId}, content=${content}`);
     
     await query(
-      'INSERT INTO notification (type, recipientId, senderId, content, postId, commentId, followId, messageId, `read`, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, NOW())',
+      'INSERT INTO notification (type, "recipientId", "senderId", content, "postId", "commentId", "followId", "messageId", read, "createdAt") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false, CURRENT_TIMESTAMP)',
       [type, recipientId, senderId, content, postId || null, commentId || null, followId || null, messageId || null]
     );
     

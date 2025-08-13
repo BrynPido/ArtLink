@@ -53,24 +53,24 @@ router.post('/create', authenticateToken, upload.array('media', 10), validateLis
 
     const result = await transaction(async (connection) => {
       // Insert listing
-      const [listingResult] = await connection.execute(
-        'INSERT INTO listing (title, content, authorId, published, createdAt, updatedAt) VALUES (?, ?, ?, ?, NOW(), NOW())',
+      const listingResult = await connection.query(
+        'INSERT INTO listing (title, content, "authorId", published, "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id',
         [title, content || '', authorId, true]
       );
 
-      const listingId = listingResult.insertId;
+      const listingId = listingResult.rows[0].id;
 
       // Insert listing details
-      await connection.execute(
-        'INSERT INTO listing_details (listingId, price, category, `condition`, location, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, NOW(), NOW())',
+      await connection.query(
+        'INSERT INTO listing_details ("listingId", price, category, "condition", location, "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
         [listingId, details.price, details.category, details.condition, details.location]
       );
 
       // Insert media if files were uploaded
       if (files.length > 0) {
         for (const file of files) {
-          await connection.execute(
-            'INSERT INTO media (listingId, mediaUrl, mediaType, createdAt, updatedAt) VALUES (?, ?, ?, NOW(), NOW())',
+          await connection.query(
+            'INSERT INTO media ("listingId", "mediaUrl", "mediaType", "createdAt", "updatedAt") VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
             [listingId, `/uploads/listings/${file.filename}`, file.mimetype]
           );
         }
@@ -102,47 +102,53 @@ router.get('/', optionalAuth, async (req, res) => {
     const offset = (page - 1) * limit;
     const { category, minPrice, maxPrice, condition, location } = req.query;
 
-    let whereClause = 'WHERE l.published = 1';
+    let whereClause = 'WHERE l.published = true';
     let params = [];
+    let paramCounter = 1;
 
     // Add filters
     if (category) {
-      whereClause += ' AND ld.category = ?';
+      whereClause += ` AND ld.category = $${paramCounter}`;
       params.push(category);
+      paramCounter++;
     }
     if (minPrice) {
-      whereClause += ' AND ld.price >= ?';
+      whereClause += ` AND ld.price >= $${paramCounter}`;
       params.push(parseFloat(minPrice));
+      paramCounter++;
     }
     if (maxPrice) {
-      whereClause += ' AND ld.price <= ?';
+      whereClause += ` AND ld.price <= $${paramCounter}`;
       params.push(parseFloat(maxPrice));
+      paramCounter++;
     }
     if (condition) {
-      whereClause += ' AND ld.condition = ?';
+      whereClause += ` AND ld."condition" = $${paramCounter}`;
       params.push(condition);
+      paramCounter++;
     }
     if (location) {
-      whereClause += ' AND ld.location LIKE ?';
+      whereClause += ` AND ld.location ILIKE $${paramCounter}`;
       params.push(`%${location}%`);
+      paramCounter++;
     }
 
     const listings = await query(`
       SELECT 
-        l.id, l.title, l.content, l.createdAt, l.updatedAt,
-        u.id as authorId, u.name as authorName, u.username as authorUsername,
-        pr.profilePictureUrl as authorProfilePicture,
-        ld.price, ld.category, ld.condition, ld.location,
-        GROUP_CONCAT(DISTINCT m.mediaUrl) as mediaUrls
+        l.id, l.title, l.content, l."createdAt", l."updatedAt",
+        u.id as "authorId", u.name as "authorName", u.username as "authorUsername",
+        pr."profilePictureUrl" as "authorProfilePicture",
+        ld.price, ld.category, ld."condition", ld.location,
+        STRING_AGG(DISTINCT m."mediaUrl", ',') as "mediaUrls"
       FROM listing l
-      LEFT JOIN user u ON l.authorId = u.id
-      LEFT JOIN profile pr ON u.id = pr.userId
-      LEFT JOIN listing_details ld ON l.id = ld.listingId
-      LEFT JOIN media m ON l.id = m.listingId
+      LEFT JOIN "user" u ON l."authorId" = u.id
+      LEFT JOIN profile pr ON u.id = pr."userId"
+      LEFT JOIN listing_details ld ON l.id = ld."listingId"
+      LEFT JOIN media m ON l.id = m."listingId"
       ${whereClause}
-      GROUP BY l.id, u.id, pr.profilePictureUrl, ld.id
-      ORDER BY l.createdAt DESC
-      LIMIT ? OFFSET ?
+      GROUP BY l.id, u.id, pr."profilePictureUrl", ld.id
+      ORDER BY l."createdAt" DESC
+      LIMIT $${paramCounter} OFFSET $${paramCounter + 1}
     `, [...params, limit, offset]);
 
     const processedListings = listings.map(listing => ({
@@ -179,18 +185,18 @@ router.get('/:id', optionalAuth, async (req, res) => {
 
     const listing = await queryOne(`
       SELECT 
-        l.id, l.title, l.content, l.createdAt, l.updatedAt,
-        u.id as authorId, u.name as authorName, u.username as authorUsername,
-        pr.profilePictureUrl as authorProfilePicture,
-        ld.price, ld.category, ld.condition, ld.location,
-        GROUP_CONCAT(DISTINCT m.mediaUrl) as mediaUrls
+        l.id, l.title, l.content, l."createdAt", l."updatedAt",
+        u.id as "authorId", u.name as "authorName", u.username as "authorUsername",
+        pr."profilePictureUrl" as "authorProfilePicture",
+        ld.price, ld.category, ld."condition", ld.location,
+        STRING_AGG(DISTINCT m."mediaUrl", ',') as "mediaUrls"
       FROM listing l
-      LEFT JOIN user u ON l.authorId = u.id
-      LEFT JOIN profile pr ON u.id = pr.userId
-      LEFT JOIN listing_details ld ON l.id = ld.listingId
-      LEFT JOIN media m ON l.id = m.listingId
-      WHERE l.id = ? AND l.published = 1
-      GROUP BY l.id, u.id, pr.profilePictureUrl, ld.id
+      LEFT JOIN "user" u ON l."authorId" = u.id
+      LEFT JOIN profile pr ON u.id = pr."userId"
+      LEFT JOIN listing_details ld ON l.id = ld."listingId"
+      LEFT JOIN media m ON l.id = m."listingId"
+      WHERE l.id = $1 AND l.published = true
+      GROUP BY l.id, u.id, pr."profilePictureUrl", ld.id
     `, [listingId]);
 
     if (!listing) {
@@ -233,15 +239,15 @@ router.get('/user/:userId', optionalAuth, async (req, res) => {
 
     const listings = await query(`
       SELECT 
-        l.id, l.title, l.content, l.createdAt, l.updatedAt,
+        l.id, l.title, l.content, l."createdAt", l."updatedAt",
         ld.price, ld.category, ld.condition, ld.location,
-        GROUP_CONCAT(DISTINCT m.mediaUrl) as mediaUrls
+        STRING_AGG(DISTINCT m."mediaUrl", ',') as "mediaUrls"
       FROM listing l
-      LEFT JOIN listing_details ld ON l.id = ld.listingId
-      LEFT JOIN media m ON l.id = m.listingId
-      WHERE l.authorId = ? AND l.published = 1
+      LEFT JOIN listing_details ld ON l.id = ld."listingId"
+      LEFT JOIN media m ON l.id = m."listingId"
+      WHERE l."authorId" = $1 AND l.published = true
       GROUP BY l.id, ld.id
-      ORDER BY l.createdAt DESC
+      ORDER BY l."createdAt" DESC
     `, [userId]);
 
     const processedListings = listings.map(listing => ({
@@ -274,7 +280,7 @@ router.post('/:id/update', authenticateToken, upload.array('media', 10), validat
 
     // Check if user owns the listing
     const listing = await queryOne(
-      'SELECT id, authorId FROM listing WHERE id = ?',
+      'SELECT id, "authorId" FROM listing WHERE id = $1',
       [listingId]
     );
 
@@ -298,13 +304,13 @@ router.post('/:id/update', authenticateToken, upload.array('media', 10), validat
     await transaction(async (connection) => {
       // Update listing
       await connection.execute(
-        'UPDATE listing SET title = ?, content = ?, updatedAt = NOW() WHERE id = ?',
+        'UPDATE listing SET title = $1, content = $2, "updatedAt" = CURRENT_TIMESTAMP WHERE id = $3',
         [title, content || '', listingId]
       );
 
       // Update listing details
       await connection.execute(
-        'UPDATE listing_details SET price = ?, category = ?, `condition` = ?, location = ?, updatedAt = NOW() WHERE listingId = ?',
+        'UPDATE listing_details SET price = $1, category = $2, condition = $3, location = $4, "updatedAt" = CURRENT_TIMESTAMP WHERE "listingId" = $5',
         [details.price, details.category, details.condition, details.location, listingId]
       );
 
@@ -312,7 +318,7 @@ router.post('/:id/update', authenticateToken, upload.array('media', 10), validat
       if (files.length > 0) {
         for (const file of files) {
           await connection.execute(
-            'INSERT INTO media (listingId, mediaUrl, mediaType, createdAt, updatedAt) VALUES (?, ?, ?, NOW(), NOW())',
+            'INSERT INTO media ("listingId", "mediaUrl", "mediaType", "createdAt", "updatedAt") VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
             [listingId, `/uploads/listings/${file.filename}`, file.mimetype]
           );
         }
@@ -341,7 +347,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 
     // Check if user owns the listing
     const listing = await queryOne(
-      'SELECT id, authorId FROM listing WHERE id = ?',
+      'SELECT id, "authorId" FROM listing WHERE id = $1',
       [listingId]
     );
 
@@ -360,7 +366,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     }
 
     // Delete listing (CASCADE will handle related records)
-    await query('DELETE FROM listing WHERE id = ?', [listingId]);
+    await query('DELETE FROM listing WHERE id = $1', [listingId]);
 
     res.json({
       status: 'success',
@@ -390,24 +396,24 @@ router.get('/search', optionalAuth, async (req, res) => {
 
     const listings = await query(`
       SELECT 
-        l.id, l.title, l.content, l.createdAt, l.updatedAt,
-        u.id as authorId, u.name as authorName, u.username as authorUsername,
-        pr.profilePictureUrl as authorProfilePicture,
+        l.id, l.title, l.content, l."createdAt", l."updatedAt",
+        u.id as "authorId", u.name as "authorName", u.username as "authorUsername",
+        pr."profilePictureUrl" as "authorProfilePicture",
         ld.price, ld.category, ld.condition, ld.location,
-        GROUP_CONCAT(DISTINCT m.mediaUrl) as mediaUrls
+        STRING_AGG(DISTINCT m."mediaUrl", ',') as "mediaUrls"
       FROM listing l
-      LEFT JOIN user u ON l.authorId = u.id
-      LEFT JOIN profile pr ON u.id = pr.userId
-      LEFT JOIN listing_details ld ON l.id = ld.listingId
-      LEFT JOIN media m ON l.id = m.listingId
-      WHERE l.published = 1 AND (
-        l.title LIKE ? OR 
-        l.content LIKE ? OR 
-        ld.category LIKE ? OR
-        ld.location LIKE ?
+      LEFT JOIN "user" u ON l."authorId" = u.id
+      LEFT JOIN profile pr ON u.id = pr."userId"
+      LEFT JOIN listing_details ld ON l.id = ld."listingId"
+      LEFT JOIN media m ON l.id = m."listingId"
+      WHERE l.published = true AND (
+        l.title ILIKE $1 OR 
+        l.content ILIKE $2 OR 
+        ld.category ILIKE $3 OR
+        ld.location ILIKE $4
       )
-      GROUP BY l.id, u.id, pr.profilePictureUrl, ld.id
-      ORDER BY l.createdAt DESC
+      GROUP BY l.id, u.id, pr."profilePictureUrl", ld.id
+      ORDER BY l."createdAt" DESC
       LIMIT 50
     `, [`%${searchQuery}%`, `%${searchQuery}%`, `%${searchQuery}%`, `%${searchQuery}%`]);
 
@@ -437,8 +443,8 @@ router.get('/categories', async (req, res) => {
     const categories = await query(`
       SELECT DISTINCT category, COUNT(*) as count
       FROM listing_details ld
-      LEFT JOIN listing l ON ld.listingId = l.id
-      WHERE l.published = 1
+      LEFT JOIN listing l ON ld."listingId" = l.id
+      WHERE l.published = true
       GROUP BY category
       ORDER BY count DESC, category ASC
     `);
