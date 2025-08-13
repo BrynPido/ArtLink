@@ -1,0 +1,125 @@
+.listing-management {
+  min-height: 100vh;
+}
+
+.listing-management table {
+  min-width: 800px;
+}
+
+.listing-management .table-cell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.listing-management .listing-image {
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.listing-management .status-badge {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 500;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+}
+
+.listing-management .action-button {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 0.375rem;
+  transition: all 0.15s ease-in-out;
+}
+
+.listing-management .action-button:hover {
+  transform: translateY(-1px);
+}
+
+.listing-management .bulk-actions {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  color: white;
+  margin-bottom: 1rem;
+}
+
+.listing-management .filter-section {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.listing-management .pagination-info {
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.listing-management .loading-spinner {
+  display: inline-block;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 50%;
+  border-top-color: #3b82f6;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.listing-management .empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #64748b;
+}
+
+.listing-management .category-badge {
+  background: #dbeafe;
+  color: #1e40af;
+  border-radius: 9999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.listing-management .price-display {
+  font-weight: 600;
+  color: #059669;
+}
+
+@media (max-width: 768px) {
+  .listing-management .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .listing-management .mobile-card {
+    display: block;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .listing-management .mobile-card-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+  
+  .listing-management .mobile-card-body {
+    font-size: 0.875rem;
+    color: #64748b;
+  }
+}

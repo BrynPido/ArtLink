@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { DataService } from './data.service';
+import { MessageStateService } from './message-state.service';
 import { BehaviorSubject, Observable, Subject, throwError } from 'rxjs';
-import { catchError, tap } from 'rxjs/operators';
+import { catchError, tap, map } from 'rxjs/operators';
 
 export interface Message {
   id?: number;
@@ -53,7 +54,7 @@ export class MessagingService {
   messages$ = this.messagesSubject.asObservable();
   newMessage$ = this.newMessageSubject.asObservable();
 
-  constructor(private dataService: DataService) { }
+  constructor(private dataService: DataService, private messageState: MessageStateService) { }
 
   // Connect to the WebSocket server
   connect(userId: number): void {
@@ -134,12 +135,9 @@ export class MessagingService {
     });
   }
 
-  // Set the active conversation and load its messages
-  setActiveConversation(conversation: Conversation): void {
-    this.activeConversationSubject.next(conversation);
-    
-    // Load messages for this conversation
-    this.dataService.getConversationMessages(conversation.id).subscribe({
+  // Load messages for a specific conversation
+  private loadMessagesForConversation(conversationId: number): void {
+    this.dataService.getConversationMessages(conversationId).subscribe({
       next: (response: any) => {
         if (response && response.payload) {
           this.messagesSubject.next(response.payload);
@@ -148,24 +146,40 @@ export class MessagingService {
         }
       },
       error: (error) => {
-        console.error('Error loading messages:', error);
+        console.error('Error loading messages for conversation:', error);
         this.messagesSubject.next([]);
       }
     });
+  }
+
+  // Set the active conversation and load its messages
+  setActiveConversation(conversation: Conversation): void {
+    this.activeConversationSubject.next(conversation);
+    
+    // Load messages for this conversation
+    this.loadMessagesForConversation(conversation.id);
     
     // Mark conversation as read if there are unread messages
     if (conversation.unreadCount && conversation.unreadCount > 0) {
-      this.dataService.markConversationAsRead(conversation.id).subscribe();
-      
-      // Update the unread count in the conversations list
-      const updatedConversations = this.conversationsSubject.value.map(c => {
-        if (c.id === conversation.id) {
-          return { ...c, unreadCount: 0 };
+      this.dataService.markConversationAsRead(conversation.id).subscribe({
+        next: () => {
+          // Update the unread count in the conversations list
+          const updatedConversations = this.conversationsSubject.value.map(c => {
+            if (c.id === conversation.id) {
+              return { ...c, unreadCount: 0 };
+            }
+            return c;
+          });
+          
+          this.conversationsSubject.next(updatedConversations);
+          
+          // Refresh unread count from server to get accurate count
+          this.refreshUnreadCount();
+        },
+        error: (error) => {
+          console.error('Error marking conversation as read:', error);
         }
-        return c;
       });
-      
-      this.conversationsSubject.next(updatedConversations);
     }
   }
 
@@ -177,15 +191,11 @@ export class MessagingService {
       return throwError(() => new Error('User is not logged in'));
     }
 
-    const data = {
-      user1Id: currentUser.id,
-      user2Id: otherUserId
-    };
-
     return this.dataService.createConversation(otherUserId).pipe(
       tap((response: any) => {
         if (response && response.payload) {
           const conversation = response.payload;
+          console.log('New conversation created:', conversation);
           
           // Add to conversations list
           const currentConversations = this.conversationsSubject.value;
@@ -196,10 +206,12 @@ export class MessagingService {
           // Set as active conversation
           this.activeConversationSubject.next(conversation);
           
-          // Clear messages for this new conversation
+          // Clear messages for this new conversation and load fresh messages
           this.messagesSubject.next([]);
+          this.loadMessagesForConversation(conversation.id);
         }
       }),
+      map((response: any) => response?.payload || null),
       catchError(error => {
         console.error('Error starting conversation:', error);
         return throwError(() => error);
@@ -297,6 +309,12 @@ export class MessagingService {
       createdAt: data.timestamp
     };
     
+    // Only process messages from other users, not from ourselves
+    if (data.from === this.userId) {
+      console.log('Ignoring message from self');
+      return;
+    }
+    
     // Notify about new message
     this.newMessageSubject.next(message);
     
@@ -306,7 +324,15 @@ export class MessagingService {
       this.messagesSubject.next([...currentMessages, message]);
       
       // Mark as read if it's the active conversation
-      this.dataService.markConversationAsRead(data.conversationId).subscribe();
+      this.dataService.markConversationAsRead(data.conversationId).subscribe({
+        next: () => {
+          // Refresh unread count after marking as read
+          this.refreshUnreadCount();
+        }
+      });
+    } else {
+      // If it's not the active conversation, refresh unread count from server
+      this.refreshUnreadCount();
     }
     
     // Update conversation in the list with the last message
@@ -382,26 +408,56 @@ export class MessagingService {
   }
 
   sendChatMessage(receiverId: number, content: string, conversationId: number, listingId?: number): void {
-    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
-      console.error('WebSocket is not connected');
-      return;
-    }
-    
-    // Debug what's being sent
-    console.log('Sending WebSocket message:', {
-      type: 'message',
-      to: receiverId,
-      content: content,
-      conversationId: conversationId,
-      listingId: listingId
+    // First, send via HTTP API to ensure it's saved to the database
+    this.dataService.sendMessage(receiverId, content, conversationId).subscribe({
+      next: (response) => {
+        console.log('Message saved to database:', response);
+        
+        // Add message to the current message list immediately
+        if (response && response.payload) {
+          const currentMessages = this.messagesSubject.value;
+          this.messagesSubject.next([...currentMessages, response.payload]);
+        }
+        
+        // Don't increment unread count for sender - only receivers get unread badges
+        // The unread count will be updated for the receiver when they receive the message via WebSocket
+        
+        // Then send via WebSocket for real-time delivery (if connected)
+        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+          console.log('Sending WebSocket message:', {
+            type: 'message',
+            to: receiverId,
+            content: content,
+            conversationId: conversationId,
+            listingId: listingId
+          });
+        
+          this.socket.send(JSON.stringify({
+            type: 'message',
+            to: receiverId,
+            content: content,
+            conversationId: conversationId,
+            listingId: listingId
+          }));
+        } else {
+          console.log('WebSocket not connected, message saved to database only');
+        }
+      },
+      error: (error) => {
+        console.error('Failed to send message via HTTP:', error);
+      }
     });
-  
-    this.socket.send(JSON.stringify({
-      type: 'message',
-      to: receiverId,
-      content: content,
-      conversationId: conversationId,
-      listingId: listingId
-    }));
+  }
+
+  // Refresh unread count from server
+  private refreshUnreadCount(): void {
+    this.dataService.getUnreadMessagesCount().subscribe({
+      next: (count) => {
+        this.messageState.setUnreadCount(count);
+      },
+      error: (error) => {
+        console.error('Error refreshing unread count:', error);
+      }
+    });
   }
 }

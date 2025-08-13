@@ -1,0 +1,332 @@
+.settings {
+  min-height: 100vh;
+}
+
+.settings .sidebar {
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+}
+
+.settings .sidebar-button {
+  width: 100%;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border-left: 4px solid transparent;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.15s ease-in-out;
+  display: flex;
+  align-items: center;
+}
+
+.settings .sidebar-button.active {
+  background: #dbeafe;
+  border-left-color: #3b82f6;
+  color: #1e40af;
+}
+
+.settings .sidebar-button:hover {
+  background: #f3f4f6;
+}
+
+.settings .sidebar-button.active:hover {
+  background: #bfdbfe;
+}
+
+.settings .content-panel {
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  padding: 1.5rem;
+}
+
+.settings .form-group {
+  margin-bottom: 1.5rem;
+}
+
+.settings .form-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.settings .form-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  transition: all 0.15s ease-in-out;
+}
+
+.settings .form-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.settings .form-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.settings .form-checkbox {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 0.25rem;
+  border: 1px solid #d1d5db;
+  color: #3b82f6;
+}
+
+.settings .form-checkbox:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.settings .checkbox-group {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.settings .checkbox-label {
+  margin-left: 0.5rem;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.settings .tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.settings .tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  background: #dbeafe;
+  color: #1e40af;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.settings .tag-remove {
+  margin-left: 0.25rem;
+  color: #3b82f6;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.settings .tag-remove:hover {
+  color: #1e40af;
+}
+
+.settings .ip-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.settings .ip-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f9fafb;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+}
+
+.settings .ip-address {
+  font-size: 0.875rem;
+  color: #111827;
+  font-family: monospace;
+}
+
+.settings .remove-button {
+  color: #dc2626;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.settings .remove-button:hover {
+  color: #b91c1c;
+}
+
+.settings .add-button {
+  padding: 0.5rem 1rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+}
+
+.settings .add-button:hover {
+  background: #2563eb;
+}
+
+.settings .action-buttons {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  margin-top: 2rem;
+}
+
+.settings .button {
+  padding: 0.75rem 1.5rem;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.settings .button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.settings .button-primary {
+  background: #3b82f6;
+  color: white;
+}
+
+.settings .button-primary:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.settings .button-secondary {
+  background: white;
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+.settings .button-secondary:hover:not(:disabled) {
+  background: #f9fafb;
+}
+
+.settings .button-danger {
+  background: white;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+.settings .button-danger:hover:not(:disabled) {
+  background: #fef2f2;
+}
+
+.settings .loading-spinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 0.5rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.settings .grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.settings .grid-cols-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.settings .section-title {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: #111827;
+  margin-bottom: 1rem;
+}
+
+.settings .help-text {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+.settings .test-button {
+  padding: 0.75rem 1.5rem;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+}
+
+.settings .test-button:hover {
+  background: #059669;
+}
+
+@media (max-width: 1024px) {
+  .settings .main-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .settings .sidebar {
+    margin-bottom: 1.5rem;
+  }
+  
+  .settings .sidebar nav {
+    display: flex;
+    overflow-x: auto;
+    gap: 0;
+  }
+  
+  .settings .sidebar-button {
+    white-space: nowrap;
+    border-left: none;
+    border-bottom: 4px solid transparent;
+  }
+  
+  .settings .sidebar-button.active {
+    border-left: none;
+    border-bottom-color: #3b82f6;
+  }
+}
+
+@media (max-width: 768px) {
+  .settings .grid-cols-2 {
+    grid-template-columns: 1fr;
+  }
+  
+  .settings .action-buttons {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  
+  .settings .button-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}

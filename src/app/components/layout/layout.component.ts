@@ -1,10 +1,14 @@
 import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnInit, OnDestroy } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet, NavigationEnd } from '@angular/router';
 import { DataService } from '../../services/data.service';
 import { WebSocketService } from '../../services/websocket.service';
 import { NotificationStateService, Notification } from '../../services/notification-state.service';
+import { MessageStateService } from '../../services/message-state.service';
 import { Subscription } from 'rxjs';
+import { filter } from 'rxjs/operators';
+import Swal from 'sweetalert2';
+import { environment } from '../../../environments/environment';
 
 // Type guard function
 function isNotificationContent(content: any): content is NotificationContent {
@@ -33,16 +37,33 @@ export class LayoutComponent implements OnInit, OnDestroy {
   isMobileView: boolean = false;
   private notificationSubscription?: Subscription;
   private unreadCountSubscription?: Subscription;
+  private unreadMessagesSubscription?: Subscription;
+  private routerSubscription?: Subscription;
   private userSubscription?: Subscription;
   unreadNotificationsCount: number = 0;
+  unreadMessagesCount: number = 0;
 
   constructor(
     private router: Router, 
     private dataService: DataService,
     private webSocketService: WebSocketService,
-    private notificationState: NotificationStateService
+    private notificationState: NotificationStateService,
+    private messageState: MessageStateService
   ) {
-    this.currentUser = this.dataService.getCurrentUser();
+    const user = this.dataService.getCurrentUser();
+    this.currentUser = user ? {
+      ...user,
+      profileImage: user.profileImage ? this.getFullMediaUrl(user.profileImage) : null
+    } : user;
+  }
+
+  // Helper method to construct full media URL
+  getFullMediaUrl(mediaPath: string): string {
+    if (!mediaPath) return '';
+    // If it's already a full URL, return as is
+    if (mediaPath.startsWith('http')) return mediaPath;
+    // If it's a relative path, prepend the media base URL from environment
+    return `${environment.mediaBaseUrl}${mediaPath}`;
   }
 
   @HostListener('window:resize', ['$event'])
@@ -55,7 +76,10 @@ export class LayoutComponent implements OnInit, OnDestroy {
     // Subscribe to user changes
     this.userSubscription = this.dataService.currentUser$.subscribe(user => {
       if (user) {
-        this.currentUser = user;
+        this.currentUser = {
+          ...user,
+          profileImage: user.profileImage ? this.getFullMediaUrl(user.profileImage) : null
+        };
       }
     });
 
@@ -91,8 +115,31 @@ export class LayoutComponent implements OnInit, OnDestroy {
         this.unreadNotificationsCount = count;
       });
 
+      // Subscribe to unread messages count from message state service
+      this.unreadMessagesSubscription = this.messageState.unreadCount$.subscribe(count => {
+        this.unreadMessagesCount = count;
+      });
+
       // Load initial notifications
       this.loadNotifications();
+      
+      // Load unread messages count initially and refresh every 30 seconds
+      this.loadUnreadMessagesCount();
+      setInterval(() => {
+        this.loadUnreadMessagesCount();
+      }, 30000); // Refresh every 30 seconds
+      
+      // Subscribe to router events to refresh unread count when navigating to inbox
+      this.routerSubscription = this.router.events.pipe(
+        filter(event => event instanceof NavigationEnd)
+      ).subscribe((event: NavigationEnd) => {
+        if (event.url.includes('/inbox')) {
+          // Refresh unread count when navigating to inbox
+          setTimeout(() => {
+            this.loadUnreadMessagesCount();
+          }, 500); // Small delay to ensure messages are loaded
+        }
+      });
     }
 
     // Set sidebar width and check view type based on current screen size
@@ -104,15 +151,44 @@ export class LayoutComponent implements OnInit, OnDestroy {
     if (this.currentUser) {
       this.dataService.getNotifications(this.currentUser.id).subscribe({
         next: (response: any) => {
-          if (response.payload) {
-            this.notificationState.setNotifications(response.payload);
+          console.log('Notifications response:', response);
+          if (response && response.payload) {
+            // The API returns payload.notifications, not just payload
+            const notifications = response.payload.notifications || response.payload;
+            // Ensure notifications is an array
+            const notificationsArray = Array.isArray(notifications) ? notifications : [];
+            this.notificationState.setNotifications(notificationsArray);
+          } else {
+            // Set empty array if no valid payload
+            this.notificationState.setNotifications([]);
           }
         },
         error: (error) => {
           console.error('Error loading notifications:', error);
+          // Set empty array on error to prevent further issues
+          this.notificationState.setNotifications([]);
         }
       });
     }
+  }
+
+  private loadUnreadMessagesCount() {
+    if (this.currentUser) {
+      this.dataService.getUnreadMessagesCount().subscribe({
+        next: (count) => {
+          this.messageState.setUnreadCount(count);
+        },
+        error: (error) => {
+          console.error('Error loading unread messages count:', error);
+          this.messageState.setUnreadCount(0);
+        }
+      });
+    }
+  }
+
+  // Public method to refresh unread messages count (can be called from other components)
+  refreshUnreadMessagesCount() {
+    this.loadUnreadMessagesCount();
   }
 
   // Improve the adjustSidebarWidth method
@@ -137,14 +213,51 @@ export class LayoutComponent implements OnInit, OnDestroy {
   }
 
   logout() {
-    this.webSocketService.disconnect();
-    this.dataService.logout();
+    Swal.fire({
+      title: 'Are you sure?',
+      text: 'You will be logged out of your account.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3b82f6',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, logout',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true,
+      customClass: {
+        popup: 'rounded-lg',
+        confirmButton: 'rounded-lg',
+        cancelButton: 'rounded-lg'
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.webSocketService.disconnect();
+        this.dataService.logout();
+        
+        // Show success message
+        Swal.fire({
+          title: 'Logged out!',
+          text: 'You have been successfully logged out.',
+          icon: 'success',
+          timer: 1500,
+          showConfirmButton: false,
+          customClass: {
+            popup: 'rounded-lg'
+          }
+        });
+      }
+    });
   }
 
   navigateToMyProfile(): void {
     if (this.currentUser) {
       this.router.navigate(['/profile', this.currentUser.id]);
     }
+  }
+
+  isAdmin(): boolean {
+    return this.currentUser && 
+           (this.currentUser.email === 'admin@artlink.com' || 
+            this.currentUser.username === 'admin');
   }
 
   ngOnDestroy() {
@@ -158,6 +271,12 @@ export class LayoutComponent implements OnInit, OnDestroy {
     }
     if (this.unreadCountSubscription) {
       this.unreadCountSubscription.unsubscribe();
+    }
+    if (this.unreadMessagesSubscription) {
+      this.unreadMessagesSubscription.unsubscribe();
+    }
+    if (this.routerSubscription) {
+      this.routerSubscription.unsubscribe();
     }
     this.webSocketService.disconnect();
   }

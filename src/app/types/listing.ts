@@ -14,9 +14,15 @@ export interface Listing {
   content: string;
   createdAt: string;
   updatedAt: string;
-  published: boolean;
+  published?: boolean;
   authorId: number;
-  author: User;
-  media: Media[];
-  listingDetails: ListingDetails;
+  author?: User;
+  media?: Media[];
+  mediaUrls?: string[];
+  listingDetails?: ListingDetails;
+  // Flat structure from API response
+  price?: number;
+  category?: string;
+  condition?: string;
+  location?: string;
 }

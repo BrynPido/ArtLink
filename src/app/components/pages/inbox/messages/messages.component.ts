@@ -80,10 +80,23 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
     // Subscribe to conversations
     this.subscriptions.push(
       this.messagingService.conversations$.subscribe(conversations => {
+        console.log('Received conversations:', conversations);
         this.conversations = conversations;
         this.filterConversations();
         this.loading = false;
         this.cdr.markForCheck();
+        
+        // Check if there's a conversation ID to auto-select
+        const selectedConversationId = (window as any).selectedConversationId;
+        if (selectedConversationId && conversations.length > 0) {
+          const conversation = conversations.find(c => c.id == selectedConversationId);
+          if (conversation) {
+            console.log('Auto-selecting conversation:', conversation);
+            this.selectConversation(conversation);
+            // Clear the stored ID so it doesn't interfere later
+            delete (window as any).selectedConversationId;
+          }
+        }
       })
     );
     
@@ -165,12 +178,18 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   getConversationName(conversation: Conversation): string {
-    if (!conversation.otherUser) return 'Unknown User';
+    if (!conversation.otherUser) {
+      console.warn('No otherUser data for conversation:', conversation);
+      return 'Unknown User';
+    }
     return conversation.otherUser.name || conversation.otherUser.username || 'Unknown User';
   }
 
   getConversationImage(conversation: Conversation): string {
-    if (!conversation.otherUser) return 'assets/images/default-avatar.svg';
+    if (!conversation.otherUser) {
+      console.warn('No otherUser data for conversation image:', conversation);
+      return 'assets/images/default-avatar.svg';
+    }
     
     // Handle direct imageProfile from API response
     if (conversation.otherUser.imageProfile) {
@@ -220,19 +239,9 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
       );
     }
 
-    // Optimistic update - add message to UI immediately
-    const message: Message = {
-      content: this.newMessage,
-      conversationId: this.activeConversation.id,
-      authorId: this.currentUser.id,
-      receiverId: otherUserId,
-      createdAt: new Date().toISOString()
-    };
-    
-    this.messages = [...this.messages, message];
+    // Clear the input - the messaging service will handle adding the message to the UI
     this.newMessage = '';
     this.cdr.markForCheck();
-    this.scrollToBottom();
   }
 
   startNewConversation(userId: number): void {
@@ -256,6 +265,12 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   startConversationWithUser(userId: number): void {
+    // Prevent messaging yourself
+    if (userId === this.currentUser.id) {
+      console.warn('Cannot start conversation with yourself');
+      return;
+    }
+
     // First check if we already have a conversation with this user
     const existingConversation = this.conversations.find(c => 
       ((c.user1Id === userId && c.user2Id === this.currentUser.id) || 

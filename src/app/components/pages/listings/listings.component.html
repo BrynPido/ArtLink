@@ -176,11 +176,11 @@
     <div 
       *ngFor="let listing of listings"
       (click)="viewListing(listing.id)"
-      class="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-200 hover:translate-y-[-2px] border border-gray-200 flex flex-col h-full"
+      class="group bg-white rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-200 hover:translate-y-[-2px] border border-gray-200 flex flex-col h-full relative"
     >
-      <!-- Recent Badge with Z-index & Better Positioning -->
+      <!-- Recent Badge with Hover Effect - Hidden by default, shows on card hover -->
       <div *ngIf="isRecentListing(listing)" 
-          class="absolute top-2 left-2 bg-blue-600 text-white text-xs py-0.5 px-1.5 rounded-full flex items-center z-20 shadow-sm">
+          class="absolute top-2 left-2 bg-blue-600 text-white text-xs py-0.5 px-1.5 rounded-full flex items-center z-20 shadow-sm opacity-0 transition-opacity duration-200 group-hover:opacity-100">
         <span class="material-symbols-rounded text-[10px] mr-0.5">schedule</span>
         <span class="text-[10px]">New</span>
       </div>
@@ -188,10 +188,11 @@
       <!-- Listing Image with Better Aspect Ratio Control -->
       <div class="relative w-full" style="padding-bottom: 75%;">
         <img 
-          [src]="listing.media[0]?.url || 'assets/images/placeholder.jpg'"
+          [src]="listing.media && listing.media.length > 0 ? listing.media[0].url : 'assets/images/default-avatar.svg'"
           [alt]="listing.title"
           class="absolute inset-0 w-full h-full object-cover"
           loading="lazy"
+          (error)="onImageError($event)"
         >
       </div>
 
@@ -200,7 +201,7 @@
         <!-- Title and Price Section -->
         <div class="pb-2 border-b border-gray-100">
           <h3 class="text-sm sm:text-base font-semibold text-gray-900 line-clamp-1">{{ listing.title }}</h3>
-          <p class="text-base font-bold text-blue-600 mt-0.5">₱{{ listing.listingDetails?.price | number:'1.0-0' }}</p>
+          <p class="text-base font-bold text-blue-600 mt-0.5">₱{{ listing.price | number:'1.0-0' }}</p>
         </div>
         
         <!-- Responsive Metadata Grid with Visual Separation -->
@@ -208,21 +209,20 @@
           <!-- Category -->
           <div class="flex items-center text-[11px] sm:text-xs text-gray-500 bg-gray-50 rounded p-1">
             <span class="material-symbols-rounded text-[11px] sm:text-xs mr-1">sell</span>
-            <span class="truncate">{{ listing.listingDetails?.category | titlecase }}</span>
+            <span class="truncate">{{ listing.category | titlecase }}</span>
+          </div>
+          
+          <!-- Condition -->
+          <div class="flex items-center text-[11px] sm:text-xs text-gray-500 bg-gray-50 rounded p-1">
+            <span class="material-symbols-rounded text-[11px] sm:text-xs mr-1">inventory_2</span>
+            <span class="truncate">{{ listing.condition | titlecase }}</span>
           </div>
           
           <!-- Location -->
           <div class="flex items-center text-[11px] sm:text-xs text-gray-500 bg-gray-50 rounded p-1">
             <span class="material-symbols-rounded text-[11px] sm:text-xs mr-1">location_on</span>
-            <span class="truncate">{{ listing.listingDetails?.location || 'Unknown' }}</span>
+            <span class="truncate">{{ listing.location || 'Unknown' }}</span>
           </div>
-          
-          <!-- Condition -->
-          <!-- <div class="flex items-center text-[11px] sm:text-xs text-gray-500 bg-gray-50 rounded p-1">
-            <span class="material-symbols-rounded text-[11px] sm:text-xs mr-1">inventory_2</span>
-            <span class="truncate">{{ listing.listingDetails?.condition | titlecase }}</span>
-          </div>
-           -->
           
           <!-- Time -->
           <div class="flex items-center text-[11px] sm:text-xs text-gray-500 bg-gray-50 rounded p-1">

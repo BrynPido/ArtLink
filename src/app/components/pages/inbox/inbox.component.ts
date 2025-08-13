@@ -34,13 +34,13 @@ export class InboxComponent implements OnInit, OnDestroy {
     this.route.queryParams.subscribe(params => {
       if (params['tab']) {
         this.activeTab = params['tab'];
-        
-        // If we have a conversationId and we're on the messages tab,
-        // pass it to the messages component
-        if (params['conversationId'] && this.activeTab === 'messages') {
-          // This approach requires the messages component to listen for router events
-          // or you need to use a shared service to communicate between components
-        }
+      }
+      
+      // If we have a conversationId, we need to pass it to the messages component
+      // Store it as a property that the messages component can access
+      if (params['conversationId']) {
+        // Store the conversation ID for the messages component to pick up
+        (window as any).selectedConversationId = params['conversationId'];
       }
     });
 

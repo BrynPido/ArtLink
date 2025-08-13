@@ -1,0 +1,477 @@
+<!-- Post Management Header -->
+<div class="mb-8">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900">Post Management</h1>
+      <p class="text-gray-600 mt-1">Manage and moderate all posts on ArtLink.</p>
+    </div>
+    <div class="flex gap-3">
+      <button 
+        (click)="exportPosts()"
+        class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+        Export
+      </button>
+      <button 
+        *ngIf="selectedPosts.length > 0"
+        (click)="bulkDelete()"
+        [disabled]="actionLoading"
+        class="bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+        </svg>
+        Bulk Delete ({{selectedPosts.length}})
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Search and Filters -->
+<div class="bg-white p-6 rounded-lg shadow mb-6">
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <!-- Search -->
+    <div class="md:col-span-2">
+      <label for="search" class="block text-sm font-medium text-gray-700 mb-2">Search Posts</label>
+      <div class="relative">
+        <input
+          type="text"
+          id="search"
+          [(ngModel)]="searchTerm"
+          (keyup.enter)="onSearch()"
+          placeholder="Search by title, content, or author..."
+          class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter -->
+    <div>
+      <label for="filter" class="block text-sm font-medium text-gray-700 mb-2">Filter</label>
+      <select
+        id="filter"
+        [(ngModel)]="filterBy"
+        (change)="onSearch()"
+        class="w-full py-2 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+        <option value="all">All Posts</option>
+        <option value="published">Published Only</option>
+        <option value="hidden">Hidden Only</option>
+      </select>
+    </div>
+
+    <!-- Sort -->
+    <div>
+      <label for="sort" class="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+      <select
+        id="sort"
+        [(ngModel)]="sortBy"
+        (change)="onSearch()"
+        class="w-full py-2 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+        <option value="createdAt">Date Created</option>
+        <option value="title">Title</option>
+        <option value="likesCount">Likes</option>
+        <option value="commentsCount">Comments</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<!-- Posts Table -->
+<div class="bg-white shadow overflow-hidden sm:rounded-lg">
+  <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+    <h3 class="text-lg leading-6 font-medium text-gray-900">
+      Posts ({{totalPosts}} total)
+    </h3>
+    <p class="mt-1 max-w-2xl text-sm text-gray-500">
+      A list of all posts in your system including their details and engagement metrics.
+    </p>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="p-6">
+    <div class="animate-pulse">
+      <div class="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
+      <div class="space-y-3">
+        <div *ngFor="let i of [1,2,3,4,5]" class="h-16 bg-gray-200 rounded"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Posts Table -->
+  <div *ngIf="!loading" class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-200 admin-table">
+      <thead class="bg-gray-50">
+        <tr>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <input
+              type="checkbox"
+              [checked]="selectedPosts.length === posts.length && posts.length > 0"
+              [indeterminate]="selectedPosts.length > 0 && selectedPosts.length < posts.length"
+              (change)="selectAllPosts()"
+              class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+          </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Post
+          </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Author
+          </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Status
+          </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Engagement
+          </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Created
+          </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Actions
+          </th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        <tr *ngFor="let post of posts; trackBy: trackByPostId" class="hover:bg-gray-50">
+          <td class="px-6 py-4 whitespace-nowrap">
+            <input
+              type="checkbox"
+              [checked]="selectedPosts.includes(post.id)"
+              (change)="selectPost(post.id)"
+              class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+          </td>
+          <td class="px-6 py-4">
+            <div class="flex items-center">
+              <div class="flex-shrink-0 h-12 w-12" *ngIf="post.mediaUrl">
+                <img 
+                  class="h-12 w-12 rounded-lg object-cover" 
+                  [src]="getFullImageUrl(post.mediaUrl)" 
+                  [alt]="post.title">
+              </div>
+              <div class="flex-shrink-0 h-12 w-12 bg-gray-200 rounded-lg flex items-center justify-center" *ngIf="!post.mediaUrl">
+                <svg class="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+              </div>
+              <div class="ml-4">
+                <div class="text-sm font-medium text-gray-900 max-w-xs truncate">{{post.title}}</div>
+                <div class="text-sm text-gray-500 max-w-xs truncate">{{truncateText(post.content, 60)}}</div>
+              </div>
+            </div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm font-medium text-gray-900">{{post.authorName}}</div>
+            <div class="text-sm text-gray-500">{{'@' + post.authorUsername}}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <span [class]="'inline-flex px-2 py-1 text-xs font-semibold rounded-full ' + (post.published ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800')">
+              {{getPostStatusText(post)}}
+            </span>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+            <div class="flex items-center space-x-4">
+              <div class="flex items-center">
+                <svg class="w-4 h-4 text-red-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path>
+                </svg>
+                {{post.likesCount || 0}}
+              </div>
+              <div class="flex items-center">
+                <svg class="w-4 h-4 text-blue-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                </svg>
+                {{post.commentsCount || 0}}
+              </div>
+            </div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+            {{post.createdAt | date:'shortDate'}}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+            <div class="flex space-x-2">
+              <button
+                (click)="viewPost(post)"
+                class="text-blue-600 hover:text-blue-900 transition-colors">
+                View
+              </button>
+              <button
+                *ngIf="post.published"
+                (click)="hidePost(post.id)"
+                [disabled]="actionLoading"
+                class="text-yellow-600 hover:text-yellow-900 disabled:text-yellow-400 transition-colors">
+                Hide
+              </button>
+              <button
+                *ngIf="!post.published"
+                (click)="unhidePost(post.id)"
+                [disabled]="actionLoading"
+                class="text-green-600 hover:text-green-900 disabled:text-green-400 transition-colors">
+                Unhide
+              </button>
+              <button
+                (click)="deletePost(post.id)"
+                [disabled]="actionLoading"
+                class="text-red-600 hover:text-red-900 disabled:text-red-400 transition-colors">
+                Delete
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!loading && posts.length === 0" class="p-6 text-center">
+    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+    </svg>
+    <h3 class="mt-2 text-sm font-medium text-gray-900">No posts found</h3>
+    <p class="mt-1 text-sm text-gray-500">Try adjusting your search or filter criteria.</p>
+  </div>
+
+  <!-- Pagination -->
+  <div *ngIf="!loading && posts.length > 0" class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+    <div class="flex-1 flex justify-between sm:hidden">
+      <button
+        (click)="onPageChange(currentPage - 1)"
+        [disabled]="currentPage === 1"
+        class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400">
+        Previous
+      </button>
+      <button
+        (click)="onPageChange(currentPage + 1)"
+        [disabled]="currentPage === totalPages"
+        class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400">
+        Next
+      </button>
+    </div>
+    <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+      <div>
+        <p class="text-sm text-gray-700">
+          Showing
+          <span class="font-medium">{{((currentPage - 1) * pageSize) + 1}}</span>
+          to
+          <span class="font-medium">{{Math.min(currentPage * pageSize, totalPosts)}}</span>
+          of
+          <span class="font-medium">{{totalPosts}}</span>
+          results
+        </p>
+      </div>
+      <div>
+        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+          <button
+            (click)="onPageChange(currentPage - 1)"
+            [disabled]="currentPage === 1"
+            class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400">
+            <span class="sr-only">Previous</span>
+            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+            </svg>
+          </button>
+          
+          <!-- Page numbers -->
+          <button
+            *ngFor="let page of [].constructor(Math.min(totalPages, 5)); let i = index"
+            (click)="onPageChange(i + 1)"
+            [class]="'relative inline-flex items-center px-4 py-2 border text-sm font-medium ' + 
+                     (currentPage === i + 1 ? 
+                      'z-10 bg-blue-50 border-blue-500 text-blue-600' : 
+                      'bg-white border-gray-300 text-gray-500 hover:bg-gray-50')">
+            {{i + 1}}
+          </button>
+
+          <button
+            (click)="onPageChange(currentPage + 1)"
+            [disabled]="currentPage === totalPages"
+            class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400">
+            <span class="sr-only">Next</span>
+            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </nav>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Post Detail Modal -->
+<div *ngIf="showPostModal" class="fixed inset-0 z-50 overflow-y-auto">
+  <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+    <div class="fixed inset-0 transition-opacity" (click)="closeModal()">
+      <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+    </div>
+
+    <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+      <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+        <div class="w-full">
+          <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Post Details</h3>
+          <div *ngIf="selectedPost" class="space-y-6">
+            
+            <!-- Post Images Gallery -->
+            <div *ngIf="selectedPost.media && selectedPost.media.length > 0" class="w-full">
+              <div *ngIf="selectedPost.media.length === 1" class="w-full max-h-96 rounded-lg overflow-hidden">
+                <img 
+                  class="w-full h-auto object-contain max-h-96" 
+                  [src]="getFullImageUrl(selectedPost.media[0].mediaUrl)" 
+                  [alt]="selectedPost.title">
+              </div>
+              
+              <!-- Multiple images gallery -->
+              <div *ngIf="selectedPost.media.length > 1" class="w-full">
+                <div class="grid grid-cols-2 gap-2" [class.grid-cols-1]="selectedPost.media.length === 2">
+                  <div *ngFor="let media of selectedPost.media; let i = index" 
+                       class="rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                       (click)="openImageViewer(i)">
+                    <img 
+                      class="w-full h-48 object-cover" 
+                      [src]="getFullImageUrl(media.mediaUrl)" 
+                      [alt]="selectedPost.title + ' - Image ' + (i + 1)">
+                  </div>
+                </div>
+                <p class="text-sm text-gray-500 mt-2 text-center">
+                  {{selectedPost.media.length}} images - Click to view full size
+                </p>
+              </div>
+            </div>
+            
+            <!-- Fallback for single mediaUrl (backward compatibility) -->
+            <div *ngIf="(!selectedPost.media || selectedPost.media.length === 0) && selectedPost.mediaUrl" 
+                 class="w-full max-h-96 rounded-lg overflow-hidden">
+              <img 
+                class="w-full h-auto object-contain max-h-96" 
+                [src]="getFullImageUrl(selectedPost.mediaUrl)" 
+                [alt]="selectedPost.title">
+            </div>
+            
+            <!-- No image placeholder -->
+            <div *ngIf="(!selectedPost.media || selectedPost.media.length === 0) && !selectedPost.mediaUrl" 
+                 class="w-full h-48 bg-gray-100 rounded-lg flex items-center justify-center">
+              <div class="text-center">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+                <p class="text-gray-500">No images</p>
+              </div>
+            </div>
+            
+            <!-- Post Content -->
+            <div>
+              <h4 class="text-xl font-semibold mb-2">{{selectedPost.title}}</h4>
+              <p class="text-gray-700 whitespace-pre-wrap">{{selectedPost.content}}</p>
+            </div>
+            
+            <!-- Post Meta -->
+            <div class="grid grid-cols-2 gap-4 pt-4 border-t">
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Author</label>
+                <p class="text-sm text-gray-900">{{selectedPost.authorName}} ({{'@' + selectedPost.authorUsername}})</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Status</label>
+                <span [class]="'inline-flex px-2 py-1 text-xs font-semibold rounded-full ' + (selectedPost.published ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800')">
+                  {{getPostStatusText(selectedPost)}}
+                </span>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Likes</label>
+                <p class="text-sm text-gray-900">{{selectedPost.likesCount || 0}}</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Comments</label>
+                <p class="text-sm text-gray-900">{{selectedPost.commentsCount || 0}}</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Created</label>
+                <p class="text-sm text-gray-900">{{selectedPost.createdAt | date:'fullDate'}}</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Last Updated</label>
+                <p class="text-sm text-gray-900">{{selectedPost.updatedAt | date:'medium'}}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+        <button
+          type="button"
+          (click)="closeModal()"
+          class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+          Close
+        </button>
+        <button
+          *ngIf="selectedPost?.published"
+          (click)="selectedPost && hidePost(selectedPost.id); closeModal()"
+          class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-yellow-600 text-base font-medium text-white hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 sm:ml-3 sm:w-auto sm:text-sm">
+          Hide Post
+        </button>
+        <button
+          *ngIf="!selectedPost?.published"
+          (click)="selectedPost && unhidePost(selectedPost.id); closeModal()"
+          class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm">
+          Unhide Post
+        </button>
+        <button
+          (click)="selectedPost && deletePost(selectedPost.id); closeModal()"
+          class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm">
+          Delete Post
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Image Viewer Modal -->
+<div *ngIf="showImageViewer" class="fixed inset-0 bg-black bg-opacity-90 z-[60] flex items-center justify-center">
+  <div class="relative w-full h-full flex items-center justify-center p-4">
+    <!-- Close button -->
+    <button 
+      (click)="closeImageViewer()"
+      class="absolute top-4 right-4 text-white hover:text-gray-300 z-10">
+      <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+      </svg>
+    </button>
+
+    <!-- Previous button -->
+    <button 
+      *ngIf="currentImages.length > 1"
+      (click)="previousImage()"
+      class="absolute left-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 z-10">
+      <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+      </svg>
+    </button>
+
+    <!-- Next button -->
+    <button 
+      *ngIf="currentImages.length > 1"
+      (click)="nextImage()"
+      class="absolute right-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 z-10">
+      <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+      </svg>
+    </button>
+
+    <!-- Image -->
+    <div class="w-full h-full flex items-center justify-center">
+      <img 
+        *ngIf="currentImages[currentImageIndex]"
+        [src]="getFullImageUrl(currentImages[currentImageIndex].mediaUrl)"
+        [alt]="'Image ' + (currentImageIndex + 1)"
+        class="max-w-full max-h-full object-contain">
+    </div>
+
+    <!-- Image counter -->
+    <div *ngIf="currentImages.length > 1" 
+         class="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white bg-black bg-opacity-50 px-4 py-2 rounded-full">
+      {{currentImageIndex + 1}} of {{currentImages.length}}
+    </div>
+  </div>
+</div>

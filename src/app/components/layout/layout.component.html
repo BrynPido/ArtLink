@@ -67,8 +67,8 @@
         >
           <div class="relative">
             <span class="material-symbols-rounded align-sub text-xl md:text-2xl">inbox</span>
-            <span *ngIf="unreadNotificationsCount > 0" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-              {{unreadNotificationsCount}}
+            <span *ngIf="(unreadNotificationsCount + unreadMessagesCount) > 0" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+              {{unreadNotificationsCount + unreadMessagesCount}}
             </span>
           </div>
           <span class="hidden md:inline ml-3 text-base lg:text-lg">Inbox</span>
@@ -84,17 +84,27 @@
           <span class="hidden md:inline ml-3 text-base lg:text-lg">Profile</span>
         </a>
       </li>
+      <!-- Admin Panel Link - Only show for admin users -->
+      <li *ngIf="isAdmin()" class="mb-8 md:mb-5 flex items-center">
+        <a
+          routerLink="/admin"
+          class="flex items-center hover:text-blue-400 text-yellow-400"
+        >
+          <span class="material-symbols-rounded align-sub text-xl md:text-2xl">admin_panel_settings</span>
+          <span class="hidden md:inline ml-3 text-base lg:text-lg">Admin Panel</span>
+        </a>
+      </li>
     </ul>
     <ul class="md:ml-2 mt-auto">
       <li class="mb-8 md:mb-5 flex items-center">
-        <a
-          href="#"
-          class="flex items-center hover:text-blue-400"
+        <button
+          type="button"
+          class="flex items-center hover:text-blue-400 bg-transparent border-none cursor-pointer text-white w-full text-left"
           (click)="logout()"
         >
           <span class="material-symbols-rounded align-sub text-xl md:text-2xl">logout</span>
           <span class="hidden md:inline ml-3 text-base lg:text-lg">Logout</span>
-        </a>
+        </button>
       </li>
     </ul>
   </div>

@@ -45,10 +45,30 @@ export class ListingDetailsComponent implements OnInit {
       this.dataService.getListingById(listingId).subscribe({
         next: (response) => {
           this.listing = response.payload;
+          
+          // Transform mediaUrls array to media objects for template compatibility
+          if (this.listing.mediaUrls && Array.isArray(this.listing.mediaUrls)) {
+            this.listing.media = this.listing.mediaUrls.map((url: string) => ({
+              url: this.getFullMediaUrl(url)
+            }));
+          } else {
+            this.listing.media = [];
+          }
+          
+          // Transform author fields to author object for consistency
+          if (this.listing.authorId) {
+            this.listing.author = {
+              id: this.listing.authorId,
+              name: this.listing.authorName,
+              username: this.listing.authorUsername,
+              profileImage: this.listing.authorProfilePicture ? this.getFullMediaUrl(this.listing.authorProfilePicture) : null
+            };
+          }
+          
           this.loading = false;
           
           // If user is logged in and not the author, check for existing conversations
-          if (this.currentUser && this.currentUser.id !== this.listing.author.id) {
+          if (this.currentUser && this.listing && this.listing.author && this.currentUser.id !== this.listing.author.id) {
             this.checkExistingConversation();
           }
         },
@@ -63,6 +83,10 @@ export class ListingDetailsComponent implements OnInit {
 
   // Check if there's an existing conversation for this listing
   checkExistingConversation(): void {
+    if (!this.listing || !this.listing.author) {
+      return;
+    }
+    
     this.dataService.getConversations().subscribe({
       next: (response) => {
         if (response && response.payload) {
@@ -86,7 +110,7 @@ export class ListingDetailsComponent implements OnInit {
 
   // Update the sendMessage method to pass the conversation ID
   sendMessage(): void {
-    if (!this.messageText.trim()) {
+    if (!this.messageText.trim() || !this.listing || !this.listing.author) {
       return;
     }
 
@@ -150,7 +174,7 @@ export class ListingDetailsComponent implements OnInit {
 
   // Update the existing deleteListing() method to close the dropdown after clicking
   deleteListing(): void {
-    if (this.currentUser.id !== this.listing.author.id) return;
+    if (!this.listing || !this.listing.author || this.currentUser.id !== this.listing.author.id) return;
     
     this.showActionMenu = false; // Close dropdown immediately
     
@@ -197,9 +221,27 @@ export class ListingDetailsComponent implements OnInit {
       return;
     }
 
+    if (!this.listing || !this.listing.author) {
+      this.toastService.showToast('Unable to start conversation', 'error');
+      return;
+    }
+
+    // Check if user is trying to message themselves
+    if (this.currentUser.id === this.listing.author.id) {
+      this.toastService.showToast('You cannot message yourself', 'error');
+      return;
+    }
+
+    console.log('Creating conversation with:', {
+      currentUserId: this.currentUser.id,
+      authorId: this.listing.author.id,
+      listingId: this.listing.id
+    });
+
     // Create a conversation with the listing owner
     this.dataService.createConversation(this.listing.author.id, this.listing.id).subscribe({
       next: (response) => {
+        console.log('Conversation created successfully:', response);
         this.router.navigate(['/inbox'], { 
           queryParams: { 
             tab: 'messages',
@@ -209,7 +251,13 @@ export class ListingDetailsComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error creating conversation:', error);
-        this.toastService.showToast('Failed to start conversation', 'error');
+        
+        // Provide more specific error messages
+        if (error.error && error.error.message) {
+          this.toastService.showToast(error.error.message, 'error');
+        } else {
+          this.toastService.showToast('Failed to start conversation', 'error');
+        }
       }
     });
   }
@@ -222,5 +270,15 @@ export class ListingDetailsComponent implements OnInit {
 
   goBack(): void {
     this.router.navigate(['/listings']);
+  }
+
+  // Helper method to construct full media URL
+  getFullMediaUrl(mediaPath: string): string {
+    if (!mediaPath) return '';
+    if (mediaPath.startsWith('http')) return mediaPath;
+    
+    // Remove leading slash if present to avoid double slashes
+    const cleanPath = mediaPath.startsWith('/') ? mediaPath.substring(1) : mediaPath;
+    return `http://localhost:3000/${cleanPath}`;
   }
 }

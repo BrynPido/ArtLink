@@ -13,12 +13,12 @@
   <div class="flex items-center gap-3 p-2 relative">
     <div class="flex items-center gap-4">
       <div class="w-10 h-10 rounded-full bg-gray-200 overflow-hidden">
-        <img [src]="post.author.profileImage || 'assets/images/default-avatar.svg'" alt="Author profile"
-          class="w-full h-full object-cover cursor-pointer" (click)="goToAuthorProfile(post.author.id); $event.stopPropagation()">
+        <img [src]="post.authorProfilePicture || '/assets/images/default-avatar.svg'" alt="Author profile"
+          class="w-full h-full object-cover cursor-pointer" (click)="goToAuthorProfile(post.authorId); $event.stopPropagation()">
       </div>
       <div class="cursor-pointer" (click)="goToAuthorProfile(post.authorId); $event.stopPropagation()">
-        <h3 class="font-medium text-gray-900">{{ post.author.name || 'Unknown' }}</h3>
-        <p class="text-sm text-gray-500">&commat;{{ post.author.username || 'unknown' }}</p>
+        <h3 class="font-medium text-gray-900">{{ post.authorName || 'Unknown' }}</h3>
+        <p class="text-sm text-gray-500">&commat;{{ post.authorUsername || 'unknown' }}</p>
       </div>
     </div>
     <div class="flex-1 flex items-center justify-end">
@@ -116,14 +116,14 @@
     </div>
   </div>
 
-  <!-- Like and save controls - unchanged -->
+  <!-- Like and save controls - fixed event propagation -->
   <div
     class="absolute bottom-[-20px] right-5 w-24 h-10 bg-white shadow-lg rounded-full flex items-center justify-center gap-4">
     <span class="material-symbols-rounded cursor-pointer transition-transform duration-200 ease-in-out select-none"
       [ngClass]="{'animate-pop': isLiked(post.id)}" [ngStyle]="{
         'font-variation-settings': '\'FILL\' ' + (isLiked(post.id) ? 1 : 0),
         'color': isLiked(post.id) ? '#ff3040' : 'black'
-      }" (click)="toggleLike(post.id, post.authorId)">
+      }" (click)="toggleLike(post.id, post.authorId); $event.stopPropagation()">
       favorite
     </span>
 
@@ -131,7 +131,7 @@
       [ngClass]="{'animate-pop': isSaved(post.id)}" [ngStyle]="{
         'font-variation-settings': '\'FILL\' ' + (isSaved(post.id) ? 1 : 0),
         'color': isSaved(post.id) ? '#007bff' : 'black'
-      }" (click)="toggleSave(post.id)">
+      }" (click)="toggleSave(post.id); $event.stopPropagation()">
       bookmark
     </span>
   </div>

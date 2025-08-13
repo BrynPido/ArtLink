@@ -1,14 +1,17 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { catchError, throwError, Observable, of, tap, map, BehaviorSubject } from 'rxjs';
+import { catchError, throwError, Observable, of, tap, map, BehaviorSubject, forkJoin } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class DataService {
+  // Old PHP API URLs
   // private apiUrl = 'http://localhost/artlink/artlink_api/api/';
-  private apiUrl = 'https://api.art-link.site/routes.php?request=';
+  // private apiUrl = 'https://api.art-link.site/routes.php?request=';
+  private apiUrl = environment.apiUrl;
 
   private currentUserSubject = new BehaviorSubject<any>(null);
   currentUser$ = this.currentUserSubject.asObservable();
@@ -16,13 +19,19 @@ export class DataService {
   constructor(private http: HttpClient, private router: Router) {
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) {
-      this.currentUserSubject.next(JSON.parse(storedUser));
+      const user = JSON.parse(storedUser);
+      // Normalize user data structure for consistent access
+      const normalizedUser = {
+        ...user,
+        profileImage: user.profilePictureUrl || user.profileImage
+      };
+      this.currentUserSubject.next(normalizedUser);
     }
   }
 
   // Method for login with error handling and saving JWT token
   login(credentials: { email: string; password: string }): Observable<any> {
-    return this.http.post(`${this.apiUrl}login`, credentials).pipe(
+    return this.http.post(`${this.apiUrl}auth/login`, credentials).pipe(
       tap((response: any) => {
         if (response && response.payload) {
           const { token, user } = response.payload;
@@ -31,8 +40,13 @@ export class DataService {
             localStorage.setItem('token', token);
           }
           if (user) {
+            // Normalize user data structure for consistent access
+            const normalizedUser = {
+              ...user,
+              profileImage: user.profilePictureUrl || user.profileImage
+            };
             // Use updateCurrentUser instead of direct localStorage
-            this.updateCurrentUser(user);
+            this.updateCurrentUser(normalizedUser);
           }
           this.router.navigate(['/home']); // Redirect to home on success
         }
@@ -49,7 +63,7 @@ export class DataService {
     password: string;
     confirmPassword: string;
   }): Observable<any> {
-    return this.http.post(`${this.apiUrl}register`, data).pipe(
+    return this.http.post(`${this.apiUrl}auth/register`, data).pipe(
       catchError(this.handleError)
     );
   }
@@ -64,7 +78,7 @@ export class DataService {
   }
 
   createPost(postData: any): Observable<any> {
-    return this.http.post(`${this.apiUrl}createPost`, postData).pipe(
+    return this.http.post(`${this.apiUrl}posts/createPost`, postData).pipe(
       catchError(this.handleError)
     );
   }
@@ -73,28 +87,28 @@ export class DataService {
   getPosts(): Observable<any> {
     const currentUser = this.getCurrentUser();
     const userId = currentUser ? currentUser.id : null;
-    return this.http.get(`${this.apiUrl}getPosts&userId=${userId}`).pipe(
+    return this.http.get(`${this.apiUrl}posts/getPosts${userId ? `?userId=${userId}` : ''}`).pipe(
       catchError(this.handleError)
     );
   }
 
   likePost(postId: number, userId: number): Observable<any> {
     const data = { postId, userId };
-    return this.http.post(`${this.apiUrl}likePost`, data).pipe(
+    return this.http.post(`${this.apiUrl}posts/likePost`, data).pipe(
       catchError(this.handleError)
     );
   }
 
   savePost(postId: number, userId: number): Observable<any> {
     const data = { postId, userId };
-    return this.http.post(`${this.apiUrl}savePost`, data).pipe(
+    return this.http.post(`${this.apiUrl}posts/savePost`, data).pipe(
       catchError(this.handleError)
     );
   }
 
   deletePost(postId: number, userId: number): Observable<any> {
     const data = { postId, userId };
-    return this.http.post(`${this.apiUrl}deletePost`, data).pipe(
+    return this.http.post(`${this.apiUrl}posts/deletePost`, data).pipe(
       catchError(this.handleError)
     );
   }
@@ -102,7 +116,7 @@ export class DataService {
   getSavedPosts(): Observable<any> {
     const currentUser = this.getCurrentUser();
     const userId = currentUser ? currentUser.id : null; // Get user ID from local storage
-    return this.http.get(`${this.apiUrl}getSavedPosts&userId=${userId}`).pipe(
+    return this.http.get(`${this.apiUrl}posts/getSavedPosts${userId ? `?userId=${userId}` : ''}`).pipe(
       catchError(this.handleError)
     );
   }
@@ -110,14 +124,75 @@ export class DataService {
   getLikedPosts(): Observable<any> {
     const currentUser = this.getCurrentUser();
     const userId = currentUser ? currentUser.id : null; // Get user ID from local storage
-    return this.http.get(`${this.apiUrl}getLikedPosts&userId=${userId}`).pipe(
+    return this.http.get(`${this.apiUrl}posts/getLikedPosts${userId ? `?userId=${userId}` : ''}`).pipe(
       catchError(this.handleError)
     );
   }
 
   search(query: string): Observable<any> {
-    return this.http.get(`${this.apiUrl}search&query=${encodeURIComponent(query)}`).pipe(
-      catchError(this.handleError)
+    const postsSearch = this.http.get(`${this.apiUrl}posts/search?query=${encodeURIComponent(query)}`);
+    const usersSearch = this.http.get(`${this.apiUrl}users/search?query=${encodeURIComponent(query)}`);
+
+    return forkJoin({
+      posts: postsSearch,
+      users: usersSearch
+    }).pipe(
+      map((results: any) => ({
+        status: 'success',
+        payload: {
+          posts: results.posts?.payload || [],
+          users: results.users?.payload || []
+        }
+      })),
+      catchError(error => {
+        console.error('Search error:', error);
+        // If one fails, still return the other if possible
+        return of({
+          status: 'error',
+          payload: {
+            posts: [],
+            users: []
+          },
+          message: 'Search failed'
+        });
+      })
+    );
+  }
+
+  // Separate methods for individual search types
+  searchUsers(query: string): Observable<any> {
+    return this.http.get(`${this.apiUrl}users/search?query=${encodeURIComponent(query)}`);
+  }
+
+  searchPosts(query: string): Observable<any> {
+    return this.http.get(`${this.apiUrl}posts/search?query=${encodeURIComponent(query)}`);
+  }
+
+  // Get suggested users for explore page
+  getSuggestedUsers(): Observable<any> {
+    return this.http.get(`${this.apiUrl}users/suggested`).pipe(
+      catchError(error => {
+        console.error('Error fetching suggested users:', error);
+        // Return a fallback response with empty payload
+        return of({
+          status: 'success',
+          payload: []
+        });
+      })
+    );
+  }
+
+  // Get trending posts for explore page
+  getTrendingPosts(): Observable<any> {
+    return this.http.get(`${this.apiUrl}posts/trending`).pipe(
+      catchError(error => {
+        console.error('Error fetching trending posts:', error);
+        // Return a fallback response with empty payload
+        return of({
+          status: 'success',
+          payload: []
+        });
+      })
     );
   }
 
@@ -125,14 +200,14 @@ export class DataService {
   getUserProfile(userId: string): Observable<any> {
     const currentUser = this.getCurrentUser();
     const currentUserId = currentUser ? currentUser.id : null;
-    return this.http.get(`${this.apiUrl}user/${userId}&userId=${currentUserId}`).pipe(
+    return this.http.get(`${this.apiUrl}users/user/${userId}${currentUserId ? `?userId=${currentUserId}` : ''}`).pipe(
       catchError(this.handleError)
     );
   }
 
   // Get post details
   getPost(postId: string): Observable<any> {
-    return this.http.get(`${this.apiUrl}post/${postId}`).pipe(
+    return this.http.get(`${this.apiUrl}posts/post/${postId}`).pipe(
       catchError(this.handleError)
     );
   }
@@ -141,7 +216,7 @@ export class DataService {
   getPostById(postId: string): Observable<any> {
     const currentUser = this.getCurrentUser();
     const userId = currentUser ? currentUser.id : null;
-    return this.http.get(`${this.apiUrl}post/${postId}&userId=${userId}`).pipe(
+    return this.http.get(`${this.apiUrl}posts/post/${postId}${userId ? `?userId=${userId}` : ''}`).pipe(
       catchError(this.handleError)
     );
   }
@@ -154,7 +229,7 @@ export class DataService {
       authorId: this.getCurrentUser().id,
       parentId
     };
-    return this.http.post(`${this.apiUrl}addComment`, data, {
+    return this.http.post(`${this.apiUrl}posts/addComment`, data, {
       responseType: 'json'
     }).pipe(
       catchError(this.handleError)
@@ -167,7 +242,7 @@ export class DataService {
       commentId,
       userId: this.getCurrentUser().id
     };
-    return this.http.post(`${this.apiUrl}likeComment`, data).pipe(
+    return this.http.post(`${this.apiUrl}posts/likeComment`, data).pipe(
       catchError(this.handleError)
     );
   }
@@ -178,19 +253,17 @@ export class DataService {
       commentId,
       userId: this.getCurrentUser().id
     };
-    return this.http.post(`${this.apiUrl}deleteComment`, data).pipe(
+    return this.http.post(`${this.apiUrl}posts/deleteComment`, data).pipe(
       catchError(this.handleError)
     );
   }
 
   // Toggle follow user
   toggleFollow(followingId: number): Observable<any> {
-    const currentUser = this.getCurrentUser();
     const data = {
-      userId: currentUser.id,
       followingId: followingId
     };
-    return this.http.post(`${this.apiUrl}toggleFollow`, data).pipe(
+    return this.http.post(`${this.apiUrl}users/toggleFollow`, data).pipe(
       catchError(this.handleError)
     );
   }
@@ -202,7 +275,7 @@ export class DataService {
     // Otherwise check if current user is following userId
     const follower = followerId || currentUser;
     return this.http.get<{ status: any, payload: { following: boolean } }>(
-      `${this.apiUrl}following/${userId}&userId=${follower}`
+      `${this.apiUrl}users/following/${userId}${follower ? `?userId=${follower}` : ''}`
     ).pipe(
       catchError(this.handleError)
     );
@@ -210,7 +283,7 @@ export class DataService {
 
   // Toggle follow/unfollow
   toggleFollowStatus(userId: number): Observable<{ following: boolean }> {
-    return this.http.post<{ following: boolean }>(`${this.apiUrl}follow`, { userId }).pipe(
+    return this.http.post<{ following: boolean }>(`${this.apiUrl}users/follow`, { userId }).pipe(
       catchError(this.handleError)
     );
   }
@@ -220,15 +293,14 @@ export class DataService {
     if (!userId) {
       return throwError(() => new Error('User ID is required'));
     }
-    return this.http.get(`${this.apiUrl}getNotifications&userId=${userId}`).pipe(
+    return this.http.get(`${this.apiUrl}notifications/getNotifications?userId=${userId}`).pipe(
       catchError(this.handleError)
     );
   }
 
   // Mark notification as read
   markNotificationAsRead(notificationId: number): Observable<any> {
-    const cleanUrl = `${this.apiUrl}notifications/${notificationId}/read`.replace(/([^:]\/)\/+/g, "$1");
-    return this.http.post(cleanUrl, {
+    return this.http.post(`${this.apiUrl}notifications/${notificationId}/read`, {
       userId: this.getCurrentUser()?.id
     }).pipe(
       catchError(this.handleError)
@@ -237,8 +309,7 @@ export class DataService {
 
   // Delete notification
   deleteNotification(notificationId: number): Observable<any> {
-    const cleanUrl = `${this.apiUrl}notifications/${notificationId}/delete`.replace(/([^:]\/)\/+/g, "$1");
-    return this.http.post(cleanUrl, {
+    return this.http.post(`${this.apiUrl}notifications/${notificationId}/delete`, {
       userId: this.getCurrentUser()?.id
     }).pipe(
       catchError(this.handleError)
@@ -267,14 +338,14 @@ export class DataService {
       return throwError(() => new Error('User is not logged in'));
     }
     
-    return this.http.get(`${this.apiUrl}conversations/${currentUser.id}`).pipe(
+    return this.http.get(`${this.apiUrl}messages/conversations/${currentUser.id}`).pipe(
       catchError(this.handleError)
     );
   }
 
   // Get messages for a specific conversation
   getConversationMessages(conversationId: number): Observable<any> {
-    return this.http.get(`${this.apiUrl}conversations/${conversationId}/messages`).pipe(
+    return this.http.get(`${this.apiUrl}messages/conversations/${conversationId}/messages`).pipe(
       catchError(this.handleError)
     );
   }
@@ -296,7 +367,7 @@ export class DataService {
       payload.listingId = listingId;
     }
     
-    return this.http.post(`${this.apiUrl}conversations/create`, payload).pipe(
+    return this.http.post(`${this.apiUrl}messages/conversations/create`, payload).pipe(
       catchError(this.handleError)
     );
   }
@@ -313,7 +384,7 @@ export class DataService {
       conversationId: conversationId
     };
     
-    return this.http.post(`${this.apiUrl}conversations/${conversationId}/read`, data).pipe(
+    return this.http.post(`${this.apiUrl}messages/conversations/${conversationId}/read`, data).pipe(
       catchError(this.handleError)
     );
   }
@@ -339,7 +410,7 @@ export class DataService {
 
   // Delete a conversation
   deleteConversation(conversationId: number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}conversations/${conversationId}`).pipe(
+    return this.http.delete(`${this.apiUrl}messages/conversations/${conversationId}`).pipe(
       catchError(this.handleError)
     );
   }
@@ -360,7 +431,35 @@ export class DataService {
 
   // Create a new listing
   createListing(listingData: any): Observable<any> {
-    return this.http.post(`${this.apiUrl}listings/create`, listingData).pipe(
+    const formData = new FormData();
+    
+    // Add basic fields
+    formData.append('title', listingData.title);
+    formData.append('content', listingData.content || '');
+    
+    // Add listing details as JSON string
+    formData.append('listingDetails', JSON.stringify(listingData.listingDetails));
+    
+    // Add media files - convert base64 back to files if needed
+    if (listingData.media && Array.isArray(listingData.media)) {
+      listingData.media.forEach((mediaItem: any, index: number) => {
+        if (mediaItem.url && mediaItem.url.startsWith('data:')) {
+          // Convert base64 back to file
+          const base64Data = mediaItem.url.split(',')[1];
+          const mimeType = mediaItem.url.split(';')[0].split(':')[1];
+          const byteCharacters = atob(base64Data);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          const file = new File([byteArray], `media-${index}.jpg`, { type: mimeType });
+          formData.append('media', file);
+        }
+      });
+    }
+    
+    return this.http.post(`${this.apiUrl}listings/create`, formData).pipe(
       catchError(this.handleError)
     );
   }
@@ -402,14 +501,14 @@ export class DataService {
 
   // Profile Update
   updateProfile(profileData: {userId: number, imageData: string}): Observable<any> {
-    return this.http.post(`${this.apiUrl}updateProfile`, profileData).pipe(
-    catchError(this.handleError) 
+    return this.http.post(`${this.apiUrl}users/updateProfile`, profileData).pipe(
+      catchError(this.handleError) 
     );
   }
 
   // Bio Update
   updateBio(bioData: {userId: number, bio: string}): Observable<any> {
-    return this.http.post(`${this.apiUrl}updateBio`, bioData).pipe(
+    return this.http.post(`${this.apiUrl}users/updateBio`, bioData).pipe(
       catchError(this.handleError)
     );
   }
@@ -417,20 +516,106 @@ export class DataService {
   // Centralized error handling method
   private handleError(error: HttpErrorResponse) {
     let errorMessage = 'An unknown error occurred!';
+    
     if (error.error instanceof ErrorEvent) {
       // Client-side error
       errorMessage = `Client Error: ${error.error.message}`;
     } else {
       // Server-side error
-      errorMessage = `Server Error: ${error.status}\nMessage: ${error.message}`;
+      console.error('Server error details:', error);
+      
+      // Check for authentication errors (401/403)
+      if (error.status === 401 || error.status === 403) {
+        // Check if it's a token-related error
+        const errorBody = error.error;
+        if (errorBody && typeof errorBody === 'object' && 
+            (errorBody.message?.includes('token') || errorBody.message?.includes('expired') || errorBody.message?.includes('Invalid'))) {
+          console.log('Token expired or invalid, logging out user');
+          this.logout(); // This will clear tokens and redirect to login
+          errorMessage = 'Your session has expired. Please log in again.';
+        } else {
+          errorMessage = 'Access denied. Please log in.';
+        }
+      }
+      // If the server returned a JSON error response
+      else if (error.error && typeof error.error === 'object') {
+        errorMessage = error.error.message || `Server Error: ${error.status}`;
+      } else {
+        errorMessage = `Server Error: ${error.status}\nMessage: ${error.message}`;
+      }
     }
-    return throwError(() => new Error(errorMessage));
+    
+    console.error('Error details:', {
+      status: error.status,
+      statusText: error.statusText,
+      error: error.error,
+      message: errorMessage
+    });
+    
+    return throwError(() => error.error || new Error(errorMessage));
   }
 
   // Check if the user is logged in by verifying the JWT token
   isLoggedIn(): Observable<boolean> {
-    const token = localStorage.getItem('token'); // Assume token is stored in localStorage
-    return of(!!token); // Return true if token exists, false otherwise
+    const token = localStorage.getItem('token');
+    if (!token) {
+      return of(false);
+    }
+
+    // Check if token is expired (basic client-side check)
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const now = Date.now() / 1000;
+      if (payload.exp && payload.exp < now) {
+        console.log('Token expired, clearing storage');
+        this.logout();
+        return of(false);
+      }
+      return of(true);
+    } catch (error) {
+      console.error('Invalid token format, clearing storage');
+      this.logout();
+      return of(false);
+    }
+  }
+
+  // Check if current user has valid authentication
+  hasValidAuth(): boolean {
+    const token = localStorage.getItem('token');
+    const user = this.getCurrentUser();
+    
+    if (!token || !user) {
+      return false;
+    }
+
+    // Basic token expiration check
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const now = Date.now() / 1000;
+      return payload.exp && payload.exp > now;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  // Helper method to construct full image URLs
+  getFullImageUrl(imagePath: string | null | undefined): string {
+    if (!imagePath) {
+      return '/assets/images/default-avatar.svg';
+    }
+    
+    // If it's already a full URL, return as is
+    if (imagePath.startsWith('http')) {
+      return imagePath;
+    }
+    
+    // If it starts with /, it's a relative path from the server root
+    if (imagePath.startsWith('/')) {
+      return `${environment.mediaBaseUrl}${imagePath}`;
+    }
+    
+    // Otherwise, assume it's a relative path that needs /uploads/ prefix
+    return `${environment.mediaBaseUrl}/uploads/${imagePath}`;
   }
 
   // Logout method

@@ -1,0 +1,124 @@
+<!-- Admin Navigation Bar -->
+<nav class="bg-white shadow-lg border-b border-gray-200 fixed w-full z-30 top-0">
+  <div class="px-3 py-3 lg:px-5 lg:pl-3">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center justify-start">
+        <!-- Mobile menu button -->
+        <button 
+          (click)="toggleMenu()"
+          class="inline-flex items-center p-2 text-sm text-gray-500 rounded-lg sm:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200">
+          <span class="sr-only">Open sidebar</span>
+          <span class="material-icons">menu</span>
+        </button>
+        
+        <!-- Logo -->
+        <a routerLink="/admin/dashboard" class="flex ml-2 md:mr-24">
+          <span class="material-symbols-rounded text-blue-600 text-3xl mr-3">palette</span>
+          <span class="self-center text-xl font-semibold sm:text-2xl whitespace-nowrap text-gray-900">ArtLink Admin</span>
+        </a>
+      </div>
+      
+      <!-- Right side items -->
+      <div class="flex items-center">
+        <!-- Notifications -->
+        <div class="relative mr-3">
+          <button class="flex mx-3 text-sm bg-gray-800 rounded-full md:mr-0 focus:ring-4 focus:ring-gray-300 relative">
+            <span class="sr-only">Open notifications</span>
+            <span class="material-icons text-gray-500">notifications</span>
+            <span *ngIf="unreadCount > 0" class="absolute -top-2 -right-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
+              {{unreadCount}}
+            </span>
+          </button>
+          
+          <!-- Notifications dropdown -->
+          <div *ngIf="notifications.length > 0" class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50 hidden group-hover:block">
+            <div class="p-4 border-b border-gray-200">
+              <h3 class="text-lg font-semibold text-gray-900">Notifications</h3>
+            </div>
+            <div class="max-h-64 overflow-y-auto">
+              <div *ngFor="let notification of notifications" 
+                   class="p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
+                   (click)="markAsRead(notification.id)">
+                <div class="flex items-center">
+                  <div class="flex-shrink-0">
+                    <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                      <span class="material-icons text-white text-sm">visibility</span>
+                    </div>
+                  </div>
+                  <div class="ml-3 flex-1">
+                    <p class="text-sm text-gray-900">{{notification.content}}</p>
+                    <p class="text-xs text-gray-500">{{notification.createdAt | date:'short'}}</p>
+                  </div>
+                  <div *ngIf="!notification.read" class="w-2 h-2 bg-blue-500 rounded-full"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- User menu -->
+        <div class="flex items-center ml-3 relative group">
+          <button class="flex text-sm bg-gray-800 rounded-full focus:ring-4 focus:ring-gray-300">
+            <span class="sr-only">Open user menu</span>
+            <img 
+              class="w-8 h-8 rounded-full" 
+              [src]="currentUser?.profileImage || '/assets/images/default-avatar.svg'" 
+              [alt]="currentUser?.name">
+          </button>
+          
+          <!-- User dropdown -->
+          <div class="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50 hidden group-hover:block">
+            <div class="p-3 border-b border-gray-200">
+              <p class="text-sm font-medium text-gray-900">{{currentUser?.name}}</p>
+              <p class="text-sm text-gray-500">{{currentUser?.email}}</p>
+            </div>
+            <div class="py-1">
+              <a routerLink="/profile/{{currentUser?.id}}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                <span class="material-icons text-sm mr-2">person</span>
+                View Profile
+              </a>
+              <a routerLink="/admin/settings" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                <span class="material-icons text-sm mr-2">settings</span>
+                Settings
+              </a>
+              <button (click)="logout()" class="w-full flex items-center text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                <span class="material-icons text-sm mr-2">logout</span>
+                Sign out
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- Sidebar -->
+<aside 
+  class="fixed top-0 left-0 z-40 w-64 h-screen pt-20 transition-transform bg-white border-r border-gray-200 sm:translate-x-0"
+  [class.-translate-x-full]="!isMenuOpen"
+  [class.translate-x-0]="isMenuOpen">
+  
+  <div class="h-full px-3 pb-4 overflow-y-auto bg-white">
+    <ul class="space-y-2 font-medium">
+      <li *ngFor="let item of menuItems">
+        <a 
+          [routerLink]="item.route" 
+          routerLinkActive="bg-blue-100 text-blue-700"
+          class="flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group">
+          <span class="material-icons w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900">
+            {{item.icon}}
+          </span>
+          <span class="ml-3">{{item.label}}</span>
+        </a>
+      </li>
+    </ul>
+  </div>
+</aside>
+
+<!-- Main Content -->
+<div class="p-4 sm:ml-64">
+  <div class="p-4 border-2 border-gray-200 border-dashed rounded-lg mt-14">
+    <router-outlet></router-outlet>
+  </div>
+</div>

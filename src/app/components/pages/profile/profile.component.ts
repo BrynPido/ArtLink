@@ -4,18 +4,19 @@ import { RouterModule } from '@angular/router';
 import { ActivatedRoute, Router, ParamMap } from '@angular/router';
 import { DataService } from '../../../services/data.service';
 import { ToastService } from '../../../services/toast.service';
+import { WebSocketService } from '../../../services/websocket.service';
 import Swal from 'sweetalert2';
-import { TimeAgoPipe } from '../../../utils/time-ago.pipe';
 import { Listing } from '../../../types/listing';
 import { ImageCropperComponent, ImageCroppedEvent } from 'ngx-image-cropper';
 import { FormsModule } from '@angular/forms';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-profile',
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.css'],
   standalone: true,
-  imports: [CommonModule, RouterModule, TimeAgoPipe, ImageCropperComponent, FormsModule]
+  imports: [CommonModule, RouterModule, ImageCropperComponent, FormsModule]
 })
 export class ProfileComponent implements OnInit {
   user: any;
@@ -40,8 +41,18 @@ export class ProfileComponent implements OnInit {
     private router: Router,
     private dataService: DataService,
     private toastService: ToastService,
+    private webSocketService: WebSocketService,
   ) {
     this.currentUser = this.dataService.getCurrentUser();
+  }
+
+  // Helper method to construct full media URL
+  getFullMediaUrl(mediaPath: string): string {
+    if (!mediaPath) return '';
+    // If it's already a full URL, return as is
+    if (mediaPath.startsWith('http')) return mediaPath;
+    // If it's a relative path, prepend the media base URL from environment
+    return `${environment.mediaBaseUrl}${mediaPath}`;
   }
 
   ngOnInit(): void {
@@ -60,9 +71,40 @@ export class ProfileComponent implements OnInit {
 
     this.dataService.getUserProfile(userId).subscribe({
       next: (response: any) => {
+        console.log('Profile API Response:', response);
         if (response && response.payload) {
-          this.user = response.payload;
-          this.isFollowing = response.payload.isFollowing;
+          // Map the API response structure to match template expectations
+          const userData = response.payload.user || response.payload;
+          
+          this.user = {
+            id: userData.id,
+            name: userData.name,
+            username: userData.username,
+            email: userData.email,
+            bio: userData.bio,
+            profileImage: userData.profilePictureUrl ? this.getFullMediaUrl(userData.profilePictureUrl) : null,
+            // Map count fields to match template expectations
+            postCount: userData.postsCount || 0,
+            followers: userData.followersCount || 0,
+            following: userData.followingCount || 0,
+            listingsCount: userData.listingsCount || 0,
+            isFollowing: userData.isFollowing || false
+          };
+          
+          this.isFollowing = this.user.isFollowing;
+          
+          // Process posts if they exist in the response
+          if (response.payload.posts && Array.isArray(response.payload.posts)) {
+            this.user.posts = response.payload.posts.map((post: any) => ({
+              ...post,
+              // Process media URLs for posts if needed
+              media: post.mediaUrls ? post.mediaUrls.map((url: string) => ({
+                url: this.getFullMediaUrl(url),
+                mediaType: 'image'
+              })) : []
+            }));
+          }
+          
           this.loadUserListings(userId);
         }
         this.isLoading = false;
@@ -125,12 +167,26 @@ export class ProfileComponent implements OnInit {
 
     this.dataService.toggleFollow(this.user.id).subscribe({
       next: (response) => {
-        if (response && typeof response.following === 'boolean') {
-          // Server confirmed the state, no need to update again
+        console.log('Follow response:', response); // Debug log
+        if (response && response.payload && typeof response.payload.following === 'boolean') {
+          const isNowFollowing = response.payload.following;
+          
+          // Update the UI state based on server response
+          this.isFollowing = isNowFollowing;
+          this.user.followers = isNowFollowing ? 
+            (previousFollowerCount || 0) + 1 : 
+            Math.max((previousFollowerCount || 1) - 1, 0);
+          
           this.toastService.showToast(
-            `Successfully ${response.following ? 'followed' : 'unfollowed'} ${this.user.username}`,
+            `Successfully ${isNowFollowing ? 'followed' : 'unfollowed'} ${this.user.username}`,
             'success'
           );
+        } else {
+          console.error('Unexpected response format:', response);
+          // Revert to previous state if response format is unexpected
+          this.isFollowing = previousState;
+          this.user.followers = previousFollowerCount;
+          this.toastService.showToast('Unexpected response from server', 'error');
         }
       },
       error: (error) => {
@@ -160,7 +216,14 @@ export class ProfileComponent implements OnInit {
     this.dataService.getSavedPosts().subscribe({
       next: (response: any) => {
         if (response && response.payload) {
-          this.user.savedPosts = response.payload;
+          // Process media URLs for saved posts
+          this.user.savedPosts = response.payload.map((post: any) => ({
+            ...post,
+            media: post.mediaUrls ? post.mediaUrls.map((url: string) => ({
+              url: this.getFullMediaUrl(url),
+              mediaType: 'image'
+            })) : []
+          }));
         }
       },
       error: (error: any) => {
@@ -175,7 +238,14 @@ export class ProfileComponent implements OnInit {
     this.dataService.getLikedPosts().subscribe({
       next: (response: any) => {
         if (response && response.payload) {
-          this.user.likedPosts = response.payload;
+          // Process media URLs for liked posts
+          this.user.likedPosts = response.payload.map((post: any) => ({
+            ...post,
+            media: post.mediaUrls ? post.mediaUrls.map((url: string) => ({
+              url: this.getFullMediaUrl(url),
+              mediaType: 'image'
+            })) : []
+          }));
         }
       },
       error: (error: any) => {
@@ -200,46 +270,30 @@ export class ProfileComponent implements OnInit {
   }
 
   goToChat(userId: number): void {
-    // First check if we are following them
-    this.dataService.isFollowing(userId).subscribe({
-      next: (response) => {
-        if (response?.payload?.following) {
-          // Now check if they are following us back
-          this.dataService.isFollowing(this.currentUser.id, userId).subscribe({
-            next: (mutualResponse) => {
-              if (mutualResponse?.payload?.following) {
-                // Create a regular conversation (not listing-specific)
-                this.dataService.createConversation(userId).subscribe({
-                  next: (convResponse) => {
-                    if (convResponse && convResponse.payload) {
-                      // Navigate to inbox with the conversation ID
-                      this.router.navigate(['/inbox'], { 
-                        queryParams: { 
-                          tab: 'messages',
-                          conversationId: convResponse.payload.id
-                        }
-                      });
-                    } else {
-                      this.toastService.showToast('Failed to start conversation', 'error');
-                    }
-                  },
-                  error: (error) => {
-                    console.error('Error creating conversation:', error);
-                    this.toastService.showToast('Failed to start conversation', 'error');
-                  }
-                });
-              } else {
-                this.toastService.showToast('You need to follow each other to start a conversation', 'info');
-              }
+    // Prevent messaging yourself
+    if (userId === this.currentUser.id) {
+      this.toastService.showToast('You cannot message yourself', 'info');
+      return;
+    }
+
+    // Allow messaging without follow restrictions (like most modern social platforms)
+    this.dataService.createConversation(userId).subscribe({
+      next: (convResponse) => {
+        if (convResponse && convResponse.payload) {
+          // Navigate to inbox with the conversation ID
+          this.router.navigate(['/inbox'], { 
+            queryParams: { 
+              tab: 'messages',
+              conversationId: convResponse.payload.id
             }
           });
         } else {
-          this.toastService.showToast('You need to follow each other to start a conversation', 'info');
+          this.toastService.showToast('Failed to start conversation', 'error');
         }
       },
       error: (error) => {
-        console.error('Error checking follow status:', error);
-        this.toastService.showToast('Unable to check follow status', 'error');
+        console.error('Error creating conversation:', error);
+        this.toastService.showToast('Failed to start conversation', 'error');
       }
     });
   }
@@ -280,8 +334,11 @@ export class ProfileComponent implements OnInit {
   imageCropped(event: ImageCroppedEvent) {
     console.log('Cropping event received:', event);
     
-    // In newer versions, the event provides objectUrl or blob instead of base64
-    if (event.objectUrl) {
+    // In newer versions of ngx-image-cropper, the event provides base64 directly
+    if (event.base64) {
+      this.croppedImage = event.base64;
+      console.log('Using base64 from event');
+    } else if (event.objectUrl) {
       // Use the objectUrl directly
       this.croppedImage = event.objectUrl;
       console.log('Using objectUrl for cropped image');
@@ -294,13 +351,14 @@ export class ProfileComponent implements OnInit {
       };
       reader.readAsDataURL(event.blob);
     } else {
-      console.error('No image data found in cropping event');
+      console.error('No image data found in cropping event:', event);
     }
   }
 
   // Save/crop the image
   saveProfilePic(): void {
     console.log('Save button clicked');
+    console.log('Cropped image:', this.croppedImage);
     
     if (!this.croppedImage) {
       this.toastService.showToast('No image to save. Please select and crop an image first.', 'error');
@@ -311,12 +369,14 @@ export class ProfileComponent implements OnInit {
     
     // If the cropped image is a blob URL, fetch the blob and convert to base64
     if (this.croppedImage.startsWith('blob:')) {
+      console.log('Converting blob URL to base64...');
       fetch(this.croppedImage)
         .then(res => res.blob())
         .then(blob => {
           const reader = new FileReader();
           reader.onloadend = () => {
             const base64data = reader.result as string;
+            console.log('Blob converted to base64, uploading...');
             this.uploadProfileImageData(base64data);
           };
           reader.readAsDataURL(blob);
@@ -326,9 +386,14 @@ export class ProfileComponent implements OnInit {
           this.uploadingProfilePic = false;
           this.toastService.showToast('Failed to process image. Please try again.', 'error');
         });
-    } else {
+    } else if (this.croppedImage.startsWith('data:')) {
       // It's already base64, send it directly
+      console.log('Image is already base64, uploading...');
       this.uploadProfileImageData(this.croppedImage);
+    } else {
+      console.error('Unknown image format:', this.croppedImage);
+      this.uploadingProfilePic = false;
+      this.toastService.showToast('Invalid image format. Please try again.', 'error');
     }
   }
 
@@ -341,8 +406,10 @@ export class ProfileComponent implements OnInit {
     
     this.dataService.updateProfile(profileData).subscribe({
       next: (response) => {
-        if (response && response.payload && response.payload.imageProfile) {
-          const newImageUrl = response.payload.imageProfile;
+        console.log('Profile update response:', response);
+        if (response && response.payload && response.payload.profilePictureUrl) {
+          // Get the full URL for the new profile picture
+          const newImageUrl = this.getFullMediaUrl(response.payload.profilePictureUrl);
           
           // 1. Update the user's profile image in the UI
           if (this.user) {
@@ -358,6 +425,9 @@ export class ProfileComponent implements OnInit {
           }
           
           this.toastService.showToast('Profile picture updated successfully!', 'success');
+        } else {
+          console.error('Invalid response structure:', response);
+          this.toastService.showToast('Profile picture updated but response was unexpected', 'warning');
         }
         this.showProfilePicModal = false;
         this.uploadingProfilePic = false;

@@ -43,8 +43,19 @@
               class="absolute inset-0 w-full h-full object-contain transition-opacity duration-300"
             >
             
+            <!-- Fallback for no images -->
+            <div
+              *ngIf="!listing.media || listing.media.length === 0"
+              class="absolute inset-0 flex items-center justify-center bg-gray-200"
+            >
+              <div class="text-center text-gray-500">
+                <span class="material-symbols-outlined text-6xl mb-2">image</span>
+                <p class="text-sm">No image available</p>
+              </div>
+            </div>
+            
             <!-- Navigation Controls -->
-            <div class="absolute inset-0 flex justify-between items-center px-4">
+            <div *ngIf="listing.media && listing.media.length > 1" class="absolute inset-0 flex justify-between items-center px-4">
               <!-- Previous Button - ALWAYS on left -->
               <button
                 *ngIf="currentMediaIndex > 0"
@@ -73,7 +84,7 @@
             </div>
             
             <!-- Image Counter Badge -->
-            <div class="absolute bottom-4 right-4">
+            <div *ngIf="listing.media && listing.media.length > 0" class="absolute bottom-4 right-4">
               <div class="bg-black/60 text-white text-xs px-2.5 py-1.5 rounded-full backdrop-blur-sm">
                 {{ currentMediaIndex + 1 }} / {{ listing.media?.length }}
               </div>
@@ -105,7 +116,7 @@
       <div class="space-y-6">
         <div class="flex justify-between items-start">
           <h1 class="text-3xl font-bold text-gray-900 leading-tight">{{ listing.title }}</h1>
-          <div *ngIf="currentUser?.id === listing.author.id" class="relative">
+          <div *ngIf="currentUser?.id === listing.author?.id" class="relative">
             <button 
               (click)="toggleActionMenu()"
               class="text-gray-600 hover:text-gray-800 p-2.5 rounded-full hover:bg-gray-100 transition-all duration-200"
@@ -148,7 +159,7 @@
         </div>
 
         <!-- Seller Info Card -->
-        <div class="flex items-center space-x-4 p-4 rounded-xl bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200">
+        <div *ngIf="listing.author" class="flex items-center space-x-4 p-4 rounded-xl bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200">
           <img
             [src]="listing.author.profileImage || 'assets/images/default-avatar.svg'"
             [alt]="listing.author.name"
@@ -162,7 +173,7 @@
             <p class="text-sm text-gray-500">{{ listing.author.username }}</p>
           </div>
           <button 
-            *ngIf="currentUser?.id !== listing.author.id"
+            *ngIf="currentUser?.id !== listing.author?.id"
             (click)="messageUser()" 
             class="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 text-sm font-medium flex items-center"
           >
@@ -206,7 +217,7 @@
         </div>
 
         <!-- Contact and Action Section -->
-        <div class="space-y-4 mt-6" *ngIf="currentUser?.id !== listing.author.id">
+        <div class="space-y-4 mt-6" *ngIf="currentUser?.id !== listing.author?.id">
           <!-- Contact Card -->
           <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
             <h3 class="text-lg font-medium text-gray-900 mb-2">Contact Options</h3>

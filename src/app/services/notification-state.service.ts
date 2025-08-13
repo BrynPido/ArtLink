@@ -38,17 +38,25 @@ export class NotificationStateService {
   }
 
   setNotifications(notifications: Notification[]) {
-    this.notificationsSubject.next(notifications);
+    // Ensure notifications is always an array
+    const notificationsArray = Array.isArray(notifications) ? notifications : [];
+    this.notificationsSubject.next(notificationsArray);
     this.updateUnreadCount();
   }
 
   getNotifications(): Notification[] {
-    return this.notificationsSubject.value;
+    return this.notificationsSubject.value || [];
   }
 
   private updateUnreadCount() {
-    const unreadCount = this.notificationsSubject.value.filter(n => !n.read).length;
-    this.unreadCountSubject.next(unreadCount);
+    const notifications = this.notificationsSubject.value || [];
+    // Ensure notifications is an array before filtering
+    if (Array.isArray(notifications)) {
+      const unreadCount = notifications.filter(n => !n.read).length;
+      this.unreadCountSubject.next(unreadCount);
+    } else {
+      this.unreadCountSubject.next(0);
+    }
   }
 
   markAsRead(notificationId: number) {
@@ -57,7 +65,7 @@ export class NotificationStateService {
 
     this.dataService.markNotificationAsRead(notificationId).subscribe({
       next: () => {
-        const notifications = this.notificationsSubject.value.map(n => 
+        const notifications = (this.notificationsSubject.value || []).map(n => 
           n.id === notificationId ? { ...n, read: true } : n
         );
         this.notificationsSubject.next(notifications);

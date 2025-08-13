@@ -1,0 +1,182 @@
+/* Post Management specific styles */
+.admin-table {
+  font-size: 0.875rem;
+}
+
+.admin-table th {
+  position: sticky;
+  top: 0;
+  background-color: #f9fafb;
+  z-index: 10;
+}
+
+.admin-table tr:hover {
+  background-color: #f8fafc;
+}
+
+/* Post thumbnail styles */
+.post-thumbnail {
+  transition: transform 0.2s ease-in-out;
+}
+
+.post-thumbnail:hover {
+  transform: scale(1.05);
+}
+
+/* Engagement metrics styling */
+.engagement-metrics {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.engagement-item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* Status indicators */
+.status-published {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.status-hidden {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+/* Modal enhancements */
+.post-modal-image {
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.post-content {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* Action buttons */
+.action-btn {
+  transition: all 0.2s ease-in-out;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+}
+
+.action-btn:hover {
+  transform: translateY(-1px);
+}
+
+.action-btn-view {
+  color: #2563eb;
+}
+
+.action-btn-hide {
+  color: #d97706;
+}
+
+.action-btn-unhide {
+  color: #059669;
+}
+
+.action-btn-delete {
+  color: #dc2626;
+}
+
+/* Bulk actions bar */
+.bulk-actions-bar {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Loading skeleton for post rows */
+.post-skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .admin-table {
+    font-size: 0.75rem;
+  }
+  
+  .admin-table td,
+  .admin-table th {
+    padding: 0.5rem;
+  }
+  
+  .engagement-metrics {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+
+/* Text truncation utilities */
+.truncate-content {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Search and filter enhancements */
+.search-filter-container {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.filter-input {
+  transition: all 0.2s ease-in-out;
+}
+
+.filter-input:focus {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  transform: translateY(-1px);
+}
+
+/* Export button animation */
+.export-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.export-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.export-btn:hover::before {
+  left: 100%;
+}

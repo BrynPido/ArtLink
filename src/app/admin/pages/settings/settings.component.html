@@ -1,0 +1,338 @@
+<div class="settings p-6">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900 mb-2">System Settings</h1>
+      <p class="text-gray-600">Configure and manage your application settings</p>
+    </div>
+    <div class="flex gap-2 mt-4 sm:mt-0">
+      <input
+        type="file"
+        accept=".json"
+        (change)="importSettings($event)"
+        class="hidden"
+        #fileInput
+      >
+      <button
+        (click)="fileInput.click()"
+        class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+      >
+        Import
+      </button>
+      <button
+        (click)="exportSettings()"
+        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+      >
+        Export
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="text-center py-12">
+    <div class="inline-flex items-center">
+      <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+      <span class="ml-2 text-gray-600">Loading settings...</span>
+    </div>
+  </div>
+
+  <!-- Settings Content -->
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6" *ngIf="!loading">
+    <!-- Sidebar -->
+    <div class="lg:col-span-1">
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <nav class="space-y-1">
+          <button
+            *ngFor="let category of settingsCategories"
+            (click)="selectCategory(category.id)"
+            [class]="category.active 
+              ? 'bg-blue-50 border-blue-500 text-blue-700 hover:bg-blue-100 block w-full text-left px-4 py-3 border-l-4 font-medium text-sm transition-colors'
+              : 'text-gray-900 hover:bg-gray-50 block w-full text-left px-4 py-3 border-l-4 border-transparent font-medium text-sm transition-colors'"
+          >
+            <div class="flex items-center">
+              <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="getCategoryIcon(category.icon)"></path>
+              </svg>
+              {{ category.name }}
+            </div>
+          </button>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="lg:col-span-3">
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        
+        <!-- General Settings -->
+        <div *ngIf="activeCategory === 'general'">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">General Settings</h3>
+          
+          <div class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Site Name</label>
+                <input
+                  type="text"
+                  [(ngModel)]="settings.general.siteName"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Language</label>
+                <select
+                  [(ngModel)]="settings.general.language"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="en">English</option>
+                  <option value="es">Spanish</option>
+                  <option value="fr">French</option>
+                  <option value="de">German</option>
+                </select>
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Site Description</label>
+              <textarea
+                [(ngModel)]="settings.general.siteDescription"
+                rows="3"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              ></textarea>
+            </div>
+            
+            <div class="space-y-3">
+              <div class="flex items-center">
+                <input
+                  type="checkbox"
+                  [(ngModel)]="settings.general.maintenanceMode"
+                  id="maintenanceMode"
+                  class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                >
+                <label for="maintenanceMode" class="ml-2 text-sm text-gray-700">
+                  Enable Maintenance Mode
+                </label>
+              </div>
+              
+              <div class="flex items-center">
+                <input
+                  type="checkbox"
+                  [(ngModel)]="settings.general.registrationEnabled"
+                  id="registrationEnabled"
+                  class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                >
+                <label for="registrationEnabled" class="ml-2 text-sm text-gray-700">
+                  Allow New User Registration
+                </label>
+              </div>
+              
+              <div class="flex items-center">
+                <input
+                  type="checkbox"
+                  [(ngModel)]="settings.general.allowGuestViewing"
+                  id="allowGuestViewing"
+                  class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                >
+                <label for="allowGuestViewing" class="ml-2 text-sm text-gray-700">
+                  Allow Guest Viewing
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Security Settings -->
+        <div *ngIf="activeCategory === 'security'">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Security Settings</h3>
+          
+          <div class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Session Timeout (minutes)</label>
+                <input
+                  type="number"
+                  [(ngModel)]="settings.security.sessionTimeout"
+                  min="5"
+                  max="480"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Max Login Attempts</label>
+                <input
+                  type="number"
+                  [(ngModel)]="settings.security.maxLoginAttempts"
+                  min="1"
+                  max="10"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Min Password Length</label>
+                <input
+                  type="number"
+                  [(ngModel)]="settings.security.passwordMinLength"
+                  min="6"
+                  max="20"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+              </div>
+            </div>
+            
+            <div class="space-y-3">
+              <div class="flex items-center">
+                <input
+                  type="checkbox"
+                  [(ngModel)]="settings.security.requireEmailVerification"
+                  id="requireEmailVerification"
+                  class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                >
+                <label for="requireEmailVerification" class="ml-2 text-sm text-gray-700">
+                  Require Email Verification for New Users
+                </label>
+              </div>
+              
+              <div class="flex items-center">
+                <input
+                  type="checkbox"
+                  [(ngModel)]="settings.security.enableBruteForceProtection"
+                  id="enableBruteForceProtection"
+                  class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                >
+                <label for="enableBruteForceProtection" class="ml-2 text-sm text-gray-700">
+                  Enable Brute Force Protection
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Content Management Settings -->
+        <div *ngIf="activeCategory === 'content'">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Content Management</h3>
+          
+          <div class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Max File Size</label>
+                <select
+                  [(ngModel)]="settings.content.maxFileSize"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="5MB">5 MB</option>
+                  <option value="10MB">10 MB</option>
+                  <option value="20MB">20 MB</option>
+                  <option value="50MB">50 MB</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Max Posts Per Day</label>
+                <input
+                  type="number"
+                  [(ngModel)]="settings.content.maxPostsPerDay"
+                  min="1"
+                  max="50"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Allowed File Types</label>
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div *ngFor="let type of ['jpg', 'jpeg', 'png', 'gif', 'webp']" class="flex items-center">
+                  <input
+                    type="checkbox"
+                    [id]="'fileType_' + type"
+                    [checked]="settings.content.allowedFileTypes.includes(type)"
+                    (change)="toggleFileType(type, $event)"
+                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  >
+                  <label [for]="'fileType_' + type" class="ml-2 text-sm text-gray-700 uppercase">
+                    {{ type }}
+                  </label>
+                </div>
+              </div>
+            </div>
+            
+            <div class="space-y-4">
+              <div class="flex items-center">
+                <input
+                  type="checkbox"
+                  [(ngModel)]="settings.content.autoModeration"
+                  id="autoModeration"
+                  class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                >
+                <label for="autoModeration" class="ml-2 text-sm text-gray-700">
+                  Enable Automatic Content Moderation
+                </label>
+              </div>
+              
+              <div class="flex items-center">
+                <input
+                  type="checkbox"
+                  [(ngModel)]="settings.content.requirePostApproval"
+                  id="requirePostApproval"
+                  class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                >
+                <label for="requirePostApproval" class="ml-2 text-sm text-gray-700">
+                  Require Admin Approval for New Posts
+                </label>
+              </div>
+              
+              <div class="flex items-center">
+                <input
+                  type="checkbox"
+                  [(ngModel)]="settings.content.requireListingApproval"
+                  id="requireListingApproval"
+                  class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                >
+                <label for="requireListingApproval" class="ml-2 text-sm text-gray-700">
+                  Require Admin Approval for New Listings
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex justify-between items-center pt-6 border-t border-gray-200 mt-8">
+          <div class="flex gap-2">
+            <button
+              (click)="discardChanges()"
+              [disabled]="!hasUnsavedChanges()"
+              class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Discard Changes
+            </button>
+            <button
+              (click)="resetSettings()"
+              class="px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors"
+            >
+              Reset to Defaults
+            </button>
+          </div>
+          
+          <button
+            (click)="saveSettings()"
+            [disabled]="saving || !hasUnsavedChanges()"
+            class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <span *ngIf="saving" class="inline-flex items-center">
+              <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Saving...
+            </span>
+            <span *ngIf="!saving">Save Settings</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

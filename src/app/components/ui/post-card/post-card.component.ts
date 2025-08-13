@@ -5,6 +5,7 @@ import { DataService } from '../../../services/data.service';
 import { ToastService } from '../../../services/toast.service';
 import { WebSocketService } from '../../../services/websocket.service';
 import { TimeAgoPipe } from '../../../utils/time-ago.pipe';
+import { environment } from '../../../../environments/environment';
 // Import SweetAlert2
 import Swal from 'sweetalert2';
 
@@ -43,6 +44,15 @@ export class PostCardComponent implements OnInit {
     this.currentUser = this.dataService.getCurrentUser();
   }
 
+  // Helper method to construct full media URL
+  getFullMediaUrl(mediaPath: string): string {
+    if (!mediaPath) return '';
+    // If it's already a full URL, return as is
+    if (mediaPath.startsWith('http')) return mediaPath;
+    // If it's a relative path, prepend the media base URL from environment
+    return `${environment.mediaBaseUrl}${mediaPath}`;
+  }
+
   ngOnInit(): void {
     console.log('PostCardComponent initialized');
     this.fetchPosts(); // Fetch posts when the component initializes
@@ -59,24 +69,44 @@ export class PostCardComponent implements OnInit {
     this.dataService.getPosts().subscribe({
       next: (response) => {
         console.log('API Response:', response); // Log the API response
-        this.posts = response.payload;
+        
+        // Extract posts array from the response payload
+        if (response && response.payload && response.payload.posts) {
+          this.posts = response.payload.posts;
+        } else {
+          this.posts = [];
+        }
+        
         console.log('Posts Array:', this.posts); // Log the posts array
 
-        // Sort posts in descending order based on a property (e.g., createdAt)
-        this.posts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        // Sort posts in descending order based on createdAt
+        if (Array.isArray(this.posts)) {
+          this.posts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-        // Initialize state for each post
-        this.posts.forEach(post => {
-          this.currentImageIndex[post.id] = 0;
-          this.likedPosts[post.id] = post.likedByUser; // ← Set from API
-          this.savedPosts[post.id] = post.savedByUser; // ← Set from API
-          this.likesCountMap[post.id] = post.likeCount || 0;
-        });
+          // Process and initialize state for each post
+          this.posts.forEach(post => {
+            // Convert mediaUrls array to media objects with full URLs for template compatibility
+            post.media = (post.mediaUrls || []).map((url: string) => ({ 
+              url: this.getFullMediaUrl(url) 
+            }));
+            
+            // Process author profile picture URL
+            if (post.authorProfilePicture) {
+              post.authorProfilePicture = this.getFullMediaUrl(post.authorProfilePicture);
+            }
+            
+            this.currentImageIndex[post.id] = 0;
+            this.likedPosts[post.id] = post.isLiked || false;
+            this.savedPosts[post.id] = post.isSaved || false;
+            this.likesCountMap[post.id] = post.likesCount || 0;
+          });
+        }
 
         this.cdr.detectChanges(); // Trigger change detection manually
       },
       error: (err) => {
         console.error('Error fetching posts:', err);
+        this.posts = []; // Set to empty array on error
       },
       complete: () => {
         this.loading = false; // Ensure loading is set to false when fetching is complete

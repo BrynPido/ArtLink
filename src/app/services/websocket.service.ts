@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 interface NotificationContent {
   type: string;
@@ -37,7 +38,7 @@ export class WebSocketService {
   constructor() {}
 
   connect(userId: number): void {
-    const wsUrl = 'wss://artlink-f4jf.onrender.com';
+    const wsUrl = environment.wsUrl;
     this.socket = new WebSocket(wsUrl);
 
     this.socket.onopen = () => {

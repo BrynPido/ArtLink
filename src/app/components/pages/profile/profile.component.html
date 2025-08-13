@@ -75,7 +75,7 @@
               rows="3"
             ></textarea>
             <div class="flex justify-between items-center mt-2">
-              <span class="text-xs text-gray-500">{{ 150 - (editableBio?.length || 0) }} characters left</span>
+              <span class="text-xs text-gray-500">{{ 150 - (editableBio.length || 0) }} characters left</span>
               <div class="flex gap-2">
                 <button class="px-3 py-1 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded text-sm" 
                         (click)="cancelEditBio()">
@@ -197,7 +197,7 @@
                (click)="viewPost(post.id)"
                class="aspect-square relative group cursor-pointer overflow-hidden rounded-lg">
             <img *ngIf="post.media?.length > 0" 
-                 [src]="post.media[0].url" 
+                 [src]="(post.media && post.media.length > 0) ? post.media[0]?.url : 'assets/images/placeholder.jpg'" 
                  alt="Post thumbnail" 
                  class="w-full h-full object-cover">
             <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -223,13 +223,13 @@
               
               <!-- Image with overlay for price -->
               <img 
-                [src]="listing.media[0]?.url || 'assets/images/placeholder.jpg'"
+                [src]="(listing.mediaUrls && listing.mediaUrls.length > 0) ? getFullMediaUrl(listing.mediaUrls[0]) : 'assets/images/placeholder.jpg'"
                 [alt]="listing.title"
                 class="w-full h-full object-cover">
               
               <!-- Price tag overlay -->
               <div class="absolute top-0 right-0 bg-blue-600 text-white px-2 py-1 m-2 rounded font-medium text-sm">
-                ₱{{ listing.listingDetails.price }}
+                ₱{{ listing.price }}
               </div>
               
               <!-- Title overlay at the bottom -->
@@ -237,17 +237,17 @@
                 <h3 class="font-medium text-white text-sm truncate">{{ listing.title }}</h3>
                 <div class="flex items-center">
                   <span class="material-symbols-outlined text-white/80 text-xs mr-1">sell</span>
-                  <span class="text-white/80 text-xs">{{ listing.listingDetails.category | titlecase }}</span>
+                  <span class="text-white/80 text-xs">{{ listing.category | titlecase }}</span>
                 </div>
               </div>
 
               <!-- Hover overlay with more details -->
               <div class="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-center items-center p-2">
                 <h3 class="font-semibold text-white text-center mb-1">{{ listing.title }}</h3>
-                <p class="text-lg font-bold text-blue-400 mb-1">₱{{ listing.listingDetails.price }}</p>
+                <p class="text-lg font-bold text-blue-400 mb-1">₱{{ listing.price }}</p>
                 <div class="flex items-center text-white/80 text-xs">
                   <span class="material-symbols-outlined text-xs mr-1">location_on</span>
-                  <span>{{ listing.listingDetails.location }}</span>
+                  <span>{{ listing.location }}</span>
                 </div>
               </div>
           </div>
@@ -259,7 +259,7 @@
                (click)="viewPost(post.id)"
                class="aspect-square relative group cursor-pointer overflow-hidden rounded-lg">
             <img *ngIf="post.media?.length > 0" 
-                 [src]="post.media[0].url" 
+                 [src]="(post.media && post.media.length > 0) ? post.media[0]?.url : 'assets/images/placeholder.jpg'" 
                  alt="Post thumbnail" 
                  class="w-full h-full object-cover">
             <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -282,7 +282,7 @@
                (click)="viewPost(post.id)"
                class="aspect-square relative group cursor-pointer overflow-hidden rounded-lg">
             <img *ngIf="post.media?.length > 0" 
-                 [src]="post.media[0].url" 
+                 [src]="(post.media && post.media.length > 0) ? post.media[0]?.url : 'assets/images/placeholder.jpg'" 
                  alt="Post thumbnail" 
                  class="w-full h-full object-cover">
             <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">

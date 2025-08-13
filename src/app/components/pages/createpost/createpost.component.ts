@@ -104,16 +104,19 @@ export class CreatePostComponent implements OnDestroy {
         mediaType: 'image'
       }));
 
-      const postData = {
-        ...this.formData,
-        media: mediaArray
-      };
-
       if (this.isListingMode) {
-        this.dataService.createListing(postData).subscribe({
+        // For listings, structure the data according to what the API expects
+        const listingData = {
+          title: this.formData.title,
+          content: this.formData.content,
+          listingDetails: this.formData.listingDetails,
+          media: mediaArray
+        };
+
+        this.dataService.createListing(listingData).subscribe({
           next: (response) => {
             this.toastService.showToast('Listing created successfully', 'success');
-            this.router.navigate(['/listing', response.payload.listingId]);
+            this.router.navigate(['/listings']);
           },
           error: (error) => {
             console.error('Error creating listing:', error);
@@ -121,6 +124,12 @@ export class CreatePostComponent implements OnDestroy {
           }
         });
       } else {
+        // For posts, use the existing structure
+        const postData = {
+          ...this.formData,
+          media: mediaArray
+        };
+
         this.dataService.createPost(postData).subscribe({
           next: (response) => {
             this.toastService.showToast('Post created successfully', 'success');

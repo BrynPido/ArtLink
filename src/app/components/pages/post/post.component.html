@@ -4,8 +4,15 @@
     <span class="material-symbols-rounded text-lg sm:text-xl">arrow_back</span>
     <span class="text-sm sm:text-base">Back</span>
   </button>
-  
-  <div class="bg-white rounded-lg sm:rounded-xl shadow-sm overflow-hidden">
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="bg-white rounded-lg sm:rounded-xl overflow-hidden p-8 text-center">
+    <div class="w-6 h-6 border-2 border-indigo-300 border-t-indigo-600 rounded-full animate-spin mx-auto"></div>
+    <p class="text-gray-400 mt-2">Loading post...</p>
+  </div>
+
+  <!-- Post Content -->
+  <div *ngIf="!loading && post" class="bg-white rounded-lg sm:rounded-xl overflow-hidden">
     <!-- Author Header - More compact on mobile -->
     <div class="p-3 sm:p-4 flex items-center gap-3 sm:gap-4 border-b">
       <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-200 overflow-hidden">
@@ -13,8 +20,8 @@
           class="w-full h-full object-cover cursor-pointer" (click)="goToAuthorProfile()">
       </div>
       <div class="cursor-pointer" (click)="goToAuthorProfile()">
-        <h2 class="font-medium text-gray-900 text-sm sm:text-base">{{ post?.author?.name }}</h2>
-        <p class="text-xs sm:text-sm text-gray-500">&commat;{{ post?.author?.username }}</p>
+        <h2 class="font-medium text-gray-900 text-sm sm:text-base">{{ post?.authorName }}</h2>
+        <p class="text-xs sm:text-sm text-gray-500">&commat;{{ post?.authorUsername }}</p>
       </div>
       <button *ngIf="showFollowButton" class="ml-auto px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg transition-colors text-xs sm:text-sm"
         [ngClass]="{
@@ -25,40 +32,54 @@
       </button>
     </div>
 
-    <!-- Media Carousel - Responsive height -->
+    <!-- Media Carousel - Improved display with blurred background -->
     <div class="relative">
       <div *ngIf="post?.media?.length > 1" class="relative">
         <div class="flex transition-transform duration-300"
           [style.transform]="'translateX(-' + (currentMediaIndex * 100) + '%)'">
           <div *ngFor="let media of post?.media" class="w-full flex-shrink-0">
-            <img *ngIf="media.mediaType === 'image'" [src]="media.url" alt="Post media"
-              class="w-full h-[250px] sm:h-[350px] md:h-[450px] lg:h-[500px] object-cover">
-            <video *ngIf="media.mediaType === 'video'" [src]="media.url" controls
-              class="w-full h-[250px] sm:h-[350px] md:h-[450px] lg:h-[500px] object-contain bg-black">
-              Your browser does not support video playback.
-            </video>
+            <div class="relative bg-black" style="height: 0; padding-bottom: 75%;">
+              <!-- Blurred background -->
+              <div class="absolute inset-0 bg-cover bg-center blur-md opacity-50" 
+                  [ngStyle]="{'background-image': 'url(' + media.url + ')'}"></div>
+              
+              <!-- Main image with proper aspect ratio -->
+              <img *ngIf="media.mediaType === 'image'" [src]="media.url" alt="Post media"
+                class="absolute inset-0 w-full h-full object-contain transition-opacity duration-300">
+              <video *ngIf="media.mediaType === 'video'" [src]="media.url" controls
+                class="absolute inset-0 w-full h-full object-contain">
+                Your browser does not support video playback.
+              </video>
+            </div>
           </div>
         </div>
 
         <!-- Carousel Controls - Smaller on mobile -->
         <button *ngIf="currentMediaIndex > 0" (click)="previousMedia()"
-          class="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/80 shadow-lg flex items-center justify-center hover:bg-white transition-colors">
+          class="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/80 shadow-lg flex items-center justify-center hover:bg-white transition-colors z-10">
           <span class="material-symbols-rounded text-base sm:text-lg">chevron_left</span>
         </button>
         <button *ngIf="currentMediaIndex < (post?.media?.length || 0) - 1" (click)="nextMedia()"
-          class="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/80 shadow-lg flex items-center justify-center hover:bg-white transition-colors">
+          class="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/80 shadow-lg flex items-center justify-center hover:bg-white transition-colors z-10">
           <span class="material-symbols-rounded text-base sm:text-lg">chevron_right</span>
         </button>
       </div>
 
-      <!-- Single Media - Responsive height -->
+      <!-- Single Media - Improved display with blurred background -->
       <div *ngIf="post?.media?.length === 1">
-        <img *ngIf="post?.media[0]?.mediaType === 'image'" [src]="post?.media[0]?.url" alt="Post media"
-          class="w-full h-[250px] sm:h-[350px] md:h-[450px] lg:h-[500px] object-cover">
-        <video *ngIf="post?.media[0]?.mediaType === 'video'" [src]="post?.media[0]?.url" controls
-          class="w-full h-[250px] sm:h-[350px] md:h-[450px] lg:h-[500px] object-contain bg-black">
-          Your browser does not support video playback.
-        </video>
+        <div class="relative bg-black" style="height: 0; padding-bottom: 75%;">
+          <!-- Blurred background that fills the container -->
+          <div class="absolute inset-0 bg-cover bg-center blur-md opacity-50" 
+              [ngStyle]="{'background-image': 'url(' + post?.media[0]?.url + ')'}"></div>
+          
+          <!-- Main image with maintained aspect ratio -->
+          <img *ngIf="post?.media[0]?.mediaType === 'image'" [src]="post?.media[0]?.url" alt="Post media"
+            class="absolute inset-0 w-full h-full object-contain transition-opacity duration-300">
+          <video *ngIf="post?.media[0]?.mediaType === 'video'" [src]="post?.media[0]?.url" controls
+            class="absolute inset-0 w-full h-full object-contain">
+            Your browser does not support video playback.
+          </video>
+        </div>
       </div>
     </div>
 

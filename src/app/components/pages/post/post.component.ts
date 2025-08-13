@@ -9,6 +9,7 @@ import { WebSocketService } from '../../../services/websocket.service';
 import Swal from 'sweetalert2';
 import { NotificationStateService } from '../../../services/notification-state.service';
 import { Subscription } from 'rxjs';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-post',
@@ -47,7 +48,20 @@ export class PostComponent implements OnInit, OnDestroy {
     private webSocketService: WebSocketService,
     private notificationState: NotificationStateService
   ) {
-    this.currentUser = this.dataService.getCurrentUser();
+    const user = this.dataService.getCurrentUser();
+    this.currentUser = user ? {
+      ...user,
+      profileImage: user.profileImage ? this.getFullMediaUrl(user.profileImage) : null
+    } : user;
+  }
+
+  // Helper method to construct full media URL
+  getFullMediaUrl(mediaPath: string): string {
+    if (!mediaPath) return '';
+    // If it's already a full URL, return as is
+    if (mediaPath.startsWith('http')) return mediaPath;
+    // If it's a relative path, prepend the media base URL from environment
+    return `${environment.mediaBaseUrl}${mediaPath}`;
   }
 
   ngOnInit(): void {
@@ -68,33 +82,72 @@ export class PostComponent implements OnInit, OnDestroy {
     if (postId) {
       this.dataService.getPostById(postId).subscribe({
         next: (response) => {
+          console.log('Post API Response:', response);
           this.post = response.payload;
+          
+          // Process media URLs similar to post-card component
+          if (this.post?.mediaUrls && Array.isArray(this.post.mediaUrls)) {
+            this.post.media = this.post.mediaUrls.map((url: string) => ({ 
+              url: this.getFullMediaUrl(url),
+              mediaType: 'image' // Assuming images for now, can be enhanced later
+            }));
+            console.log('Processed media:', this.post.media);
+          } else {
+            this.post.media = [];
+            console.log('No mediaUrls found or not an array');
+          }
+          
           this.loading = false;
           if (this.post?.id) {
-            this.likedPosts[this.post.id] = !!this.post.likedByUser;
-            this.savedPosts[this.post.id] = !!this.post.savedByUser;
-            this.likesCountMap[this.post.id] = this.post.likes || 0;
+            // Fix field mapping to match API response
+            this.likedPosts[this.post.id] = !!this.post.isLiked;
+            this.savedPosts[this.post.id] = !!this.post.isSaved;
+            this.likesCountMap[this.post.id] = this.post.likesCount || 0;
             
             // Initialize comment likes state
             if (this.post.comments) {
               this.post.comments.forEach((comment: any) => {
-                this.commentLikes[comment.id] = comment.likedByUser || false;
-                this.commentLikeCounts[comment.id] = comment.likes || 0;
+                this.commentLikes[comment.id] = comment.likedByUser || comment.isLiked || false;
+                this.commentLikeCounts[comment.id] = comment.likes || comment.likesCount || 0;
+                
+                // Map comment author information from flat structure to nested structure
+                comment.author = {
+                  id: comment.authorId,
+                  name: comment.authorName,
+                  username: comment.authorUsername,
+                  profileImage: comment.authorProfilePicture ? this.getFullMediaUrl(comment.authorProfilePicture) : null
+                };
                 
                 // Also handle replies if they exist
                 if (comment.replies) {
                   comment.replies.forEach((reply: any) => {
-                    this.commentLikes[reply.id] = reply.likedByUser || false;
-                    this.commentLikeCounts[reply.id] = reply.likes || 0;
+                    this.commentLikes[reply.id] = reply.likedByUser || reply.isLiked || false;
+                    this.commentLikeCounts[reply.id] = reply.likes || reply.likesCount || 0;
+                    
+                    // Map reply author information from flat structure to nested structure
+                    reply.author = {
+                      id: reply.authorId,
+                      name: reply.authorName,
+                      username: reply.authorUsername,
+                      profileImage: reply.authorProfilePicture ? this.getFullMediaUrl(reply.authorProfilePicture) : null
+                    };
                   });
                 }
               });
             }
           }
 
-          this.showFollowButton = this.currentUser?.id !== this.post?.author?.id;
-          if (this.showFollowButton && this.post?.author?.id) {
-            this.dataService.isFollowing(this.post.author.id).subscribe({
+          // Map author information from flat structure to nested structure for template compatibility
+          this.post.author = {
+            id: this.post.authorId,
+            name: this.post.authorName,
+            username: this.post.authorUsername,
+            profileImage: this.post.authorProfilePicture ? this.getFullMediaUrl(this.post.authorProfilePicture) : null
+          };
+
+          this.showFollowButton = this.currentUser?.id !== this.post?.authorId;
+          if (this.showFollowButton && this.post?.authorId) {
+            this.dataService.isFollowing(this.post.authorId).subscribe({
               next: (res) => {
                 if (res && res.payload && typeof res.payload.following === 'boolean') {
                   this.isFollowing = res.payload.following;
@@ -125,6 +178,16 @@ export class PostComponent implements OnInit, OnDestroy {
           this.post.comments = [];
         }
         if (content.comment) {
+          // Ensure the comment has the proper author structure
+          if (!content.comment.author && (content.comment.authorId || content.comment.authorName)) {
+            content.comment.author = {
+              id: content.comment.authorId,
+              name: content.comment.authorName,
+              username: content.comment.authorUsername,
+              profileImage: content.comment.authorProfilePicture ? this.getFullMediaUrl(content.comment.authorProfilePicture) : null
+            };
+          }
+
           // Handle both new comments and replies
           if (content.comment.parentId) {
             // This is a reply
@@ -134,9 +197,13 @@ export class PostComponent implements OnInit, OnDestroy {
                   if (!comment.replies) {
                     comment.replies = [];
                   }
-                  comment.replies.unshift(content.comment);
-                  this.commentLikes[content.comment.id] = false;
-                  this.commentLikeCounts[content.comment.id] = 0;
+                  // Check for duplicate replies
+                  const existingReply = comment.replies.find((r: any) => r.id === content.comment.id);
+                  if (!existingReply) {
+                    comment.replies.unshift(content.comment);
+                    this.commentLikes[content.comment.id] = false;
+                    this.commentLikeCounts[content.comment.id] = 0;
+                  }
                   return true;
                 }
                 if (comment.replies && comment.replies.length) {
@@ -152,11 +219,14 @@ export class PostComponent implements OnInit, OnDestroy {
               this.toastService.showToast('New reply added', 'info');
             }
           } else {
-            // This is a new comment
-            this.post.comments.unshift(content.comment);
-            this.commentLikes[content.comment.id] = false;
-            this.commentLikeCounts[content.comment.id] = 0;
-            this.toastService.showToast('New comment added', 'info');
+            // This is a new comment - check for duplicates first
+            const existingComment = this.post.comments.find((c: any) => c.id === content.comment.id);
+            if (!existingComment) {
+              this.post.comments.unshift(content.comment);
+              this.commentLikes[content.comment.id] = false;
+              this.commentLikeCounts[content.comment.id] = 0;
+              this.toastService.showToast('New comment added', 'info');
+            }
           }
           this.cdr.markForCheck();
         }
@@ -351,7 +421,7 @@ export class PostComponent implements OnInit, OnDestroy {
               this.commentLikeCounts[newReply.id] = 0;
 
               // Send WebSocket notification for reply
-              if (comment.author.id !== this.currentUser.id) {
+              if (comment.author?.id !== this.currentUser.id) {
                 this.webSocketService.sendNotification(comment.author.id, {
                   type: 'COMMENT',
                   message: `${this.currentUser.username} replied to your comment`,
@@ -412,7 +482,7 @@ export class PostComponent implements OnInit, OnDestroy {
 
   canDeleteComment(comment: any): boolean {
     if (!this.currentUser) return false;
-    return this.currentUser.id === comment.author.id || // Comment author
+    return this.currentUser.id === comment.author?.id || // Comment author
            this.currentUser.id === this.post?.author?.id; // Post author
   }
 
@@ -497,17 +567,22 @@ export class PostComponent implements OnInit, OnDestroy {
       next: (response) => {
         if (response && response.payload && typeof response.payload.following === 'boolean') {
           this.isFollowing = response.payload.following;
+          const isNowFollowing = response.payload.following;
+          
           // Update follower count
           if (this.post.author) {
-            this.post.author.followers = response.payload.following ? 
+            this.post.author.followers = isNowFollowing ? 
               (this.post.author.followers || 0) + 1 : 
               (this.post.author.followers || 1) - 1;
           }
+          
+          // Note: Backend handles notification creation, no need to send WebSocket notification here
+          
           this.cdr.markForCheck();
           
           // Show success message
           this.toastService.showToast(
-            `Successfully ${response.payload.following ? 'followed' : 'unfollowed'} ${this.post.author.username}`,
+            `Successfully ${isNowFollowing ? 'followed' : 'unfollowed'} ${this.post.author.username}`,
             'success'
           );
         }
