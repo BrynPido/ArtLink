@@ -504,17 +504,17 @@ router.get('/suggested', optionalAuth, async (req, res) => {
           u.id,
           u.name,
           u.username,
-          p.profilePictureUrl,
-          COUNT(DISTINCT f.followerId) as followersCount,
+          p."profilePictureUrl",
+          COUNT(DISTINCT f."followerId") as followersCount,
           COUNT(DISTINCT posts.id) as postsCount,
           'popular' as suggestionType
-        FROM user u
-        LEFT JOIN profile p ON u.id = p.userId
-        LEFT JOIN follow f ON u.id = f.followingId
-        LEFT JOIN post posts ON u.id = posts.authorId
+        FROM "user" u
+        LEFT JOIN profile p ON u.id = p."userId"
+        LEFT JOIN follow f ON u.id = f."followingId"
+        LEFT JOIN post posts ON u.id = posts."authorId"
         WHERE u.username != 'admin' 
         AND u.id != 1
-        GROUP BY u.id, u.name, u.username, p.profilePictureUrl
+        GROUP BY u.id, u.name, u.username, p."profilePictureUrl"
         ORDER BY followersCount DESC, postsCount DESC
         LIMIT 10
       `;
@@ -532,31 +532,30 @@ router.get('/suggested', optionalAuth, async (req, res) => {
         u.id,
         u.name,
         u.username,
-        p.profilePictureUrl,
-        COUNT(DISTINCT f_all.followerId) as followersCount,
+        p."profilePictureUrl",
+        COUNT(DISTINCT f_all."followerId") as followersCount,
         COUNT(DISTINCT posts.id) as postsCount,
         
         -- Check if this user is followed by someone the current user follows
-        COUNT(DISTINCT mutual_connections.followerId) as mutualConnectionsCount,
+        COUNT(DISTINCT mutual_connections."followerId") as mutualConnectionsCount,
         
         -- Determine suggestion type
         CASE 
-          WHEN COUNT(DISTINCT mutual_connections.followerId) > 0 THEN 'friends_of_friends'
+          WHEN COUNT(DISTINCT mutual_connections."followerId") > 0 THEN 'friends_of_friends'
           ELSE 'popular'
         END as suggestionType,
         
-        -- Get names of mutual connections (up to 3)
-        GROUP_CONCAT(
+        -- Get names of mutual connections (limit handled in application)
+        STRING_AGG(
           DISTINCT CASE 
-            WHEN mutual_connections.followerId IS NOT NULL 
+            WHEN mutual_connections."followerId" IS NOT NULL 
             THEN mutual_friends.name 
-            END 
-          ORDER BY mutual_friends.name 
-          LIMIT 3
+            END, 
+          ', '
         ) as mutualFriendsNames
         
-      FROM user u
-      LEFT JOIN profile p ON u.id = p.userId
+      FROM "user" u
+      LEFT JOIN profile p ON u.id = p."userId"
       LEFT JOIN follow f_all ON u.id = f_all."followingId"
       LEFT JOIN post posts ON u.id = posts."authorId"
       

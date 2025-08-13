@@ -122,6 +122,16 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// WebSocket test endpoint
+app.get('/api/websocket-test', (req, res) => {
+  res.json({
+    status: 'OK',
+    message: 'WebSocket server is available',
+    connectedClients: clients.size,
+    timestamp: new Date().toISOString()
+  });
+});
+
 // 404 handler
 app.use('*', (req, res) => {
   res.status(404).json({
