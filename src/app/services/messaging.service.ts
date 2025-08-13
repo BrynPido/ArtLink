@@ -3,6 +3,7 @@ import { DataService } from './data.service';
 import { MessageStateService } from './message-state.service';
 import { BehaviorSubject, Observable, Subject, throwError } from 'rxjs';
 import { catchError, tap, map } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 
 export interface Message {
   id?: number;
@@ -64,11 +65,11 @@ export class MessagingService {
     }
 
     this.userId = userId;
-    // Always use secure WebSocket connection for production server
-    const wsUrl = 'wss://artlink-f4jf.onrender.com';
+    // Use environment configuration for WebSocket URL
+    const wsUrl = environment.wsUrl;
     
     try {
-      console.log(`Connecting to WebSocket server at: ${wsUrl}`);
+      console.log(`🔍 Connecting to WebSocket server at: ${wsUrl}`);
       this.socket = new WebSocket(wsUrl);
 
       this.socket.onopen = () => {
