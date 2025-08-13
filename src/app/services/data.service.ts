@@ -566,17 +566,50 @@ export class DataService {
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
       const now = Date.now() / 1000;
+      
+      // Check if token expires within the next 5 minutes (300 seconds)
+      const timeUntilExpiry = payload.exp - now;
+      
       if (payload.exp && payload.exp < now) {
         console.log('Token expired, clearing storage');
         this.logout();
         return of(false);
       }
+      
+      // If token expires within 5 minutes, try to refresh it
+      if (timeUntilExpiry < 300 && timeUntilExpiry > 0) {
+        console.log('Token expiring soon, attempting refresh');
+        this.refreshToken().subscribe({
+          next: () => console.log('Token refreshed successfully'),
+          error: (error) => {
+            console.error('Token refresh failed:', error);
+            this.logout();
+          }
+        });
+      }
+      
       return of(true);
     } catch (error) {
       console.error('Invalid token format, clearing storage');
       this.logout();
       return of(false);
     }
+  }
+
+  // Add token refresh method
+  private refreshToken(): Observable<any> {
+    return this.http.get(`${this.apiUrl}auth/verify`).pipe(
+      tap((response: any) => {
+        if (response && response.payload && response.payload.token) {
+          localStorage.setItem('token', response.payload.token);
+        }
+      }),
+      catchError((error) => {
+        console.error('Token refresh failed:', error);
+        this.logout();
+        return throwError(() => error);
+      })
+    );
   }
 
   // Check if current user has valid authentication

@@ -142,7 +142,59 @@ router.post('/login', validateLogin, handleValidationErrors, async (req, res) =>
   }
 });
 
-// Verify token endpoint
+// Test endpoint for debugging
+router.get('/test', (req, res) => {
+  res.json({
+    status: 'success',
+    message: 'API is working',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// Debug token endpoint - helps diagnose token issues
+router.get('/debug-token', (req, res) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  
+  if (!token) {
+    return res.json({
+      status: 'debug',
+      message: 'No token provided',
+      hasAuthHeader: !!authHeader,
+      authHeaderValue: authHeader ? 'Bearer [TOKEN]' : null
+    });
+  }
+
+  try {
+    // Decode without verification first to see token content
+    const decoded = jwt.decode(token);
+    const now = Date.now() / 1000;
+    
+    return res.json({
+      status: 'debug',
+      message: 'Token decoded successfully',
+      tokenInfo: {
+        userId: decoded?.userId,
+        email: decoded?.email,
+        issuer: decoded?.iss,
+        issuedAt: decoded?.iat ? new Date(decoded.iat * 1000).toISOString() : null,
+        expiresAt: decoded?.exp ? new Date(decoded.exp * 1000).toISOString() : null,
+        currentTime: new Date(now * 1000).toISOString(),
+        isExpired: decoded?.exp ? decoded.exp < now : 'unknown',
+        timeUntilExpiry: decoded?.exp ? Math.round(decoded.exp - now) : 'unknown'
+      }
+    });
+  } catch (error) {
+    return res.json({
+      status: 'debug',
+      message: 'Token decode failed',
+      error: error.message
+    });
+  }
+});
+
+// Verify token endpoint - Now also refreshes token if needed
 router.get('/verify', authenticateToken, async (req, res) => {
   try {
     const user = await queryOne(
@@ -154,15 +206,48 @@ router.get('/verify', authenticateToken, async (req, res) => {
       [req.user.id]
     );
 
-    res.json({
-      status: 'success',
-      payload: {
-        user
-      }
-    });
+    if (!user) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found'
+      });
+    }
 
+    // Check if we need to issue a new token (if current token expires within 1 hour)
+    const authHeader = req.headers['authorization'];
+    const currentToken = authHeader && authHeader.split(' ')[1];
+    let newToken = null;
+
+    if (currentToken) {
+      try {
+        const decoded = jwt.verify(currentToken, process.env.JWT_SECRET);
+        const now = Date.now() / 1000;
+        const timeUntilExpiry = decoded.exp - now;
+        
+        // If token expires within 1 hour, issue a new one
+        if (timeUntilExpiry < 3600) {
+          newToken = generateToken(user.id, user.email);
+          console.log('Issued new token for user', user.id);
+        }
+      } catch (error) {
+        // If there's an error verifying the token, we shouldn't reach here
+        // but just in case, issue a new token
+        newToken = generateToken(user.id, user.email);
+      }
+    }
+
+    const response = {
+      status: 'success',
+      message: 'Token verified',
+      payload: {
+        user,
+        ...(newToken && { token: newToken })
+      }
+    };
+
+    res.json(response);
   } catch (error) {
-    console.error('Token verification error:', error);
+    console.error('Verify token error:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to verify token'

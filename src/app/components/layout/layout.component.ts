@@ -5,6 +5,7 @@ import { DataService } from '../../services/data.service';
 import { WebSocketService } from '../../services/websocket.service';
 import { NotificationStateService, Notification } from '../../services/notification-state.service';
 import { MessageStateService } from '../../services/message-state.service';
+import { DebugService } from '../../utils/debug.service';
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import Swal from 'sweetalert2';
@@ -48,13 +49,20 @@ export class LayoutComponent implements OnInit, OnDestroy {
     private dataService: DataService,
     private webSocketService: WebSocketService,
     private notificationState: NotificationStateService,
-    private messageState: MessageStateService
+    private messageState: MessageStateService,
+    private debugService: DebugService
   ) {
     const user = this.dataService.getCurrentUser();
     this.currentUser = user ? {
       ...user,
       profileImage: user.profileImage ? this.getFullMediaUrl(user.profileImage) : null
     } : user;
+    
+    // Run diagnostics on production to help debug token issues
+    if (environment.production) {
+      console.log('🚀 Running production diagnostics...');
+      this.debugService.runFullDiagnostics();
+    }
   }
 
   // Helper method to construct full media URL
