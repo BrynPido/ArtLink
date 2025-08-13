@@ -181,11 +181,16 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server
-server.listen(PORT, () => {
-  console.log(`🚀 ArtLink API Server running on port ${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
-});
+// Export the app for Vercel
+module.exports = app;
+
+// Start server only in development
+if (process.env.NODE_ENV !== 'production') {
+  server.listen(PORT, () => {
+    console.log(`🚀 ArtLink API Server running on port ${PORT}`);
+    console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+  });
+}
 
 // WebSocket connection handling
 const clients = new Map(); // Store client connections with user IDs
