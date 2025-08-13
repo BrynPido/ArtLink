@@ -127,7 +127,7 @@ export class ExploreComponent implements OnInit {
     
     // Remove leading slash if present to avoid double slashes
     const cleanPath = mediaPath.startsWith('/') ? mediaPath.substring(1) : mediaPath;
-    return `http://localhost:3000/${cleanPath}`;
+    return `${environment.mediaBaseUrl}/${cleanPath}`;
   }
 
   navigateToProfile(userId: number): void {

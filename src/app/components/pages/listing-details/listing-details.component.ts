@@ -6,6 +6,7 @@ import { TimeAgoPipe } from '../../../utils/time-ago.pipe';
 import { ToastService } from '../../../services/toast.service';
 import Swal from 'sweetalert2';
 import { FormsModule } from '@angular/forms';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-listing-details',
@@ -279,6 +280,6 @@ export class ListingDetailsComponent implements OnInit {
     
     // Remove leading slash if present to avoid double slashes
     const cleanPath = mediaPath.startsWith('/') ? mediaPath.substring(1) : mediaPath;
-    return `http://localhost:3000/${cleanPath}`;
+    return `${environment.mediaBaseUrl}/${cleanPath}`;
   }
 }
