@@ -16,6 +16,7 @@ export class LoginComponent {
   loginForm: FormGroup;
   passwordFieldType: string = 'password';
   errorMessage: string | null = null;
+  isSubmitting: boolean = false;
 
   constructor(private fb: FormBuilder, private dataService: DataService, private toastService: ToastService) {
     this.loginForm = this.fb.group({
@@ -34,16 +35,21 @@ export class LoginComponent {
 
   onSubmit() {
     if (this.loginForm.valid) {
+      this.isSubmitting = true;
+      this.errorMessage = null;
+      
       this.dataService.login(this.loginForm.value).subscribe({
         next: (response) => {
           console.log('Login Successful', response);
           this.errorMessage = null; // Clear errors on success
           this.toastService.showToast('Login successful!', 'success');
+          this.isSubmitting = false;
         },
         error: (error) => {
           this.errorMessage = error.message;
           console.error('Login Failed', error);
           this.toastService.showToast('Login failed!', 'error');
+          this.isSubmitting = false;
         },
       });
     }

@@ -28,6 +28,7 @@ export class RegisterComponent {
         email: ['', [Validators.required, Validators.email]],
         password: ['', [Validators.required, Validators.minLength(6), this.passwordValidator]],
         confirmPassword: ['', Validators.required],
+        termsAccepted: [false, Validators.requiredTrue],
       },
       { validator: this.passwordMatchValidator }
     );
@@ -97,6 +98,9 @@ export class RegisterComponent {
       if (field.hasError('mismatch')) {
         errors.push('Passwords do not match');
       }
+      if (field.hasError('required') && fieldName === 'termsAccepted') {
+        errors.push('You must accept the Terms of Service and Privacy Policy');
+      }
     }
 
     // Backend validation errors
@@ -113,66 +117,43 @@ export class RegisterComponent {
       'username': 'Username',
       'email': 'Email',
       'password': 'Password',
-      'confirmPassword': 'Confirm Password'
+      'confirmPassword': 'Confirm Password',
+      'termsAccepted': 'Terms and Privacy Policy acceptance'
     };
     return displayNames[fieldName] || fieldName;
   }
 
   onSubmit() {
     if (this.registerForm.valid) {
-      this.isSubmitting = true;
-      this.errorMessage = null;
-      this.validationErrors = {};
-
-      this.dataService.register(this.registerForm.value).subscribe({
-        next: (response) => {
-          console.log('Registration Successful', response);
-          this.registerForm.reset();
-          this.router.navigate(['/login']);
-          this.toastService.showToast('Registration successful! Please sign in.', 'success');
-          this.isSubmitting = false;
-        },
-        error: (error) => {
-          this.isSubmitting = false;
-          console.error('Registration Failed', error);
-          
-          // Reset validation errors
-          this.validationErrors = {};
-          
-          // Handle different error types
-          let errorResponse = error;
-          
-          // If the error is wrapped in an Error object, extract the actual response
-          if (error instanceof Error && error.message) {
-            try {
-              errorResponse = JSON.parse(error.message);
-            } catch (parseError) {
-              // If parsing fails, use the error object itself
-              errorResponse = error;
-            }
-          }
-          
-          // Handle validation errors from backend
-          if (errorResponse.status === 'error' && errorResponse.errors) {
-            errorResponse.errors.forEach((err: any) => {
-              if (err.path) {
-                if (!this.validationErrors[err.path]) {
-                  this.validationErrors[err.path] = [];
-                }
-                this.validationErrors[err.path].push(err.msg);
-              }
-            });
-            this.errorMessage = errorResponse.message || 'Validation failed';
-          } else if (errorResponse.message) {
-            this.errorMessage = errorResponse.message;
-          } else if (error.message) {
-            this.errorMessage = error.message;
-          } else {
-            this.errorMessage = 'Registration failed. Please try again.';
-          }
-          
-          this.toastService.showToast(this.errorMessage || 'Registration failed', 'error');
-        },
+      // Show confirmation dialog before proceeding with registration
+      Swal.fire({
+        title: 'Confirm Registration',
+        html: `
+          <div class="text-left">
+            <p class="mb-3">Please confirm that you want to create an account with the following details:</p>
+            <ul class="list-disc list-inside space-y-1 text-sm">
+              <li><strong>Name:</strong> ${this.registerForm.get('name')?.value}</li>
+              <li><strong>Username:</strong> ${this.registerForm.get('username')?.value}</li>
+              <li><strong>Email:</strong> ${this.registerForm.get('email')?.value}</li>
+            </ul>
+            <p class="mt-3 text-xs text-gray-600">
+              By proceeding, you confirm that you have read and agreed to our Terms of Service and Privacy Policy.
+            </p>
+          </div>
+        `,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#4f46e5',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Yes, Create Account',
+        cancelButtonText: 'Cancel',
+        customClass: {
+          popup: 'swal2-popup-custom'
+        }
+      }).then((result) => {
+        if (result.isConfirmed) {
+          this.proceedWithRegistration();
+        }
       });
     } else {
       // Mark all fields as touched to show validation errors
@@ -180,6 +161,146 @@ export class RegisterComponent {
         this.registerForm.get(key)?.markAsTouched();
       });
     }
+  }
+
+  private proceedWithRegistration() {
+    this.isSubmitting = true;
+    this.errorMessage = null;
+    this.validationErrors = {};
+
+    // Remove termsAccepted from the form data before sending to server
+    const formData = { ...this.registerForm.value };
+    delete formData.termsAccepted;
+
+    this.dataService.register(formData).subscribe({
+      next: (response) => {
+        console.log('Registration Successful', response);
+        this.registerForm.reset();
+        this.router.navigate(['/login']);
+        this.toastService.showToast('Registration successful! Please sign in.', 'success');
+        this.isSubmitting = false;
+      },
+      error: (error) => {
+        this.isSubmitting = false;
+        console.error('Registration Failed', error);
+        
+        // Reset validation errors
+        this.validationErrors = {};
+        
+        // Handle different error types
+        let errorResponse = error;
+        
+        // If the error is wrapped in an Error object, extract the actual response
+        if (error instanceof Error && error.message) {
+          try {
+            errorResponse = JSON.parse(error.message);
+          } catch (parseError) {
+            // If parsing fails, use the error object itself
+            errorResponse = error;
+          }
+        }
+        
+        // Handle validation errors from backend
+        if (errorResponse.status === 'error' && errorResponse.errors) {
+          errorResponse.errors.forEach((err: any) => {
+            if (err.path) {
+              if (!this.validationErrors[err.path]) {
+                this.validationErrors[err.path] = [];
+              }
+              this.validationErrors[err.path].push(err.msg);
+            }
+          });
+          this.errorMessage = errorResponse.message || 'Validation failed';
+        } else if (errorResponse.message) {
+          this.errorMessage = errorResponse.message;
+        } else if (error.message) {
+          this.errorMessage = error.message;
+        } else {
+          this.errorMessage = 'Registration failed. Please try again.';
+        }
+        
+        this.toastService.showToast(this.errorMessage || 'Registration failed', 'error');
+      },
+    });
+  }
+
+  showTermsOfService() {
+    Swal.fire({
+      title: 'Terms of Service',
+      html: `
+        <div class="text-left text-sm space-y-3 max-h-96 overflow-y-auto">
+          <h3 class="font-semibold text-base">1. Acceptance of Terms</h3>
+          <p>By creating an account on ArtLink, you agree to be bound by these Terms of Service and all applicable laws and regulations.</p>
+          
+          <h3 class="font-semibold text-base">2. User Accounts</h3>
+          <p>You are responsible for maintaining the confidentiality of your account and password. You agree to accept responsibility for all activities that occur under your account.</p>
+          
+          <h3 class="font-semibold text-base">3. Content Guidelines</h3>
+          <p>Users must not post content that is illegal, harmful, threatening, abusive, harassing, defamatory, vulgar, obscene, or otherwise objectionable.</p>
+          
+          <h3 class="font-semibold text-base">4. Intellectual Property</h3>
+          <p>Users retain ownership of their original content but grant ArtLink a license to display, distribute, and promote their work on the platform.</p>
+          
+          <h3 class="font-semibold text-base">5. Prohibited Activities</h3>
+          <p>Users may not engage in spamming, harassment, impersonation, or any activity that disrupts the platform's functionality.</p>
+          
+          <h3 class="font-semibold text-base">6. Termination</h3>
+          <p>ArtLink reserves the right to terminate or suspend accounts that violate these terms.</p>
+          
+          <h3 class="font-semibold text-base">7. Disclaimer</h3>
+          <p>ArtLink is provided "as is" without any warranties, express or implied.</p>
+          
+          <p class="text-xs text-gray-500 mt-4">Last updated: August 14, 2025</p>
+        </div>
+      `,
+      confirmButtonText: 'I Understand',
+      confirmButtonColor: '#4f46e5',
+      width: '600px',
+      customClass: {
+        popup: 'swal2-popup-custom'
+      }
+    });
+  }
+
+  showPrivacyPolicy() {
+    Swal.fire({
+      title: 'Privacy Policy',
+      html: `
+        <div class="text-left text-sm space-y-3 max-h-96 overflow-y-auto">
+          <h3 class="font-semibold text-base">1. Information We Collect</h3>
+          <p>We collect information you provide directly (name, email, username) and automatically through your use of our services (usage data, cookies).</p>
+          
+          <h3 class="font-semibold text-base">2. How We Use Your Information</h3>
+          <p>We use your information to provide our services, communicate with you, improve our platform, and ensure security.</p>
+          
+          <h3 class="font-semibold text-base">3. Information Sharing</h3>
+          <p>We do not sell your personal information. We may share information in limited circumstances such as legal requirements or service providers.</p>
+          
+          <h3 class="font-semibold text-base">4. Data Security</h3>
+          <p>We implement appropriate security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction.</p>
+          
+          <h3 class="font-semibold text-base">5. Your Rights</h3>
+          <p>You have the right to access, update, or delete your personal information. You can also opt out of certain communications.</p>
+          
+          <h3 class="font-semibold text-base">6. Cookies</h3>
+          <p>We use cookies to enhance your experience, analyze usage, and provide personalized content.</p>
+          
+          <h3 class="font-semibold text-base">7. Data Retention</h3>
+          <p>We retain your information as long as your account is active or as needed to provide services.</p>
+          
+          <h3 class="font-semibold text-base">8. Contact Us</h3>
+          <p>If you have questions about this Privacy Policy, please contact us through our support channels.</p>
+          
+          <p class="text-xs text-gray-500 mt-4">Last updated: August 14, 2025</p>
+        </div>
+      `,
+      confirmButtonText: 'I Understand',
+      confirmButtonColor: '#4f46e5',
+      width: '600px',
+      customClass: {
+        popup: 'swal2-popup-custom'
+      }
+    });
   }
 
   showPasswords() {

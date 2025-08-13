@@ -1,0 +1,138 @@
+/* Custom styles for SweetAlert2 modals */
+:host ::ng-deep .swal2-popup-custom {
+  font-family: inherit;
+}
+
+:host ::ng-deep .swal2-popup-custom .swal2-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+:host ::ng-deep .swal2-popup-custom .swal2-html-container {
+  font-size: 0.875rem;
+  color: #374151;
+  line-height: 1.5;
+}
+
+:host ::ng-deep .swal2-popup-custom .swal2-html-container h3 {
+  color: #1f2937;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+:host ::ng-deep .swal2-popup-custom .swal2-html-container p {
+  margin-bottom: 0.75rem;
+}
+
+/* Enhanced input field styles */
+.group input:focus + div svg {
+  color: #4f46e5;
+  transform: scale(1.1);
+}
+
+/* Custom hover effects for form fields */
+.group:hover input {
+  border-color: #cbd5e1;
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+/* Smooth transitions for all interactive elements */
+input, button, a {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Enhanced focus ring for accessibility */
+input:focus {
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1), 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* Custom checkbox styling */
+.custom-checkbox {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Remove default checkbox styles */
+input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+/* Checkbox checked state via peer classes in HTML */
+.peer:checked ~ .custom-checkbox .checkmark {
+  opacity: 1 !important;
+}
+
+/* Terms agreement text styling */
+.text-sm {
+  user-select: none;
+}
+
+/* Button hover effects */
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Error state styling */
+.text-red-600 {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Loading animation enhancement */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Adjusted styles for compact layout */
+.group input {
+  padding: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.group label {
+  font-size: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+/* Adjusted spacing */
+.space-y-4 > * {
+  margin-bottom: 1rem;
+}
+
+.space-y-1 > * {
+  margin-bottom: 0.5rem;
+}
+
+/* Reduced button size */
+button {
+  font-size: 0.875rem;
+}
