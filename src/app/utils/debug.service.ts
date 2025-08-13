@@ -53,9 +53,7 @@ export class DebugService {
   async testApiConnectivity(): Promise<void> {
     try {
       console.log('🔍 DEBUG: Testing API connectivity...');
-      const response = await this.http.get(`${environment.apiUrl}auth/test`, {
-        headers: { 'Cache-Control': 'no-cache' }
-      }).toPromise();
+      const response = await this.http.get(`${environment.apiUrl}auth/test`).toPromise();
       console.log('🔍 DEBUG: API connectivity test successful:', response);
     } catch (error) {
       console.error('🔍 DEBUG: API connectivity test failed:', error);
