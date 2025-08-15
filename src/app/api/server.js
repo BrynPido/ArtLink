@@ -50,12 +50,19 @@ app.use(cors({
     if (!origin) return callback(null, true);
     
     const allowedOrigins = [
-      'http://localhost:4200', 
+      'http://localhost:4200',
       'https://art-link.site',
-      'https://artlink-seven.vercel.app',  // Your frontend Vercel URL
-      'https://art-link-seven.vercel.app',  // Your actual frontend URL
-      'https://artlink.vercel.app',  // In case you change the URL
-      'https://art-link.vercel.app'  // Alternative frontend URL
+      'https://artlink-seven.vercel.app',
+      'https://art-link-seven.vercel.app',
+      'https://artlink.vercel.app',
+      'https://art-link.vercel.app',
+      'https://artlink-api.onrender.com',
+      'https://artlink-api.onrender.com/',
+      'https://artlink-seven.vercel.app/',
+      'https://art-link-seven.vercel.app/',
+      'https://art-link.site/',
+      'https://artlink.vercel.app/',
+      'https://art-link.vercel.app/'
     ];
     
     if (allowedOrigins.indexOf(origin) !== -1) {
@@ -122,15 +129,7 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// WebSocket test endpoint
-app.get('/api/websocket-test', (req, res) => {
-  res.json({
-    status: 'OK',
-    message: 'WebSocket server is available',
-    connectedClients: clients.size,
-    timestamp: new Date().toISOString()
-  });
-});
+
 
 // 404 handler
 app.use('*', (req, res) => {
