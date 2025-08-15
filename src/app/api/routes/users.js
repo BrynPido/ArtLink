@@ -6,23 +6,12 @@ const { query, queryOne } = require('../config/database');
 const { authenticateToken, optionalAuth } = require('../middleware/auth');
 const { createNotification } = require('./notifications');
 const wsService = require('../services/websocket-service');
+const storageService = require('../services/supabase-storage');
 
 const router = express.Router();
 
-// Configure multer for profile picture uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadPath = path.join(__dirname, '../uploads/profiles');
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-    }
-    cb(null, uploadPath);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'profile-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Configure multer for memory storage (we'll upload to Supabase)
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage: storage,
@@ -348,11 +337,20 @@ router.post('/updateProfile', authenticateToken, upload.single('profilePicture')
     const { imageData } = req.body;
     
     let profilePictureUrl = null;
+    let uploadResult = null;
 
     // Handle file upload or base64 image data
     if (req.file) {
-      profilePictureUrl = `/uploads/profiles/${req.file.filename}`;
+      console.log('🔍 Uploading profile picture via file upload...');
+      uploadResult = await storageService.uploadFile(
+        req.file.buffer,
+        req.file.originalname,
+        'profiles',
+        req.file.mimetype
+      );
+      profilePictureUrl = uploadResult.url;
     } else if (imageData) {
+      console.log('🔍 Uploading profile picture via base64...');
       // Handle base64 image data
       const matches = imageData.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
       if (matches && matches.length === 3) {
@@ -370,18 +368,14 @@ router.post('/updateProfile', authenticateToken, upload.single('profilePicture')
         // Generate filename
         const extension = imageType.split('/')[1];
         const filename = `profile-${Date.now()}-${Math.round(Math.random() * 1E9)}.${extension}`;
-        const uploadPath = path.join(__dirname, '../uploads/profiles');
         
-        // Ensure directory exists
-        if (!fs.existsSync(uploadPath)) {
-          fs.mkdirSync(uploadPath, { recursive: true });
-        }
-
-        // Save file
-        const filePath = path.join(uploadPath, filename);
-        fs.writeFileSync(filePath, imageBuffer);
-        
-        profilePictureUrl = `/uploads/profiles/${filename}`;
+        uploadResult = await storageService.uploadFile(
+          imageBuffer,
+          filename,
+          'profiles',
+          imageType
+        );
+        profilePictureUrl = uploadResult.url;
       }
     }
 
@@ -391,6 +385,8 @@ router.post('/updateProfile', authenticateToken, upload.single('profilePicture')
         message: 'No valid image provided'
       });
     }
+
+    console.log('✅ Profile picture uploaded successfully:', profilePictureUrl);
 
     // Update profile
     await query(

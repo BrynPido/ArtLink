@@ -315,8 +315,15 @@ export class PostComponent implements OnInit, OnDestroy {
     const userId = this.currentUser.id;
     this.dataService.likePost(postId, userId).subscribe({
       next: (response) => {
-        this.likedPosts[postId] = !this.likedPosts[postId];
-        this.likesCountMap[postId] += this.likedPosts[postId] ? 1 : -1;
+        // Update local state based on server response
+        if (response && response.payload) {
+          this.likedPosts[postId] = response.payload.liked;
+          
+          // Update likes count from server response
+          if (response.payload.likesCount !== undefined) {
+            this.likesCountMap[postId] = response.payload.likesCount;
+          }
+        }
         this.cdr.markForCheck();
       },
       error: (err) => {
@@ -329,7 +336,10 @@ export class PostComponent implements OnInit, OnDestroy {
     const userId = this.currentUser.id;
     this.dataService.savePost(postId, userId).subscribe({
       next: (response) => {
-        this.savedPosts[postId] = !this.savedPosts[postId];
+        // Update local state based on server response
+        if (response && response.payload) {
+          this.savedPosts[postId] = response.payload.saved;
+        }
         this.cdr.markForCheck();
       },
       error: (err) => {

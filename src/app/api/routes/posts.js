@@ -5,23 +5,12 @@ const fs = require('fs');
 const { query, queryOne, transaction } = require('../config/database');
 const { authenticateToken, optionalAuth } = require('../middleware/auth');
 const { validatePost, validateComment, handleValidationErrors } = require('../middleware/validation');
+const storageService = require('../services/supabase-storage');
 
 const router = express.Router();
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadPath = path.join(__dirname, '../uploads');
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-    }
-    cb(null, uploadPath);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Configure multer for memory storage (we'll upload to Supabase)
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage: storage,
@@ -47,6 +36,8 @@ router.post('/createPost', authenticateToken, async (req, res) => {
     const { title, content, media } = req.body;
     const userId = req.user.id;
 
+    console.log('🔍 Creating post with media items:', media?.length || 0);
+
     const result = await transaction(async (connection) => {
       // Insert post
       const postResult = await connection.query(
@@ -58,37 +49,43 @@ router.post('/createPost', authenticateToken, async (req, res) => {
 
       // Handle media if provided
       if (media && Array.isArray(media) && media.length > 0) {
-        const uploadPath = path.join(__dirname, '../uploads');
-        if (!fs.existsSync(uploadPath)) {
-          fs.mkdirSync(uploadPath, { recursive: true });
-        }
-
         for (const mediaItem of media) {
           let mediaUrl = mediaItem.url;
-          let mediaType = mediaItem.mediaType || 'image';
+          let mediaType = mediaItem.mediaType || 'image/jpeg';
 
-          // If it's a base64 data URL, save it as a file
+          // If it's a base64 data URL, upload it to Supabase
           if (mediaUrl && mediaUrl.startsWith('data:')) {
             try {
+              console.log('🔍 Processing base64 media for Supabase upload...');
               const matches = mediaUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
               if (matches && matches.length === 3) {
                 const mimeType = matches[1];
                 const base64Data = matches[2];
                 
-                // Generate unique filename
-                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-                const extension = mimeType.split('/')[1] || 'jpg';
-                const filename = `${uniqueSuffix}.${extension}`;
-                const filePath = path.join(uploadPath, filename);
+                // Convert base64 to buffer
+                const imageBuffer = Buffer.from(base64Data, 'base64');
                 
-                // Save base64 data as file
-                fs.writeFileSync(filePath, base64Data, 'base64');
-                mediaUrl = `/uploads/${filename}`;
+                // Generate unique filename
+                const extension = mimeType.split('/')[1] || 'jpg';
+                const filename = `post-${Date.now()}-${Math.round(Math.random() * 1E9)}.${extension}`;
+                
+                // Upload to Supabase storage
+                const uploadResult = await storageService.uploadFile(
+                  imageBuffer,
+                  filename,
+                  'posts',
+                  mimeType
+                );
+                
+                mediaUrl = uploadResult.url;
                 mediaType = mimeType;
+                
+                console.log('✅ Base64 media uploaded to Supabase:', uploadResult.url);
               }
             } catch (saveError) {
-              console.error('Error saving base64 media:', saveError);
-              // Continue with the original URL if saving fails
+              console.error('❌ Error uploading base64 media to Supabase:', saveError);
+              // Skip this media item if upload fails
+              continue;
             }
           }
 
@@ -124,6 +121,8 @@ router.post('/createPostFile', authenticateToken, upload.array('media', 5), asyn
     const userId = req.user.id;
     const files = req.files || [];
 
+    console.log('🔍 Creating post with files:', files.length);
+
     const result = await transaction(async (connection) => {
       // Insert post
       const postResult = await connection.query(
@@ -133,13 +132,24 @@ router.post('/createPostFile', authenticateToken, upload.array('media', 5), asyn
 
       const postId = postResult.rows[0].id;
 
-      // Insert media if files were uploaded
+      // Upload files to Supabase and insert media records
       if (files.length > 0) {
         for (const file of files) {
+          console.log('🔍 Uploading file to Supabase:', file.originalname);
+          
+          const uploadResult = await storageService.uploadFile(
+            file.buffer,
+            file.originalname,
+            'posts',
+            file.mimetype
+          );
+
           await connection.query(
             'INSERT INTO media ("postId", "mediaUrl", "mediaType", "createdAt", "updatedAt") VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
-            [postId, `/uploads/${file.filename}`, file.mimetype]
+            [postId, uploadResult.url, file.mimetype]
           );
+
+          console.log('✅ File uploaded and media record created:', uploadResult.url);
         }
       }
 
@@ -314,23 +324,31 @@ router.post('/likePost', authenticateToken, async (req, res) => {
     if (existingLike) {
       // Unlike
       await query('DELETE FROM "like" WHERE id = $1', [existingLike.id]);
-      res.json({
-        status: 'success',
-        message: 'Post unliked',
-        payload: { liked: false }
-      });
     } else {
       // Like
       await query(
         'INSERT INTO "like" ("postId", "userId", "createdAt", "updatedAt") VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
         [postId, userId]
       );
-      res.json({
-        status: 'success',
-        message: 'Post liked',
-        payload: { liked: true }
-      });
     }
+
+    // Get updated likes count
+    const likesCountResult = await queryOne(
+      'SELECT COUNT(*) as count FROM "like" WHERE "postId" = $1',
+      [postId]
+    );
+
+    const isLiked = !existingLike; // If no existing like, then we just liked it
+    const likesCount = parseInt(likesCountResult.count);
+
+    res.json({
+      status: 'success',
+      message: isLiked ? 'Post liked' : 'Post unliked',
+      payload: { 
+        liked: isLiked,
+        likesCount: likesCount
+      }
+    });
 
   } catch (error) {
     console.error('Like post error:', error);
@@ -447,7 +465,7 @@ router.post('/addComment', authenticateToken, validateComment, handleValidationE
       LEFT JOIN "user" u ON c."authorId" = u.id
       LEFT JOIN profile pr ON u.id = pr."userId"
       WHERE c.id = $1
-    `, [result.rows[0].id]);
+    `, [result[0].id]);
 
     res.status(201).json({
       status: 'success',

@@ -142,57 +142,6 @@ router.post('/login', validateLogin, handleValidationErrors, async (req, res) =>
   }
 });
 
-// Test endpoint for debugging
-router.get('/test', (req, res) => {
-  res.json({
-    status: 'success',
-    message: 'API is working',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
-  });
-});
-
-// Debug token endpoint - helps diagnose token issues
-router.get('/debug-token', (req, res) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-  
-  if (!token) {
-    return res.json({
-      status: 'debug',
-      message: 'No token provided',
-      hasAuthHeader: !!authHeader,
-      authHeaderValue: authHeader ? 'Bearer [TOKEN]' : null
-    });
-  }
-
-  try {
-    // Decode without verification first to see token content
-    const decoded = jwt.decode(token);
-    const now = Date.now() / 1000;
-    
-    return res.json({
-      status: 'debug',
-      message: 'Token decoded successfully',
-      tokenInfo: {
-        userId: decoded?.userId,
-        email: decoded?.email,
-        issuer: decoded?.iss,
-        issuedAt: decoded?.iat ? new Date(decoded.iat * 1000).toISOString() : null,
-        expiresAt: decoded?.exp ? new Date(decoded.exp * 1000).toISOString() : null,
-        currentTime: new Date(now * 1000).toISOString(),
-        isExpired: decoded?.exp ? decoded.exp < now : 'unknown',
-        timeUntilExpiry: decoded?.exp ? Math.round(decoded.exp - now) : 'unknown'
-      }
-    });
-  } catch (error) {
-    return res.json({
-      status: 'debug',
-      message: 'Token decode failed',
-      error: error.message
-    });
-  }
-});
 
 // Verify token endpoint - Now also refreshes token if needed
 router.get('/verify', authenticateToken, async (req, res) => {

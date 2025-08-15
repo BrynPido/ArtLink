@@ -5,23 +5,12 @@ const fs = require('fs');
 const { query, queryOne, transaction } = require('../config/database');
 const { authenticateToken, optionalAuth } = require('../middleware/auth');
 const { validateListing, handleValidationErrors } = require('../middleware/validation');
+const storageService = require('../services/supabase-storage');
 
 const router = express.Router();
 
-// Configure multer for listing image uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadPath = path.join(__dirname, '../uploads/listings');
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-    }
-    cb(null, uploadPath);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'listing-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Configure multer for memory storage (we'll upload to Supabase)
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage: storage,
@@ -48,6 +37,8 @@ router.post('/create', authenticateToken, upload.array('media', 10), validateLis
     const authorId = req.user.id;
     const files = req.files || [];
 
+    console.log('🔍 Creating listing with files:', files.length);
+
     // Parse listingDetails if it's a string
     const details = typeof listingDetails === 'string' ? JSON.parse(listingDetails) : listingDetails;
 
@@ -66,13 +57,24 @@ router.post('/create', authenticateToken, upload.array('media', 10), validateLis
         [listingId, details.price, details.category, details.condition, details.location]
       );
 
-      // Insert media if files were uploaded
+      // Upload files to Supabase and insert media records
       if (files.length > 0) {
         for (const file of files) {
+          console.log('🔍 Uploading listing file to Supabase:', file.originalname);
+          
+          const uploadResult = await storageService.uploadFile(
+            file.buffer,
+            file.originalname,
+            'listings',
+            file.mimetype
+          );
+
           await connection.query(
             'INSERT INTO media ("listingId", "mediaUrl", "mediaType", "createdAt", "updatedAt") VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
-            [listingId, `/uploads/listings/${file.filename}`, file.mimetype]
+            [listingId, uploadResult.url, file.mimetype]
           );
+
+          console.log('✅ Listing file uploaded and media record created:', uploadResult.url);
         }
       }
 

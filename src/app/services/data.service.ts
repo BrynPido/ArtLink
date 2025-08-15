@@ -225,9 +225,8 @@ export class DataService {
   addComment(postId: number, content: string, parentId?: number): Observable<any> {
     const data = {
       content,
-      postId,
-      authorId: this.getCurrentUser().id,
-      parentId
+      postId: Number(postId), // Ensure postId is a number
+      ...(parentId && { parentId: Number(parentId) }) // Only include parentId if it exists
     };
     return this.http.post(`${this.apiUrl}posts/addComment`, data, {
       responseType: 'json'

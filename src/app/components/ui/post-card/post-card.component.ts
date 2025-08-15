@@ -145,20 +145,26 @@ export class PostCardComponent implements OnInit {
     const userId = this.currentUser.id;
     this.dataService.likePost(postId, userId).subscribe({
       next: (response) => {
-        // Update local state
-        this.likedPosts[postId] = !this.likedPosts[postId];
-        this.likesCountMap[postId] += this.likedPosts[postId] ? 1 : -1;
-        
-        // If the post was liked (not unliked) and it's not the user's own post
-        if (this.likedPosts[postId] && authorId !== userId) {
-          // Send real-time notification through WebSocket
-          this.webSocketService.sendNotification(authorId, {
-            type: 'LIKE',
-            message: `${this.currentUser.username} liked your post`,
-            userId: userId,
-            postId: postId,
-            timestamp: new Date().toISOString()
-          });
+        // Update local state based on server response
+        if (response && response.payload) {
+          this.likedPosts[postId] = response.payload.liked;
+          
+          // Update likes count from server response
+          if (response.payload.likesCount !== undefined) {
+            this.likesCountMap[postId] = response.payload.likesCount;
+          }
+          
+          // If the post was liked (not unliked) and it's not the user's own post
+          if (response.payload.liked && authorId !== userId) {
+            // Send real-time notification through WebSocket
+            this.webSocketService.sendNotification(authorId, {
+              type: 'LIKE',
+              message: `${this.currentUser.username} liked your post`,
+              userId: userId,
+              postId: postId,
+              timestamp: new Date().toISOString()
+            });
+          }
         }
         
         this.cdr.markForCheck();
@@ -174,11 +180,15 @@ export class PostCardComponent implements OnInit {
     const userId = this.currentUser.id;
     this.dataService.savePost(postId, userId).subscribe({
       next: (response) => {
-        this.savedPosts[postId] = !this.savedPosts[postId];
+        // Update local state based on server response
+        if (response && response.payload) {
+          this.savedPosts[postId] = response.payload.saved;
+        }
         this.cdr.markForCheck(); // Trigger change detection
       },
       error: (err) => {
         console.error('Error toggling save:', err);
+        this.toastService.showToast('Failed to save post', 'error');
       }
     });
   }
