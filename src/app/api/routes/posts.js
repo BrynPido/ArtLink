@@ -497,23 +497,31 @@ router.post('/likeComment', authenticateToken, async (req, res) => {
     if (existingLike) {
       // Unlike
       await query('DELETE FROM "like" WHERE id = $1', [existingLike.id]);
-      res.json({
-        status: 'success',
-        message: 'Comment unliked',
-        payload: { liked: false }
-      });
     } else {
       // Like
       await query(
         'INSERT INTO "like" ("commentId", "userId", "createdAt", "updatedAt") VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
         [commentId, userId]
       );
-      res.json({
-        status: 'success',
-        message: 'Comment liked',
-        payload: { liked: true }
-      });
     }
+
+    // Get updated likes count for the comment
+    const likesCountResult = await queryOne(
+      'SELECT COUNT(*) as count FROM "like" WHERE "commentId" = $1',
+      [commentId]
+    );
+    const likesCount = parseInt(likesCountResult.count);
+
+    const liked = !existingLike; // If we just liked, liked = true
+
+    res.json({
+      status: 'success',
+      message: liked ? 'Comment liked' : 'Comment unliked',
+      payload: { 
+        liked,
+        likesCount
+      }
+    });
 
   } catch (error) {
     console.error('Like comment error:', error);

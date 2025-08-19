@@ -388,11 +388,15 @@ router.post('/updateProfile', authenticateToken, upload.single('profilePicture')
 
     console.log('✅ Profile picture uploaded successfully:', profilePictureUrl);
 
-    // Update profile
-    await query(
-      'UPDATE profile SET "profilePictureUrl" = $1, "updatedAt" = CURRENT_TIMESTAMP WHERE "userId" = $2',
-      [profilePictureUrl, userId]
-    );
+    // Upsert profile (insert if not exists, update if exists)
+    await query(`
+      INSERT INTO profile ("userId", "profilePictureUrl", "createdAt", "updatedAt")
+      VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      ON CONFLICT ("userId")
+      DO UPDATE SET 
+        "profilePictureUrl" = EXCLUDED."profilePictureUrl",
+        "updatedAt" = CURRENT_TIMESTAMP
+    `, [userId, profilePictureUrl]);
 
     res.json({
       status: 'success',
@@ -425,10 +429,14 @@ router.post('/updateBio', authenticateToken, async (req, res) => {
       });
     }
 
-    await query(
-      'UPDATE profile SET bio = $1, "updatedAt" = CURRENT_TIMESTAMP WHERE "userId" = $2',
-      [bio || '', userId]
-    );
+    await query(`
+      INSERT INTO profile ("userId", bio, "createdAt", "updatedAt")
+      VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      ON CONFLICT ("userId")
+      DO UPDATE SET 
+        bio = EXCLUDED.bio,
+        "updatedAt" = CURRENT_TIMESTAMP
+    `, [userId, bio || '']);
 
     res.json({
       status: 'success',

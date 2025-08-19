@@ -160,10 +160,14 @@
                 </div>
                 <div class="flex items-center flex-wrap gap-2 sm:gap-4 mt-1 sm:mt-2 text-xs sm:text-sm">
                   <button class="text-gray-500 hover:text-gray-700" (click)="toggleCommentLike(comment.id)">
-                    <span class="material-symbols-rounded text-sm sm:text-base" [ngStyle]="{
-                      'font-variation-settings': '\'FILL\' ' + (isCommentLiked(comment.id) ? 1 : 0),
-                      'color': isCommentLiked(comment.id) ? '#ff3040' : 'inherit'
-                    }">favorite</span>
+                    <span 
+                      class="material-symbols-rounded text-sm sm:text-base transition-transform duration-200 ease-in-out select-none"
+                      [ngClass]="{'animate-pop': isCommentLiked(comment.id)}"
+                      [ngStyle]="{
+                        'font-variation-settings': '\'FILL\' ' + (isCommentLiked(comment.id) ? 1 : 0),
+                        'color': isCommentLiked(comment.id) ? '#ff3040' : 'inherit'
+                      }"
+                    >favorite</span>
                     {{ getCommentLikeCount(comment.id) }}
                   </button>
                   <button class="text-gray-500 hover:text-gray-700" (click)="startReply(comment.id, level + 1)">

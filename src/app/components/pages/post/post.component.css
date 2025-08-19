@@ -1,0 +1,16 @@
+/* Comment Like Animation */
+.comment-like-animate {
+	animation: pop-like 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes pop-like {
+	0% {
+		transform: scale(1);
+	}
+	50% {
+		transform: scale(1.4);
+	}
+	100% {
+		transform: scale(1);
+	}
+}

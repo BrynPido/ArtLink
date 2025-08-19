@@ -467,7 +467,16 @@ export class PostComponent implements OnInit, OnDestroy {
     });
   }
 
+  commentLikeAnimation: { [key: number]: boolean } = {};
+
   toggleCommentLike(commentId: number): void {
+    // Optimistically animate
+    this.commentLikeAnimation[commentId] = true;
+    setTimeout(() => {
+      this.commentLikeAnimation[commentId] = false;
+      this.cdr.markForCheck();
+    }, 350);
+
     this.dataService.likeComment(commentId).subscribe({
       next: (response) => {
         if (response.payload) {
