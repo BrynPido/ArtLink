@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnInit, signal, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { DataService } from '../../../services/data.service';
 import { ToastService } from '../../../services/toast.service';
 import { WebSocketService } from '../../../services/websocket.service';
@@ -12,7 +13,7 @@ import Swal from 'sweetalert2';
 @Component({
   selector: 'app-post-card',
   standalone: true,
-  imports: [CommonModule, TimeAgoPipe],
+  imports: [CommonModule, TimeAgoPipe, FormsModule],
   templateUrl: './post-card.component.html',
   styleUrls: ['./post-card.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -28,11 +29,19 @@ export class PostCardComponent implements OnInit {
   // Post-specific state tracking
   likedPosts: { [key: number]: boolean } = {};
   savedPosts: { [key: number]: boolean } = {};
+  reportedPosts: { [key: number]: boolean } = {};
   likesCountMap: { [key: number]: number } = {};
   loading: boolean = true; // Track loading state
   imageLoaded: { [key: string]: boolean } = {}; // Track which images have loaded
   modalImageLoaded: boolean = false;
   modalZoom: number = 1.0;
+
+  // Report modal state
+  showReportModal: boolean = false;
+  reportPostId: number | null = null;
+  reportReason: string = '';
+  reportDescription: string = '';
+  submittingReport: boolean = false;
 
   constructor(
     private dataService: DataService,
@@ -98,7 +107,13 @@ export class PostCardComponent implements OnInit {
             this.currentImageIndex[post.id] = 0;
             this.likedPosts[post.id] = post.isLiked || false;
             this.savedPosts[post.id] = post.isSaved || false;
+            this.reportedPosts[post.id] = false; // Initialize as not reported
             this.likesCountMap[post.id] = post.likesCount || 0;
+            
+            // Check if user has reported this post
+            if (this.currentUser?.id && this.currentUser.id !== post.authorId) {
+              this.checkPostReportStatus(post.id);
+            }
           });
         }
 
@@ -315,5 +330,79 @@ export class PostCardComponent implements OnInit {
 
   resetZoom(): void {
     this.modalZoom = 1.0;
+  }
+
+  // Check if user has reported a specific post
+  checkPostReportStatus(postId: number): void {
+    this.dataService.checkPostReport(postId).subscribe({
+      next: (response) => {
+        if (response.status === 'success') {
+          this.reportedPosts[postId] = response.payload.hasReported;
+          this.cdr.detectChanges();
+        }
+      },
+      error: (error) => {
+        console.error('Error checking report status:', error);
+      }
+    });
+  }
+
+  // Open report modal
+  openReportModal(postId: number): void {
+    this.reportPostId = postId;
+    this.showReportModal = true;
+    this.reportReason = '';
+    this.reportDescription = '';
+    this.menuOpenPostId = null; // Close the dropdown menu
+    this.cdr.detectChanges();
+  }
+
+  // Close report modal
+  closeReportModal(): void {
+    this.showReportModal = false;
+    this.reportPostId = null;
+    this.reportReason = '';
+    this.reportDescription = '';
+    this.submittingReport = false;
+    this.cdr.detectChanges();
+  }
+
+  // Submit report
+  submitReport(): void {
+    if (!this.reportPostId || !this.reportReason) {
+      this.toastService.showToast('Please select a reason for reporting', 'error');
+      return;
+    }
+
+    this.submittingReport = true;
+    this.cdr.detectChanges();
+
+    this.dataService.reportPost(this.reportPostId, this.reportReason, this.reportDescription).subscribe({
+      next: (response) => {
+        if (response.status === 'success') {
+          this.toastService.showToast('Post reported successfully. Our team will review it.', 'success');
+          this.reportedPosts[this.reportPostId!] = true;
+          this.closeReportModal();
+        } else {
+          this.toastService.showToast(response.message || 'Failed to report post', 'error');
+          this.submittingReport = false;
+          this.cdr.detectChanges();
+        }
+      },
+      error: (error) => {
+        console.error('Error reporting post:', error);
+        let errorMessage = 'Failed to report post';
+        
+        if (error.error?.message) {
+          errorMessage = error.error.message;
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
+        this.toastService.showToast(errorMessage, 'error');
+        this.submittingReport = false;
+        this.cdr.detectChanges();
+      }
+    });
   }
 }

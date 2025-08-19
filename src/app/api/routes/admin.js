@@ -775,4 +775,219 @@ router.put('/settings', async (req, res) => {
   }
 });
 
+// Get all reports
+router.get('/reports', async (req, res) => {
+  try {
+    const { status, page = 1, limit = 20 } = req.query;
+    const offset = (page - 1) * limit;
+
+    console.log('🔍 Fetching reports with filters:', { status, page, limit });
+
+    let whereClause = '';
+    let queryParams = [];
+    let paramIndex = 1;
+
+    if (status && status !== 'all') {
+      whereClause = `WHERE r.status = $${paramIndex}`;
+      queryParams.push(status);
+      paramIndex++;
+    }
+
+    // Get reports with post and user information
+    const reports = await query(`
+      SELECT 
+        r.id,
+        r."postId",
+        r."reporterId",
+        r.reason,
+        r.description,
+        r.status,
+        r."createdAt",
+        r."updatedAt",
+        p.title as "postTitle",
+        p.content as "postContent",
+        p."authorId" as "postAuthorId",
+        pa.name as "postAuthorName",
+        pa.username as "postAuthorUsername",
+        rp.name as "reporterName",
+        rp.username as "reporterUsername"
+      FROM report r
+      LEFT JOIN post p ON r."postId" = p.id
+      LEFT JOIN "user" pa ON p."authorId" = pa.id
+      LEFT JOIN "user" rp ON r."reporterId" = rp.id
+      ${whereClause}
+      ORDER BY r."createdAt" DESC
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+    `, [...queryParams, limit, offset]);
+
+    // Get total count for pagination
+    const countResult = await queryOne(`
+      SELECT COUNT(*) as total
+      FROM report r
+      ${whereClause}
+    `, queryParams);
+
+    const totalReports = parseInt(countResult.total) || 0;
+    const totalPages = Math.ceil(totalReports / limit);
+
+    res.json({
+      status: 'success',
+      payload: {
+        reports,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: totalReports,
+          totalPages
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching reports:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Error fetching reports'
+    });
+  }
+});
+
+// Update report status
+router.patch('/reports/:reportId/status', async (req, res) => {
+  try {
+    const { reportId } = req.params;
+    const { status, adminNote } = req.body;
+
+    console.log('🔍 Updating report status:', { reportId, status, adminNote });
+
+    // Validate status
+    const validStatuses = ['pending', 'approved', 'rejected', 'resolved'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Invalid status. Must be one of: ' + validStatuses.join(', ')
+      });
+    }
+
+    // Check if report exists
+    const report = await queryOne('SELECT id, "postId" FROM report WHERE id = $1', [reportId]);
+    if (!report) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Report not found'
+      });
+    }
+
+    // Update the report
+    await query(
+      'UPDATE report SET status = $1, "updatedAt" = CURRENT_TIMESTAMP WHERE id = $2',
+      [status, reportId]
+    );
+
+    // If status is 'approved', we might want to hide/remove the post
+    // For now, we'll just update the report status
+    
+    console.log('✅ Report status updated successfully');
+
+    res.json({
+      status: 'success',
+      message: 'Report status updated successfully'
+    });
+
+  } catch (error) {
+    console.error('Error updating report status:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Error updating report status'
+    });
+  }
+});
+
+// Delete a report
+router.delete('/reports/:reportId', async (req, res) => {
+  try {
+    const { reportId } = req.params;
+
+    console.log('🔍 Deleting report:', reportId);
+
+    // Check if report exists
+    const report = await queryOne('SELECT id FROM report WHERE id = $1', [reportId]);
+    if (!report) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Report not found'
+      });
+    }
+
+    // Delete the report
+    await query('DELETE FROM report WHERE id = $1', [reportId]);
+
+    console.log('✅ Report deleted successfully');
+
+    res.json({
+      status: 'success',
+      message: 'Report deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Error deleting report:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Error deleting report'
+    });
+  }
+});
+
+// Get report statistics
+router.get('/reports/stats', async (req, res) => {
+  try {
+    console.log('🔍 Fetching report statistics...');
+
+    // Get total reports
+    const totalReportsResult = await queryOne('SELECT COUNT(*) as count FROM report');
+    const totalReports = parseInt(totalReportsResult.count) || 0;
+
+    // Get reports by status
+    const statusStats = await query(`
+      SELECT status, COUNT(*) as count
+      FROM report
+      GROUP BY status
+    `);
+
+    // Get recent reports (last 24 hours)
+    const recentReportsResult = await queryOne(`
+      SELECT COUNT(*) as count
+      FROM report
+      WHERE "createdAt" >= CURRENT_TIMESTAMP - INTERVAL '24 hours'
+    `);
+    const recentReports = parseInt(recentReportsResult.count) || 0;
+
+    // Get most reported reasons
+    const reasonStats = await query(`
+      SELECT reason, COUNT(*) as count
+      FROM report
+      GROUP BY reason
+      ORDER BY count DESC
+      LIMIT 5
+    `);
+
+    res.json({
+      status: 'success',
+      payload: {
+        totalReports,
+        recentReports,
+        statusBreakdown: statusStats,
+        topReasons: reasonStats
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching report statistics:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Error fetching report statistics'
+    });
+  }
+});
+
 module.exports = router;

@@ -55,6 +55,12 @@ export class AdminLayoutComponent implements OnInit {
       active: false
     },
     {
+      label: 'Report Management',
+      icon: 'report_problem',
+      route: '/admin/report-management',
+      active: false
+    },
+    {
       label: 'Settings',
       icon: 'settings',
       route: '/admin/settings',

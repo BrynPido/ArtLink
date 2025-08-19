@@ -333,6 +333,31 @@ CREATE TABLE `notification` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `report`
+--
+
+DROP TABLE IF EXISTS `report`;
+CREATE TABLE `report` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `postId` int(11) NOT NULL,
+  `reporterId` int(11) NOT NULL,
+  `reason` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `status` varchar(50) NOT NULL DEFAULT 'pending',
+  `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  `updatedAt` datetime(3) NOT NULL DEFAULT current_timestamp(3) ON UPDATE current_timestamp(3),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `report_postId_reporterId_unique` (`postId`, `reporterId`),
+  KEY `report_status_idx` (`status`),
+  KEY `report_postId_idx` (`postId`),
+  KEY `report_createdAt_idx` (`createdAt`),
+  CONSTRAINT `report_postId_fkey` FOREIGN KEY (`postId`) REFERENCES `post` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `report_reporterId_fkey` FOREIGN KEY (`reporterId`) REFERENCES `user` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `_prisma_migrations`
 --
 

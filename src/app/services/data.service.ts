@@ -658,4 +658,52 @@ export class DataService {
     this.router.navigate(['/login']);
   }
 
+  // Report a post
+  reportPost(postId: number, reason: string, description?: string): Observable<any> {
+    const data = { postId, reason, description };
+    return this.http.post(`${this.apiUrl}posts/reportPost`, data).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // Check if current user has reported a specific post
+  checkPostReport(postId: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}posts/checkReport/${postId}`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // Admin: Get all reports
+  getReports(status?: string, page: number = 1, limit: number = 20): Observable<any> {
+    let params = `?page=${page}&limit=${limit}`;
+    if (status && status !== 'all') {
+      params += `&status=${status}`;
+    }
+    return this.http.get(`${this.apiUrl}admin/reports${params}`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // Admin: Update report status
+  updateReportStatus(reportId: number, status: string, adminNote?: string): Observable<any> {
+    const data = { status, adminNote };
+    return this.http.patch(`${this.apiUrl}admin/reports/${reportId}/status`, data).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // Admin: Delete a report
+  deleteReport(reportId: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}admin/reports/${reportId}`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // Admin: Get report statistics
+  getReportStats(): Observable<any> {
+    return this.http.get(`${this.apiUrl}admin/reports/stats`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
 }

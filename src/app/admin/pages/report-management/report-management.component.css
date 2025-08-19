@@ -1,0 +1,102 @@
+/* Report Management Component Styles */
+.report-management {
+  min-height: 100vh;
+}
+
+.stats-card {
+  transition: transform 0.2s ease-in-out;
+}
+
+.stats-card:hover {
+  transform: translateY(-2px);
+}
+
+.table-hover:hover {
+  background-color: rgba(249, 250, 251, 0.5);
+}
+
+.status-badge {
+  transition: all 0.2s ease-in-out;
+}
+
+.modal-overlay {
+  backdrop-filter: blur(4px);
+}
+
+.pagination-button {
+  transition: all 0.2s ease-in-out;
+}
+
+.pagination-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.search-input:focus {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Custom scrollbar for modal content */
+.modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* Responsive table */
+@media (max-width: 768px) {
+  .table-responsive {
+    font-size: 0.875rem;
+  }
+  
+  .table-responsive th,
+  .table-responsive td {
+    padding: 0.5rem;
+  }
+}
+
+/* Loading animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Smooth transitions */
+.transition-all {
+  transition: all 0.3s ease;
+}
+
+.transition-colors {
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+/* Button hover effects */
+.btn-hover:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Card shadow effects */
+.card-shadow {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.card-shadow:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}

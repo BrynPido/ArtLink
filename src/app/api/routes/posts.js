@@ -777,4 +777,100 @@ router.get('/trending', optionalAuth, async (req, res) => {
   }
 });
 
+// Report a post
+router.post('/reportPost', authenticateToken, async (req, res) => {
+  try {
+    const { postId, reason, description } = req.body;
+    const reporterId = req.user.id;
+
+    console.log('🔍 Reporting post:', { postId, reporterId, reason });
+
+    // Validate required fields
+    if (!postId || !reason) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Post ID and reason are required'
+      });
+    }
+
+    // Check if post exists
+    const post = await queryOne('SELECT id, "authorId" FROM post WHERE id = $1', [postId]);
+    if (!post) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Post not found'
+      });
+    }
+
+    // Check if user is trying to report their own post
+    if (post.authorId === reporterId) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'You cannot report your own post'
+      });
+    }
+
+    // Check if user has already reported this post
+    const existingReport = await queryOne(
+      'SELECT id FROM report WHERE "postId" = $1 AND "reporterId" = $2',
+      [postId, reporterId]
+    );
+
+    if (existingReport) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'You have already reported this post'
+      });
+    }
+
+    // Create the report
+    const reportResult = await queryOne(
+      `INSERT INTO report ("postId", "reporterId", reason, description, status, "createdAt", "updatedAt") 
+       VALUES ($1, $2, $3, $4, 'pending', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) 
+       RETURNING id`,
+      [postId, reporterId, reason, description || null]
+    );
+
+    console.log('✅ Post reported successfully:', reportResult.id);
+
+    res.json({
+      status: 'success',
+      message: 'Post reported successfully',
+      payload: { reportId: reportResult.id }
+    });
+
+  } catch (error) {
+    console.error('Report post error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to report post'
+    });
+  }
+});
+
+// Check if user has reported a post
+router.get('/checkReport/:postId', authenticateToken, async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const userId = req.user.id;
+
+    const report = await queryOne(
+      'SELECT id FROM report WHERE "postId" = $1 AND "reporterId" = $2',
+      [postId, userId]
+    );
+
+    res.json({
+      status: 'success',
+      payload: { hasReported: !!report }
+    });
+
+  } catch (error) {
+    console.error('Check report error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to check report status'
+    });
+  }
+});
+
 module.exports = router;
