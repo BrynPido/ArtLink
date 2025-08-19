@@ -57,10 +57,8 @@
         </div>
         
         <!-- User menu -->
-        <div class="flex items-center ml-3 relative">
-          <button 
-            (click)="toggleUserMenu()"
-            class="user-menu-button flex text-sm bg-gray-800 rounded-full focus:ring-4 focus:ring-gray-300">
+        <div class="flex items-center ml-3 relative group">
+          <button class="flex text-sm bg-gray-800 rounded-full focus:ring-4 focus:ring-gray-300">
             <span class="sr-only">Open user menu</span>
             <img 
               class="w-8 h-8 rounded-full" 
@@ -69,31 +67,21 @@
           </button>
           
           <!-- User dropdown -->
-          <div 
-            *ngIf="isUserMenuOpen"
-            class="user-menu-dropdown absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+          <div class="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50 hidden group-hover:block">
             <div class="p-3 border-b border-gray-200">
               <p class="text-sm font-medium text-gray-900">{{currentUser?.name}}</p>
               <p class="text-sm text-gray-500">{{currentUser?.email}}</p>
             </div>
             <div class="py-1">
-              <a 
-                routerLink="/profile/{{currentUser?.id}}" 
-                (click)="isUserMenuOpen = false"
-                class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+              <a routerLink="/profile/{{currentUser?.id}}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                 <span class="material-icons text-sm mr-2">person</span>
                 View Profile
               </a>
-              <a 
-                routerLink="/admin/settings" 
-                (click)="isUserMenuOpen = false"
-                class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+              <a routerLink="/admin/settings" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                 <span class="material-icons text-sm mr-2">settings</span>
                 Settings
               </a>
-              <button 
-                (click)="logout()" 
-                class="w-full flex items-center text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+              <button (click)="logout()" class="w-full flex items-center text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                 <span class="material-icons text-sm mr-2">logout</span>
                 Sign out
               </button>

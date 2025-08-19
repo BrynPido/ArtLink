@@ -1,4 +1,4 @@
-import { Component, OnInit, HostListener } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { DataService } from '../../services/data.service';
@@ -14,7 +14,6 @@ import { AdminService } from '../services/admin.service';
 export class AdminLayoutComponent implements OnInit {
   currentUser: any;
   isMenuOpen = false;
-  isUserMenuOpen = false;
   notifications: any[] = [];
   unreadCount = 0;
 
@@ -56,12 +55,6 @@ export class AdminLayoutComponent implements OnInit {
       active: false
     },
     {
-      label: 'Report Management',
-      icon: 'report_problem',
-      route: '/admin/report-management',
-      active: false
-    },
-    {
       label: 'Settings',
       icon: 'settings',
       route: '/admin/settings',
@@ -82,23 +75,6 @@ export class AdminLayoutComponent implements OnInit {
 
   toggleMenu() {
     this.isMenuOpen = !this.isMenuOpen;
-  }
-
-  toggleUserMenu() {
-    this.isUserMenuOpen = !this.isUserMenuOpen;
-  }
-
-  @HostListener('document:click', ['$event'])
-  onDocumentClick(event: Event) {
-    const target = event.target as HTMLElement;
-    const userMenuButton = document.querySelector('.user-menu-button');
-    const userMenuDropdown = document.querySelector('.user-menu-dropdown');
-    
-    if (this.isUserMenuOpen && 
-        !userMenuButton?.contains(target) && 
-        !userMenuDropdown?.contains(target)) {
-      this.isUserMenuOpen = false;
-    }
   }
 
   loadNotifications() {
