@@ -105,7 +105,7 @@
                 {{truncateText(report.post.title, 40)}}
               </div>
               <div class="text-sm text-gray-500">
-                by @{{report.post.author.username}}
+                by {{`@${report.post.author.username}`}}
               </div>
               <div class="text-xs text-gray-400">
                 {{truncateText(report.post.content, 50)}}
@@ -120,7 +120,7 @@
                 {{report.reporter.name}}
               </div>
               <div class="text-sm text-gray-500">
-                @{{report.reporter.username}}
+                {{`@${report.reporter.username}`}}
               </div>
             </div>
           </td>
@@ -284,7 +284,7 @@
             </div>
             <div class="flex justify-between">
               <span class="text-sm text-gray-600">Username:</span>
-              <span class="text-sm text-gray-900">@{{selectedReport.reporter.username}}</span>
+              <span class="text-sm text-gray-900">{{'@' + selectedReport.reporter.username}}</span>
             </div>
             <div class="flex justify-between">
               <span class="text-sm text-gray-600">Email:</span>
@@ -303,7 +303,7 @@
             </div>
             <div class="flex justify-between">
               <span class="text-sm text-gray-600">Author:</span>
-              <span class="text-sm text-gray-900">{{selectedReport.post.author.name}} (@{{selectedReport.post.author.username}})</span>
+              <span class="text-sm text-gray-900">{{selectedReport.post.author.name}} ({{'@' + selectedReport.post.author.username}})</span>
             </div>
             <div class="pt-2 border-t border-gray-200">
               <span class="text-sm text-gray-600">Content:</span>
