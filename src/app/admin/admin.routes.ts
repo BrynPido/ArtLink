@@ -38,6 +38,10 @@ export const adminRoutes: Routes = [
         loadComponent: () => import('./pages/reports/reports.component').then(m => m.ReportsComponent) 
       },
       { 
+        path: 'report-management', 
+        loadComponent: () => import('./pages/report-management/report-management.component').then(m => m.ReportManagementComponent) 
+      },
+      { 
         path: 'settings', 
         loadComponent: () => import('./pages/settings/settings.component').then(m => m.SettingsComponent) 
       }

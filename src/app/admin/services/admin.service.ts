@@ -218,6 +218,42 @@ export class AdminService {
     );
   }
 
+  // Post Report Management
+  getPostReports(params: any = {}): Observable<any> {
+    let url = `${this.apiUrl}admin/reports/posts`;
+    const queryParams = new URLSearchParams();
+    
+    if (params.page) queryParams.append('page', params.page.toString());
+    if (params.limit) queryParams.append('limit', params.limit.toString());
+    if (params.status) queryParams.append('status', params.status);
+    if (params.search) queryParams.append('search', params.search);
+    if (params.sortBy) queryParams.append('sortBy', params.sortBy);
+    if (params.sortOrder) queryParams.append('sortOrder', params.sortOrder);
+    
+    if (queryParams.toString()) {
+      url += `?${queryParams.toString()}`;
+    }
+    
+    return this.http.get(url).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  resolvePostReport(reportId: number, action: string, reason: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}admin/reports/posts/${reportId}/resolve`, {
+      action,
+      reason
+    }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  dismissPostReport(reportId: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}admin/reports/posts/${reportId}/dismiss`, {}).pipe(
+      catchError(this.handleError)
+    );
+  }
+
   // Notifications
   getAdminNotifications(): Observable<any> {
     return this.http.get(`${this.apiUrl}admin/notifications`).pipe(

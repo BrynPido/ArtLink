@@ -1,0 +1,354 @@
+<!-- Report Management Header -->
+<div class="bg-white shadow">
+  <div class="px-4 py-6 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between">
+      <h1 class="text-2xl font-bold text-gray-900">Report Management</h1>
+      <div class="flex items-center space-x-3">
+        <span class="text-sm text-gray-500">
+          {{totalReports}} total reports
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Filters and Search -->
+<div class="bg-white border-b border-gray-200 px-4 py-4 sm:px-6 lg:px-8">
+  <div class="flex flex-col sm:flex-row gap-4">
+    <!-- Search -->
+    <div class="flex-1">
+      <div class="relative">
+        <input
+          type="text"
+          [(ngModel)]="searchTerm"
+          (keyup.enter)="onSearch()"
+          placeholder="Search by reporter name, post content, or reason..."
+          class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <span class="material-icons text-gray-400 text-sm">search</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status Filter -->
+    <div class="sm:w-48">
+      <select
+        [(ngModel)]="statusFilter"
+        (ngModelChange)="onFilterChange()"
+        class="block w-full px-3 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+        <option *ngFor="let option of statusOptions" [value]="option.value">
+          {{option.label}}
+        </option>
+      </select>
+    </div>
+
+    <!-- Search Button -->
+    <button
+      (click)="onSearch()"
+      class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center gap-2">
+      <span class="material-icons text-sm">search</span>
+      Search
+    </button>
+  </div>
+</div>
+
+<!-- Loading State -->
+<div *ngIf="loading" class="flex justify-center items-center py-12">
+  <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+  <span class="ml-3 text-gray-600">Loading reports...</span>
+</div>
+
+<!-- Reports Table -->
+<div *ngIf="!loading" class="bg-white shadow overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Report Details
+          </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Reported Post
+          </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Reporter
+          </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Status
+          </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Date
+          </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Actions
+          </th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        <tr *ngFor="let report of reports" class="hover:bg-gray-50">
+          <!-- Report Details -->
+          <td class="px-6 py-4">
+            <div class="space-y-1">
+              <div class="text-sm font-medium text-gray-900">
+                {{report.reason}}
+              </div>
+              <div class="text-sm text-gray-500">
+                {{truncateText(report.description || 'No description provided', 60)}}
+              </div>
+            </div>
+          </td>
+
+          <!-- Reported Post -->
+          <td class="px-6 py-4">
+            <div class="space-y-1">
+              <div class="text-sm font-medium text-gray-900">
+                {{truncateText(report.post.title, 40)}}
+              </div>
+              <div class="text-sm text-gray-500">
+                by @{{report.post.author.username}}
+              </div>
+              <div class="text-xs text-gray-400">
+                {{truncateText(report.post.content, 50)}}
+              </div>
+            </div>
+          </td>
+
+          <!-- Reporter -->
+          <td class="px-6 py-4">
+            <div class="space-y-1">
+              <div class="text-sm font-medium text-gray-900">
+                {{report.reporter.name}}
+              </div>
+              <div class="text-sm text-gray-500">
+                @{{report.reporter.username}}
+              </div>
+            </div>
+          </td>
+
+          <!-- Status -->
+          <td class="px-6 py-4">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                  [class]="getStatusClass(report.status)">
+              {{getStatusText(report.status)}}
+            </span>
+          </td>
+
+          <!-- Date -->
+          <td class="px-6 py-4 text-sm text-gray-500">
+            {{formatDate(report.createdAt)}}
+          </td>
+
+          <!-- Actions -->
+          <td class="px-6 py-4 text-right text-sm font-medium">
+            <div class="flex space-x-2">
+              <button
+                (click)="viewReport(report)"
+                class="text-blue-600 hover:text-blue-900 transition-colors">
+                View Details
+              </button>
+              <button
+                *ngIf="report.status === 'pending'"
+                (click)="resolveReport(report.id, 'hide_post')"
+                [disabled]="actionLoading"
+                class="text-red-600 hover:text-red-900 disabled:text-red-400 transition-colors">
+                Hide Post
+              </button>
+              <button
+                *ngIf="report.status === 'pending'"
+                (click)="dismissReport(report.id)"
+                [disabled]="actionLoading"
+                class="text-gray-600 hover:text-gray-900 disabled:text-gray-400 transition-colors">
+                Dismiss
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="reports.length === 0" class="text-center py-12">
+    <span class="material-icons text-gray-400 text-6xl mb-4">report_off</span>
+    <h3 class="text-lg font-medium text-gray-900 mb-2">No reports found</h3>
+    <p class="text-sm text-gray-500">No reports match your current filters.</p>
+  </div>
+</div>
+
+<!-- Pagination -->
+<div *ngIf="!loading && reports.length > 0" class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+  <div class="flex-1 flex justify-between sm:hidden">
+    <button
+      (click)="onPageChange(currentPage - 1)"
+      [disabled]="currentPage === 1"
+      class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400">
+      Previous
+    </button>
+    <button
+      (click)="onPageChange(currentPage + 1)"
+      [disabled]="currentPage === totalPages"
+      class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400">
+      Next
+    </button>
+  </div>
+  
+  <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+    <div>
+      <p class="text-sm text-gray-700">
+        Showing <span class="font-medium">{{((currentPage - 1) * pageSize) + 1}}</span>
+        to <span class="font-medium">{{Math.min(currentPage * pageSize, totalReports)}}</span>
+        of <span class="font-medium">{{totalReports}}</span> results
+      </p>
+    </div>
+    <div>
+      <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+        <button
+          (click)="onPageChange(currentPage - 1)"
+          [disabled]="currentPage === 1"
+          class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400">
+          <span class="sr-only">Previous</span>
+          <span class="material-icons text-sm">chevron_left</span>
+        </button>
+        
+        <button
+          *ngFor="let page of [].constructor(totalPages); let i = index"
+          (click)="onPageChange(i + 1)"
+          [class.bg-blue-50]="currentPage === i + 1"
+          [class.border-blue-500]="currentPage === i + 1"
+          [class.text-blue-600]="currentPage === i + 1"
+          class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+          {{i + 1}}
+        </button>
+        
+        <button
+          (click)="onPageChange(currentPage + 1)"
+          [disabled]="currentPage === totalPages"
+          class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400">
+          <span class="sr-only">Next</span>
+          <span class="material-icons text-sm">chevron_right</span>
+        </button>
+      </nav>
+    </div>
+  </div>
+</div>
+
+<!-- Report Details Modal -->
+<div *ngIf="showReportModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+  <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+    <div class="mt-3">
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-4 border-b border-gray-200">
+        <h3 class="text-lg font-medium text-gray-900">Report Details</h3>
+        <button
+          (click)="closeModal()"
+          class="text-gray-400 hover:text-gray-600">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+
+      <!-- Modal Content -->
+      <div *ngIf="selectedReport" class="py-4 space-y-6">
+        <!-- Report Info -->
+        <div>
+          <h4 class="text-sm font-medium text-gray-900 mb-2">Report Information</h4>
+          <div class="bg-gray-50 p-4 rounded-lg space-y-2">
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-600">Reason:</span>
+              <span class="text-sm font-medium text-gray-900">{{selectedReport.reason}}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-600">Status:</span>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                    [class]="getStatusClass(selectedReport.status)">
+                {{getStatusText(selectedReport.status)}}
+              </span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-600">Reported on:</span>
+              <span class="text-sm text-gray-900">{{formatDate(selectedReport.createdAt)}}</span>
+            </div>
+            <div *ngIf="selectedReport.description" class="pt-2 border-t border-gray-200">
+              <span class="text-sm text-gray-600">Description:</span>
+              <p class="text-sm text-gray-900 mt-1">{{selectedReport.description}}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reporter Info -->
+        <div>
+          <h4 class="text-sm font-medium text-gray-900 mb-2">Reporter</h4>
+          <div class="bg-gray-50 p-4 rounded-lg space-y-2">
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-600">Name:</span>
+              <span class="text-sm font-medium text-gray-900">{{selectedReport.reporter.name}}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-600">Username:</span>
+              <span class="text-sm text-gray-900">@{{selectedReport.reporter.username}}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-600">Email:</span>
+              <span class="text-sm text-gray-900">{{selectedReport.reporter.email}}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Post Info -->
+        <div>
+          <h4 class="text-sm font-medium text-gray-900 mb-2">Reported Post</h4>
+          <div class="bg-gray-50 p-4 rounded-lg space-y-2">
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-600">Title:</span>
+              <span class="text-sm font-medium text-gray-900">{{selectedReport.post.title}}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-600">Author:</span>
+              <span class="text-sm text-gray-900">{{selectedReport.post.author.name}} (@{{selectedReport.post.author.username}})</span>
+            </div>
+            <div class="pt-2 border-t border-gray-200">
+              <span class="text-sm text-gray-600">Content:</span>
+              <p class="text-sm text-gray-900 mt-1">{{selectedReport.post.content}}</p>
+            </div>
+            <div class="pt-2">
+              <button
+                (click)="viewPost(selectedReport.post)"
+                class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                View Full Post →
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Actions -->
+      <div class="flex items-center justify-end pt-4 border-t border-gray-200 space-x-3">
+        <button
+          (click)="closeModal()"
+          class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+          Close
+        </button>
+        <button
+          *ngIf="selectedReport?.status === 'pending'"
+          (click)="selectedReport && dismissReport(selectedReport.id)"
+          [disabled]="actionLoading"
+          class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:bg-gray-100">
+          Dismiss Report
+        </button>
+        <button
+          *ngIf="selectedReport?.status === 'pending'"
+          (click)="selectedReport && resolveReport(selectedReport.id, 'warn_user')"
+          [disabled]="actionLoading"
+          class="px-4 py-2 text-sm font-medium text-white bg-yellow-600 border border-transparent rounded-md hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 disabled:bg-yellow-400">
+          Warn User
+        </button>
+        <button
+          *ngIf="selectedReport?.status === 'pending'"
+          (click)="selectedReport && resolveReport(selectedReport.id, 'hide_post')"
+          [disabled]="actionLoading"
+          class="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:bg-red-400">
+          Hide Post
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

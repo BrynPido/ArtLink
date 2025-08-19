@@ -709,6 +709,249 @@ router.get('/reports', async (req, res) => {
   }
 });
 
+// Post Report Management
+router.get('/reports/posts', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const status = req.query.status;
+    const search = req.query.search;
+    const sortBy = req.query.sortBy || 'createdAt';
+    const sortOrder = req.query.sortOrder || 'desc';
+    const offset = (page - 1) * limit;
+
+    let whereClause = '';
+    let queryParams = [];
+    let paramCount = 0;
+
+    // Build WHERE clause
+    const conditions = [];
+    
+    if (status && status !== 'all') {
+      paramCount++;
+      conditions.push(`r.status = $${paramCount}`);
+      queryParams.push(status);
+    }
+
+    if (search) {
+      paramCount++;
+      conditions.push(`(
+        r.reason ILIKE $${paramCount} OR 
+        r.description ILIKE $${paramCount} OR
+        reporter.name ILIKE $${paramCount} OR
+        reporter.username ILIKE $${paramCount} OR
+        p.title ILIKE $${paramCount} OR
+        p.content ILIKE $${paramCount}
+      )`);
+      queryParams.push(`%${search}%`);
+    }
+
+    if (conditions.length > 0) {
+      whereClause = 'WHERE ' + conditions.join(' AND ');
+    }
+
+    // Get total count
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM report r
+      JOIN "user" reporter ON r."reporterId" = reporter.id
+      JOIN post p ON r."postId" = p.id
+      JOIN "user" author ON p."authorId" = author.id
+      ${whereClause}
+    `;
+    
+    const totalResult = await queryOne(countQuery, queryParams);
+    const total = parseInt(totalResult.total);
+
+    // Get reports with pagination
+    paramCount++;
+    queryParams.push(limit);
+    paramCount++;
+    queryParams.push(offset);
+
+    const reportsQuery = `
+      SELECT 
+        r.id, r."postId", r."reporterId", r.reason, r.description, 
+        r.status, r."createdAt", r."updatedAt",
+        reporter.id as "reporter_id", reporter.name as "reporter_name", 
+        reporter.email as "reporter_email", reporter.username as "reporter_username",
+        p.id as "post_id", p.title as "post_title", p.content as "post_content",
+        p."authorId" as "post_authorId",
+        author.id as "author_id", author.name as "author_name", 
+        author.username as "author_username",
+        STRING_AGG(DISTINCT m."mediaUrl", ',') as "mediaUrls"
+      FROM report r
+      JOIN "user" reporter ON r."reporterId" = reporter.id
+      JOIN post p ON r."postId" = p.id
+      JOIN "user" author ON p."authorId" = author.id
+      LEFT JOIN media m ON p.id = m."postId"
+      ${whereClause}
+      GROUP BY r.id, reporter.id, p.id, author.id
+      ORDER BY r."${sortBy}" ${sortOrder.toUpperCase()}
+      LIMIT $${paramCount - 1} OFFSET $${paramCount}
+    `;
+
+    const reports = await query(reportsQuery, queryParams);
+
+    // Transform the results
+    const transformedReports = reports.map(report => ({
+      id: report.id,
+      postId: report.postId,
+      reporterId: report.reporterId,
+      reason: report.reason,
+      description: report.description,
+      status: report.status,
+      createdAt: report.createdAt,
+      updatedAt: report.updatedAt,
+      reporter: {
+        id: report.reporter_id,
+        name: report.reporter_name,
+        email: report.reporter_email,
+        username: report.reporter_username
+      },
+      post: {
+        id: report.post_id,
+        title: report.post_title,
+        content: report.post_content,
+        authorId: report.post_authorId,
+        author: {
+          id: report.author_id,
+          name: report.author_name,
+          username: report.author_username
+        },
+        mediaUrls: report.mediaUrls ? report.mediaUrls.split(',') : []
+      }
+    }));
+
+    res.json({
+      status: 'success',
+      payload: {
+        reports: transformedReports,
+        total: total,
+        page: page,
+        limit: limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching post reports:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Error fetching post reports'
+    });
+  }
+});
+
+// Resolve Post Report
+router.post('/reports/posts/:id/resolve', async (req, res) => {
+  try {
+    const reportId = req.params.id;
+    const { action, reason } = req.body;
+
+    if (!action || !reason) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Action and reason are required'
+      });
+    }
+
+    // Get the report details
+    const report = await queryOne(`
+      SELECT r.*, p."authorId"
+      FROM report r
+      JOIN post p ON r."postId" = p.id
+      WHERE r.id = $1
+    `, [reportId]);
+
+    if (!report) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Report not found'
+      });
+    }
+
+    // Update report status
+    await query(`
+      UPDATE report 
+      SET status = 'resolved', "updatedAt" = CURRENT_TIMESTAMP 
+      WHERE id = $1
+    `, [reportId]);
+
+    // Take action based on the specified action
+    switch (action) {
+      case 'hide_post':
+        // Hide the post
+        await query(`
+          UPDATE post 
+          SET published = false, "updatedAt" = CURRENT_TIMESTAMP 
+          WHERE id = $1
+        `, [report.postId]);
+        break;
+
+      case 'warn_user':
+        // Create a notification for the post author (warning)
+        await query(`
+          INSERT INTO notification ("userId", type, content, "createdAt")
+          VALUES ($1, 'warning', $2, CURRENT_TIMESTAMP)
+        `, [
+          report.authorId,
+          `Your post has been reported and reviewed. Reason: ${reason}. Please ensure your content follows our community guidelines.`
+        ]);
+        break;
+
+      case 'dismiss':
+        // Just mark as resolved, no further action
+        break;
+    }
+
+    res.json({
+      status: 'success',
+      message: 'Report resolved successfully'
+    });
+
+  } catch (error) {
+    console.error('Error resolving post report:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Error resolving report'
+    });
+  }
+});
+
+// Dismiss Post Report
+router.post('/reports/posts/:id/dismiss', async (req, res) => {
+  try {
+    const reportId = req.params.id;
+
+    // Update report status to dismissed
+    const result = await query(`
+      UPDATE report 
+      SET status = 'dismissed', "updatedAt" = CURRENT_TIMESTAMP 
+      WHERE id = $1 AND status = 'pending'
+    `, [reportId]);
+
+    if (result.length === 0) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Report not found or already processed'
+      });
+    }
+
+    res.json({
+      status: 'success',
+      message: 'Report dismissed successfully'
+    });
+
+  } catch (error) {
+    console.error('Error dismissing post report:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Error dismissing report'
+    });
+  }
+});
+
 // Admin Settings
 router.get('/settings', async (req, res) => {
   try {
