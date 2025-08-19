@@ -52,8 +52,8 @@ class SupabaseStorageService {
 
       const result = await this.s3.upload(uploadParams).promise();
       
-      // Generate public URL - Correct Supabase Storage public URL format
-      const publicUrl = `https://janjfnnvvnnylruflpzo.supabase.co/storage/v1/object/public/${this.bucketName}/${filePath}`;
+      // Generate public URL
+      const publicUrl = `${process.env.ENDPOINT.replace('/storage/v1/s3', '')}/storage/v1/object/public/${this.bucketName}/${filePath}`;
       
       console.log(`✅ File uploaded successfully: ${publicUrl}`);
       
