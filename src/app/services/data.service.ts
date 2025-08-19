@@ -679,7 +679,7 @@ export class DataService {
     if (status && status !== 'all') {
       params += `&status=${status}`;
     }
-    return this.http.get(`${this.apiUrl}admin/reports${params}`).pipe(
+    return this.http.get(`${this.apiUrl}admin/reports/list${params}`).pipe(
       catchError(this.handleError)
     );
   }

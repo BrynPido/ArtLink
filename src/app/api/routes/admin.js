@@ -775,8 +775,8 @@ router.put('/settings', async (req, res) => {
   }
 });
 
-// Get all reports
-router.get('/reports', async (req, res) => {
+// Get all reports for management
+router.get('/reports/list', async (req, res) => {
   try {
     const { status, page = 1, limit = 20 } = req.query;
     const offset = (page - 1) * limit;
