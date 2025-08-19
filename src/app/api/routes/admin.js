@@ -652,7 +652,7 @@ router.delete('/messages/:id', async (req, res) => {
 });
 
 // Reports Overview
-router.get('/reports', async (req, res) => {
+router.get('/reports/overview', async (req, res) => {
   try {
     const start = req.query.start;
     const end = req.query.end;

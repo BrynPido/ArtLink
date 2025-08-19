@@ -64,30 +64,45 @@ export class ReportManagementComponent implements OnInit {
 
   loadReports(): void {
     this.loading = true;
+    console.log('🔍 Loading reports with status:', this.selectedStatus);
+    
     this.dataService.getReports(this.selectedStatus === 'all' ? undefined : this.selectedStatus).subscribe({
       next: (response) => {
-        if (response.status === 'success') {
-          this.reports = response.payload.reports || [];
+        console.log('✅ Reports API response:', response);
+        if (response && response.status === 'success') {
+          this.reports = response.payload?.reports || [];
+          this.filterReports();
+        } else {
+          console.error('❌ Unexpected response structure:', response);
+          this.reports = [];
           this.filterReports();
         }
         this.loading = false;
       },
       error: (error) => {
-        console.error('Error loading reports:', error);
+        console.error('❌ Error loading reports:', error);
+        this.reports = [];
+        this.filterReports();
         this.loading = false;
       }
     });
   }
 
   loadStats(): void {
+    console.log('🔍 Loading report stats...');
     this.dataService.getReportStats().subscribe({
       next: (response) => {
-        if (response.status === 'success') {
+        console.log('✅ Stats API response:', response);
+        if (response && response.status === 'success') {
           this.stats = response.payload;
+        } else {
+          console.error('❌ Unexpected stats response structure:', response);
+          this.stats = null;
         }
       },
       error: (error) => {
-        console.error('Error loading report stats:', error);
+        console.error('❌ Error loading report stats:', error);
+        this.stats = null;
       }
     });
   }
