@@ -19,15 +19,13 @@ export class AdminGuard implements CanActivate {
       currentUser.email === 'admin@artlink.com' || 
       currentUser.username === 'admin' ||
       currentUser.role === 'admin' ||
-      currentUser.isAdmin === true ||
-      // Temporary: Allow any logged-in user for development
-      currentUser.id
+      currentUser.isAdmin === true
     )) {
       return true;
     }
     
-    // Redirect to login if not authenticated or not admin
-    this.router.navigate(['/login']);
+    // Redirect to home if not authenticated or not admin
+    this.router.navigate(['/home']);
     return false;
   }
 }
