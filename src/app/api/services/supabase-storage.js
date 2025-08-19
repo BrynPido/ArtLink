@@ -2,14 +2,11 @@ const { createClient } = require('@supabase/supabase-js');
 const AWS = require('aws-sdk');
 const path = require('path');
 
-// Load environment variables
-require('dotenv').config();
-
 class SupabaseStorageService {
   constructor() {
     // Initialize Supabase client
     this.supabaseUrl = `https://janjfnnvvnnylruflpzo.supabase.co`;
-    this.supabaseKey = process.env.SUPABASE_ANON_KEY;
+    this.supabaseKey = process.env.SUPABASE_ANON_KEY || 'your-anon-key'; // You'll need to add this to .env
     
     // For now, we'll use the S3-compatible API directly
     this.s3 = new AWS.S3({
@@ -18,11 +15,7 @@ class SupabaseStorageService {
       secretAccessKey: process.env.ACCESS_SECRET,
       region: process.env.EP_REGION,
       s3ForcePathStyle: true,
-      signatureVersion: 'v4',
-      maxRetries: 3,
-      httpOptions: {
-        timeout: 60000
-      }
+      signatureVersion: 'v4'
     });
     
     this.bucketName = 'Media'; // Your bucket name from Supabase
