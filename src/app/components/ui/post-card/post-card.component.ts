@@ -197,7 +197,7 @@ export class PostCardComponent implements OnInit {
     const userId = this.currentUser.id;
     this.dataService.deletePost(postId, userId).subscribe({
       next: (response) => {
-        if (response.success) {
+        if (response.status === 'success') {
           this.posts = this.posts.filter(post => post.id !== postId); // Remove post from UI
           this.toastService.showToast('Post deleted successfully!', 'success');
         } else {
