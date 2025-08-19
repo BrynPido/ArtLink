@@ -113,6 +113,12 @@ export class DataService {
     );
   }
 
+  reportPost(reportData: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}posts/reportPost`, reportData).pipe(
+      catchError(this.handleError)
+    );
+  }
+
   getSavedPosts(): Observable<any> {
     const currentUser = this.getCurrentUser();
     const userId = currentUser ? currentUser.id : null; // Get user ID from local storage

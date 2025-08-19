@@ -316,4 +316,65 @@ export class PostCardComponent implements OnInit {
   resetZoom(): void {
     this.modalZoom = 1.0;
   }
+
+  reportPost(postId: number): void {
+    // Prevent post navigation when clicking report button
+    event?.stopPropagation();
+    this.menuOpenPostId = null; // Close the menu
+    
+    Swal.fire({
+      title: 'Report Post',
+      text: 'Why are you reporting this post?',
+      input: 'select',
+      inputOptions: {
+        'spam': 'Spam',
+        'harassment': 'Harassment or Bullying',
+        'hate_speech': 'Hate Speech',
+        'violence': 'Violence or Dangerous Organizations',
+        'nudity': 'Nudity or Sexual Activity',
+        'false_information': 'False Information',
+        'intellectual_property': 'Intellectual Property Violation',
+        'other': 'Other'
+      },
+      inputPlaceholder: 'Select a reason',
+      showCancelButton: true,
+      confirmButtonText: 'Submit Report',
+      cancelButtonText: 'Cancel',
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      inputValidator: (value) => {
+        if (!value) {
+          return 'Please select a reason for reporting';
+        }
+        return null;
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.submitReport(postId, result.value);
+      }
+    });
+  }
+
+  private submitReport(postId: number, reason: string): void {
+    const reportData = {
+      postId: postId,
+      reporterId: this.currentUser.id,
+      reason: reason,
+      timestamp: new Date().toISOString()
+    };
+
+    this.dataService.reportPost(reportData).subscribe({
+      next: (response) => {
+        if (response.status === 'success') {
+          this.toastService.showToast('Report submitted successfully. Thank you for helping keep our community safe.', 'success');
+        } else {
+          this.toastService.showToast('Failed to submit report. Please try again.', 'error');
+        }
+      },
+      error: (err) => {
+        console.error('Error submitting report:', err);
+        this.toastService.showToast('Failed to submit report. Please try again.', 'error');
+      }
+    });
+  }
 }

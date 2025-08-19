@@ -32,6 +32,10 @@
           class="block w-full text-left px-4 py-2 text-red-500 hover:bg-gray-100">
           Delete Post
         </button>
+        <button *ngIf="currentUser.id !== post.authorId" (click)="reportPost(post.id)"
+          class="block w-full text-left px-4 py-2 text-red-500 hover:bg-gray-100">
+          Report Post
+        </button>
       </div>
     </div>
   </div>
