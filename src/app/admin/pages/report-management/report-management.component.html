@@ -107,7 +107,7 @@
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
@@ -152,24 +152,51 @@
               {{ report.createdAt | date:'short' }}
             </td>
             
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-              <div class="flex space-x-2">
-                <button (click)="viewReportDetails(report)" 
-                        class="text-blue-600 hover:text-blue-900 transition-colors">
-                  View
-                </button>
-                <button *ngIf="report.status === 'pending'" (click)="updateReportStatus(report.id, 'approved')"
-                        class="text-green-600 hover:text-green-900 transition-colors">
-                  Approve
-                </button>
-                <button *ngIf="report.status === 'pending'" (click)="updateReportStatus(report.id, 'rejected')"
-                        class="text-red-600 hover:text-red-900 transition-colors">
-                  Reject
-                </button>
-                <button (click)="deleteReport(report.id)"
-                        class="text-gray-600 hover:text-gray-900 transition-colors">
-                  Delete
-                </button>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-right">
+              <div class="flex space-x-3 justify-end">
+                <div class="relative group">
+                  <button (click)="viewReportDetails(report)" 
+                          class="text-blue-600 hover:text-blue-900 transition-colors p-1 rounded-full hover:bg-blue-100">
+                    <span class="material-icons text-sm">visibility</span>
+                  </button>
+                  <div class="absolute bottom-full right-0 mb-2 w-24 bg-black text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                    View Details
+                    <div class="absolute top-full right-2 -mt-1 border-4 border-transparent border-t-black"></div>
+                  </div>
+                </div>
+                
+                <div class="relative group" *ngIf="report.status === 'pending'">
+                  <button (click)="updateReportStatus(report.id, 'approved')"
+                          class="text-green-600 hover:text-green-900 transition-colors p-1 rounded-full hover:bg-green-100">
+                    <span class="material-icons text-sm">check_circle</span>
+                  </button>
+                  <div class="absolute bottom-full right-0 mb-2 w-16 bg-black text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                    Approve
+                    <div class="absolute top-full right-2 -mt-1 border-4 border-transparent border-t-black"></div>
+                  </div>
+                </div>
+                
+                <div class="relative group" *ngIf="report.status === 'pending'">
+                  <button (click)="updateReportStatus(report.id, 'rejected')"
+                          class="text-red-600 hover:text-red-900 transition-colors p-1 rounded-full hover:bg-red-100">
+                    <span class="material-icons text-sm">cancel</span>
+                  </button>
+                  <div class="absolute bottom-full right-0 mb-2 w-14 bg-black text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                    Reject
+                    <div class="absolute top-full right-2 -mt-1 border-4 border-transparent border-t-black"></div>
+                  </div>
+                </div>
+                
+                <div class="relative group">
+                  <button (click)="deleteReport(report.id)"
+                          class="text-gray-600 hover:text-gray-900 transition-colors p-1 rounded-full hover:bg-gray-100">
+                    <span class="material-icons text-sm">delete</span>
+                  </button>
+                  <div class="absolute bottom-full right-0 mb-2 w-14 bg-black text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                    Delete
+                    <div class="absolute top-full right-2 -mt-1 border-4 border-transparent border-t-black"></div>
+                  </div>
+                </div>
               </div>
             </td>
           </tr>

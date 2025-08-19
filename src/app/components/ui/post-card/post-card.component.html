@@ -27,12 +27,12 @@
         <span class="material-symbols-rounded">more_vert</span>
       </button>
       <!-- Dropdown menu -->
-      <div *ngIf="isMenuOpen(post.id)" class="absolute right-4 top-8 mt-2 w-48 bg-white shadow-lg rounded-md z-20 border border-gray-300/85 dropdown-menu">
-        <button *ngIf="currentUser.id === post.authorId" (click)="openConfirmationModal(post.id)"
+      <div *ngIf="isMenuOpen(post.id)" class="absolute right-4 top-8 mt-2 w-48 bg-white shadow-lg rounded-md z-20 border border-gray-300/85 dropdown-menu" (click)="$event.stopPropagation()">
+        <button *ngIf="currentUser.id === post.authorId" (click)="openConfirmationModal(post.id); $event.stopPropagation()"
           class="block w-full text-left px-4 py-2 text-red-500 hover:bg-gray-100">
           Delete Post
         </button>
-        <button *ngIf="currentUser.id !== post.authorId && !reportedPosts[post.id]" (click)="openReportModal(post.id)"
+        <button *ngIf="currentUser.id !== post.authorId && !reportedPosts[post.id]" (click)="openReportModal(post.id); $event.stopPropagation()"
           class="block w-full text-left px-4 py-2 text-orange-500 hover:bg-gray-100">
           Report Post
         </button>

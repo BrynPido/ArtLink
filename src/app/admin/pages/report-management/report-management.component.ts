@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DataService } from '../../../services/data.service';
+import { SweetAlertService } from '../../services/sweetalert.service';
 
 interface Report {
   id: number;
@@ -55,7 +56,7 @@ export class ReportManagementComponent implements OnInit {
   showDetailsModal = false;
   selectedReport: Report | null = null;
 
-  constructor(private dataService: DataService) {}
+  constructor(private dataService: DataService, private sweetAlert: SweetAlertService) {}
 
   ngOnInit(): void {
     this.loadReports();
@@ -211,38 +212,42 @@ export class ReportManagementComponent implements OnInit {
             this.selectedReport.status = status;
           }
           
-          // Show success message or toast
-          console.log('Report status updated successfully');
+          // Show success message using SweetAlert
+          this.sweetAlert.success('Success!', `Report status updated to ${status}`);
         }
       },
       error: (error) => {
         console.error('Error updating report status:', error);
+        this.sweetAlert.error('Error!', 'Failed to update report status. Please try again.');
       }
     });
   }
 
   deleteReport(reportId: number): void {
-    if (confirm('Are you sure you want to delete this report? This action cannot be undone.')) {
-      this.dataService.deleteReport(reportId).subscribe({
-        next: (response) => {
-          if (response.status === 'success') {
-            // Remove the report from the local array
-            this.reports = this.reports.filter(r => r.id !== reportId);
-            this.filterReports();
-            this.loadStats(); // Refresh stats
-            
-            if (this.selectedReport && this.selectedReport.id === reportId) {
-              this.closeDetailsModal();
+    this.sweetAlert.confirmDelete('report', 'This action cannot be undone.').then((result: any) => {
+      if (result.isConfirmed) {
+        this.dataService.deleteReport(reportId).subscribe({
+          next: (response) => {
+            if (response.status === 'success') {
+              // Remove the report from the local array
+              this.reports = this.reports.filter(r => r.id !== reportId);
+              this.filterReports();
+              this.loadStats(); // Refresh stats
+              
+              if (this.selectedReport && this.selectedReport.id === reportId) {
+                this.closeDetailsModal();
+              }
+              
+              this.sweetAlert.success('Success!', 'Report deleted successfully');
             }
-            
-            console.log('Report deleted successfully');
+          },
+          error: (error) => {
+            console.error('Error deleting report:', error);
+            this.sweetAlert.error('Error!', 'Failed to delete report. Please try again.');
           }
-        },
-        error: (error) => {
-          console.error('Error deleting report:', error);
-        }
-      });
-    }
+        });
+      }
+    });
   }
 
   // Modal methods
@@ -273,16 +278,20 @@ export class ReportManagementComponent implements OnInit {
   }
 
   getPendingCount(): number {
-    if (!this.stats) return 0;
-    const pendingStatus = this.stats.statusBreakdown.find(s => s.status === 'pending');
-    return pendingStatus ? pendingStatus.count : 0;
+    if (!this.stats || !this.stats.statusBreakdown) return 0;
+    const pendingStatus = this.stats.statusBreakdown.find((s: any) => s.status === 'pending');
+    return pendingStatus ? (typeof pendingStatus.count === 'string' ? parseInt(pendingStatus.count) : pendingStatus.count) || 0 : 0;
   }
 
   getResolvedCount(): number {
-    if (!this.stats) return 0;
-    const resolvedStatus = this.stats.statusBreakdown.find(s => s.status === 'resolved');
-    const approvedStatus = this.stats.statusBreakdown.find(s => s.status === 'approved');
-    return (resolvedStatus?.count || 0) + (approvedStatus?.count || 0);
+    if (!this.stats || !this.stats.statusBreakdown) return 0;
+    const resolvedStatus = this.stats.statusBreakdown.find((s: any) => s.status === 'resolved');
+    const approvedStatus = this.stats.statusBreakdown.find((s: any) => s.status === 'approved');
+    
+    const resolvedCount = resolvedStatus ? (typeof resolvedStatus.count === 'string' ? parseInt(resolvedStatus.count) : resolvedStatus.count) || 0 : 0;
+    const approvedCount = approvedStatus ? (typeof approvedStatus.count === 'string' ? parseInt(approvedStatus.count) : approvedStatus.count) || 0 : 0;
+    
+    return resolvedCount + approvedCount;
   }
 
   Math = Math; // Make Math available in template

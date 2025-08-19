@@ -21,8 +21,10 @@
       <!-- Right side items -->
       <div class="flex items-center">
         <!-- Notifications -->
-        <div class="relative mr-3">
-          <button class="flex mx-3 text-sm bg-gray-800 rounded-full md:mr-0 focus:ring-4 focus:ring-gray-300 relative">
+        <div class="relative mr-3" clickOutside (clickOutside)="isNotificationsOpen = false">
+          <button 
+            (click)="toggleNotifications()" 
+            class="flex mx-3 text-sm bg-gray-800 rounded-full md:mr-0 focus:ring-4 focus:ring-gray-300 relative">
             <span class="sr-only">Open notifications</span>
             <span class="material-icons text-gray-500">notifications</span>
             <span *ngIf="unreadCount > 0" class="absolute -top-2 -right-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
@@ -31,7 +33,7 @@
           </button>
           
           <!-- Notifications dropdown -->
-          <div *ngIf="notifications.length > 0" class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50 hidden group-hover:block">
+          <div *ngIf="notifications.length > 0 && isNotificationsOpen" class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
             <div class="p-4 border-b border-gray-200">
               <h3 class="text-lg font-semibold text-gray-900">Notifications</h3>
             </div>
@@ -57,8 +59,10 @@
         </div>
         
         <!-- User menu -->
-        <div class="flex items-center ml-3 relative group">
-          <button class="flex text-sm bg-gray-800 rounded-full focus:ring-4 focus:ring-gray-300">
+        <div class="flex items-center ml-3 relative" clickOutside (clickOutside)="isUserDropdownOpen = false">
+          <button 
+            (click)="toggleUserDropdown()" 
+            class="flex text-sm bg-gray-800 rounded-full focus:ring-4 focus:ring-gray-300">
             <span class="sr-only">Open user menu</span>
             <img 
               class="w-8 h-8 rounded-full" 
@@ -67,7 +71,9 @@
           </button>
           
           <!-- User dropdown -->
-          <div class="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50 hidden group-hover:block">
+          <div 
+            *ngIf="isUserDropdownOpen" 
+            class="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
             <div class="p-3 border-b border-gray-200">
               <p class="text-sm font-medium text-gray-900">{{currentUser?.name}}</p>
               <p class="text-sm text-gray-500">{{currentUser?.email}}</p>

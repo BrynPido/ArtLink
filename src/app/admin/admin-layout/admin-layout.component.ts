@@ -3,17 +3,20 @@ import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { DataService } from '../../services/data.service';
 import { AdminService } from '../services/admin.service';
+import { ClickOutsideDirective } from '../../directives/click-outside.directive';
 
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, ClickOutsideDirective],
   templateUrl: './admin-layout.component.html',
   styleUrls: ['./admin-layout.component.css']
 })
 export class AdminLayoutComponent implements OnInit {
   currentUser: any;
   isMenuOpen = false;
+  isUserDropdownOpen = false;
+  isNotificationsOpen = false;
   notifications: any[] = [];
   unreadCount = 0;
 
@@ -81,6 +84,20 @@ export class AdminLayoutComponent implements OnInit {
 
   toggleMenu() {
     this.isMenuOpen = !this.isMenuOpen;
+  }
+  
+  toggleUserDropdown() {
+    this.isUserDropdownOpen = !this.isUserDropdownOpen;
+    if (this.isUserDropdownOpen) {
+      this.isNotificationsOpen = false;
+    }
+  }
+  
+  toggleNotifications() {
+    this.isNotificationsOpen = !this.isNotificationsOpen;
+    if (this.isNotificationsOpen) {
+      this.isUserDropdownOpen = false;
+    }
   }
 
   loadNotifications() {
