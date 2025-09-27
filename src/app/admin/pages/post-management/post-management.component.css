@@ -1,4 +1,4 @@
-/* Post Management specific styles */
+/* Post Management specific styles - Dark Mode Compatible */
 .admin-table {
   font-size: 0.875rem;
 }
@@ -6,12 +6,7 @@
 .admin-table th {
   position: sticky;
   top: 0;
-  background-color: #f9fafb;
   z-index: 10;
-}
-
-.admin-table tr:hover {
-  background-color: #f8fafc;
 }
 
 /* Post thumbnail styles */
@@ -34,17 +29,6 @@
   display: flex;
   align-items: center;
   gap: 0.25rem;
-}
-
-/* Status indicators */
-.status-published {
-  background-color: #d1fae5;
-  color: #065f46;
-}
-
-.status-hidden {
-  background-color: #fee2e2;
-  color: #991b1b;
 }
 
 /* Modal enhancements */
@@ -139,14 +123,14 @@
 .truncate-content {
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* Search and filter enhancements */
+/* Search and filter enhancements - Dark Mode Compatible */
 .search-filter-container {
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
   border-radius: 0.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
@@ -156,7 +140,7 @@
 }
 
 .filter-input:focus {
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
   transform: translateY(-1px);
 }
 

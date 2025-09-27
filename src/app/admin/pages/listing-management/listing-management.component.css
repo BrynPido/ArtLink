@@ -1,8 +1,11 @@
 .listing-management {
   min-height: 100vh;
 }
-
-.listing-management table {
+.listing-management .stats-card {
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}ing-management table {
   min-width: 800px;
 }
 
@@ -41,10 +44,8 @@
 }
 
 .listing-management .bulk-actions {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 0.5rem;
   padding: 1rem;
-  color: white;
   margin-bottom: 1rem;
 }
 
@@ -67,7 +68,7 @@
   height: 1.5rem;
   border: 2px solid #e5e7eb;
   border-radius: 50%;
-  border-top-color: #3b82f6;
+  border-top-color: #6366f1;
   animation: spin 1s ease-in-out infinite;
 }
 
@@ -84,8 +85,6 @@
 }
 
 .listing-management .category-badge {
-  background: #dbeafe;
-  color: #1e40af;
   border-radius: 9999px;
   padding: 0.25rem 0.75rem;
   font-size: 0.75rem;
@@ -105,8 +104,6 @@
   
   .listing-management .mobile-card {
     display: block;
-    background: white;
-    border: 1px solid #e2e8f0;
     border-radius: 0.5rem;
     padding: 1rem;
     margin-bottom: 1rem;

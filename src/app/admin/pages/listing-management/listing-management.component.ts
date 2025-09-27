@@ -184,72 +184,86 @@ export class ListingManagementComponent implements OnInit {
   }
 
   viewListing(listing: any) {
-    // Create HTML content for the SweetAlert modal
+    // Detect if dark mode is active
+    const isDarkMode = document.documentElement.classList.contains('dark') || 
+                       window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    // Define colors based on theme
+    const colors = {
+      background: isDarkMode ? '#374151' : '#f3f4f6',
+      border: isDarkMode ? '#4b5563' : '#e5e7eb',
+      text: isDarkMode ? '#f9fafb' : '#374151',
+      textSecondary: isDarkMode ? '#d1d5db' : '#6b7280',
+      modalBg: isDarkMode ? '#1f2937' : '#ffffff',
+      strongText: isDarkMode ? '#f3f4f6' : '#111827'
+    };
+
+    // Create HTML content for the SweetAlert modal with dark mode support
     const imageHtml = listing.image_url 
-      ? `<img src="http://localhost:3000${listing.image_url}" alt="${listing.title}" onclick="window.open('http://localhost:3000${listing.image_url}', '_blank')" style="width: 100%; max-width: 300px; height: auto; max-height: 250px; object-fit: contain; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); cursor: pointer;" title="Click to view full size">`
-      : '<div style="width: 100%; height: 200px; background-color: #f3f4f6; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #6b7280; margin-bottom: 20px; border: 1px solid #e5e7eb;">No image available</div>';
+      ? `<img src="${listing.image_url}" alt="${listing.title}" onclick="window.open('${listing.image_url}', '_blank')" style="width: 100%; max-width: 300px; height: auto; max-height: 250px; object-fit: contain; border-radius: 8px; margin-bottom: 20px; border: 1px solid ${colors.border}; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); cursor: pointer;" title="Click to view full size">`
+      : `<div style="width: 100%; height: 200px; background-color: ${colors.background}; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: ${colors.textSecondary}; margin-bottom: 20px; border: 1px solid ${colors.border};">No image available</div>`;
 
     const modalContent = `
-      <div style="text-align: left;">
+      <div style="text-align: left; color: ${colors.text};">
         <div style="text-align: center; margin-bottom: 20px;">
           ${imageHtml}
         </div>
         
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
           <div>
-            <strong>Title:</strong><br>
-            <span style="color: #374151;">${listing.title || 'N/A'}</span>
+            <strong style="color: ${colors.strongText};">Title:</strong><br>
+            <span style="color: ${colors.text};">${listing.title || 'N/A'}</span>
           </div>
           <div>
-            <strong>Artist:</strong><br>
-            <span style="color: #374151;">${listing.username || 'Unknown Artist'}</span>
+            <strong style="color: ${colors.strongText};">Artist:</strong><br>
+            <span style="color: ${colors.text};">${listing.username || 'Unknown Artist'}</span>
           </div>
         </div>
 
         <div style="margin-bottom: 15px;">
-          <strong>Description:</strong><br>
-          <span style="color: #374151;">${listing.content || 'No description provided'}</span>
+          <strong style="color: ${colors.strongText};">Description:</strong><br>
+          <span style="color: ${colors.text};">${listing.content || 'No description provided'}</span>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
           <div>
-            <strong>Price:</strong><br>
-            <span style="color: #374151;">$${parseFloat(listing.price || 0).toFixed(2)}</span>
+            <strong style="color: ${colors.strongText};">Price:</strong><br>
+            <span style="color: #059669;">$${parseFloat(listing.price || 0).toFixed(2)}</span>
           </div>
           <div>
-            <strong>Category:</strong><br>
-            <span style="color: #374151;">${listing.category ? listing.category.charAt(0).toUpperCase() + listing.category.slice(1) : 'N/A'}</span>
+            <strong style="color: ${colors.strongText};">Category:</strong><br>
+            <span style="color: ${colors.text};">${listing.category ? listing.category.charAt(0).toUpperCase() + listing.category.slice(1) : 'N/A'}</span>
           </div>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
           <div>
-            <strong>Status:</strong><br>
-            <span style="color: ${listing.published === 1 ? '#10b981' : '#6b7280'};">
-              ${listing.published === 1 ? 'Published' : 'Draft'}
+            <strong style="color: ${colors.strongText};">Status:</strong><br>
+            <span style="color: ${(listing.published === true || listing.published === 1) ? '#10b981' : colors.textSecondary};">
+              ${(listing.published === true || listing.published === 1) ? 'Published' : 'Draft'}
             </span>
           </div>
           <div>
-            <strong>Condition:</strong><br>
-            <span style="color: #374151;">${listing.condition ? listing.condition.replace('-', ' ').toUpperCase() : 'N/A'}</span>
+            <strong style="color: ${colors.strongText};">Condition:</strong><br>
+            <span style="color: ${colors.text};">${listing.condition ? listing.condition.replace('-', ' ').toUpperCase() : 'N/A'}</span>
           </div>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
           <div>
-            <strong>Location:</strong><br>
-            <span style="color: #374151;">${listing.location || 'N/A'}</span>
+            <strong style="color: ${colors.strongText};">Location:</strong><br>
+            <span style="color: ${colors.text};">${listing.location || 'N/A'}</span>
           </div>
           <div>
-            <strong>Email:</strong><br>
-            <span style="color: #374151;">${listing.email || 'N/A'}</span>
+            <strong style="color: ${colors.strongText};">Email:</strong><br>
+            <span style="color: ${colors.text};">${listing.email || 'N/A'}</span>
           </div>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
           <div>
-            <strong>Created:</strong><br>
-            <span style="color: #374151;">${new Date(listing.createdAt).toLocaleDateString('en-US', { 
+            <strong style="color: ${colors.strongText};">Created:</strong><br>
+            <span style="color: ${colors.text};">${new Date(listing.createdAt).toLocaleDateString('en-US', { 
               year: 'numeric', 
               month: 'short', 
               day: 'numeric',
@@ -258,8 +272,8 @@ export class ListingManagementComponent implements OnInit {
             })}</span>
           </div>
           <div>
-            <strong>Updated:</strong><br>
-            <span style="color: #374151;">${new Date(listing.updatedAt).toLocaleDateString('en-US', { 
+            <strong style="color: ${colors.strongText};">Updated:</strong><br>
+            <span style="color: ${colors.text};">${new Date(listing.updatedAt).toLocaleDateString('en-US', { 
               year: 'numeric', 
               month: 'short', 
               day: 'numeric',
@@ -283,21 +297,29 @@ export class ListingManagementComponent implements OnInit {
         cancelButtonText: 'Close',
         width: '70vw',
         padding: '1.5rem',
+        background: colors.modalBg,
+        color: colors.text,
         customClass: {
           popup: 'listing-details-modal',
-          htmlContainer: 'listing-modal-content'
+          htmlContainer: 'listing-modal-content',
+          title: 'listing-modal-title'
         },
         didOpen: () => {
-          // Add custom CSS for better image display and modal sizing
+          // Add custom CSS for better image display and modal sizing with dark mode support
           const style = document.createElement('style');
           style.textContent = `
             .listing-details-modal {
               border-radius: 12px !important;
               max-width: 700px !important;
               margin: auto !important;
+              background-color: ${colors.modalBg} !important;
+              color: ${colors.text} !important;
             }
             .listing-modal-content {
               text-align: left !important;
+            }
+            .listing-modal-title {
+              color: ${colors.strongText} !important;
             }
             .listing-modal-content img {
               cursor: pointer;

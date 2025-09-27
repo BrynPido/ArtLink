@@ -2,12 +2,12 @@
 <div class="mb-8">
   <div class="flex items-center justify-between">
     <div>
-      <h1 class="text-3xl font-bold text-gray-900">Dashboard</h1>
-      <p class="text-gray-600 mt-1">Welcome back! Here's what's happening with ArtLink today.</p>
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+      <p class="text-gray-600 dark:text-gray-400 mt-1">Welcome back! Here's what's happening with ArtLink today.</p>
     </div>
     <button 
       (click)="refreshDashboard()"
-      class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
+      class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors shadow-md">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
       </svg>
@@ -18,10 +18,10 @@
 
 <!-- Loading State -->
 <div *ngIf="loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-  <div *ngFor="let i of [1,2,3,4]" class="bg-white p-6 rounded-lg shadow">
+  <div *ngFor="let i of [1,2,3,4]" class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
     <div class="animate-pulse">
-      <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-      <div class="h-8 bg-gray-200 rounded w-1/2"></div>
+      <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
+      <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
     </div>
   </div>
 </div>
@@ -29,11 +29,11 @@
 <!-- Stats Cards -->
 <div *ngIf="!loading && stats" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
   <!-- Total Users -->
-  <div class="bg-white overflow-hidden shadow rounded-lg admin-card">
+  <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-lg rounded-lg admin-card border border-gray-200 dark:border-gray-700 transition-all hover:shadow-xl">
     <div class="p-5">
       <div class="flex items-center">
         <div class="flex-shrink-0">
-          <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
+          <div class="w-8 h-8 bg-indigo-500 rounded-md flex items-center justify-center">
             <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
               <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"></path>
             </svg>
@@ -41,15 +41,15 @@
         </div>
         <div class="ml-5 w-0 flex-1">
           <dl>
-            <dt class="text-sm font-medium text-gray-500 truncate">Total Users</dt>
-            <dd class="text-lg font-medium text-gray-900">{{stats.totalUsers | number}}</dd>
+            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Total Users</dt>
+            <dd class="text-lg font-medium text-gray-900 dark:text-white">{{stats.totalUsers | number}}</dd>
           </dl>
         </div>
       </div>
     </div>
-    <div class="bg-gray-50 px-5 py-3">
+    <div class="bg-gray-50 dark:bg-gray-700/50 px-5 py-3 border-t border-gray-200 dark:border-gray-600">
       <div class="text-sm">
-        <a routerLink="/admin/users" class="font-medium text-blue-700 hover:text-blue-600">
+        <a routerLink="/admin/users" class="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 transition-colors">
           View all users
         </a>
       </div>
@@ -57,7 +57,7 @@
   </div>
 
   <!-- Total Posts -->
-  <div class="bg-white overflow-hidden shadow rounded-lg admin-card">
+  <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-lg rounded-lg admin-card border border-gray-200 dark:border-gray-700 transition-all hover:shadow-xl">
     <div class="p-5">
       <div class="flex items-center">
         <div class="flex-shrink-0">
@@ -69,15 +69,15 @@
         </div>
         <div class="ml-5 w-0 flex-1">
           <dl>
-            <dt class="text-sm font-medium text-gray-500 truncate">Total Posts</dt>
-            <dd class="text-lg font-medium text-gray-900">{{stats.totalPosts | number}}</dd>
+            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Total Posts</dt>
+            <dd class="text-lg font-medium text-gray-900 dark:text-white">{{stats.totalPosts | number}}</dd>
           </dl>
         </div>
       </div>
     </div>
-    <div class="bg-gray-50 px-5 py-3">
+    <div class="bg-gray-50 dark:bg-gray-700/50 px-5 py-3 border-t border-gray-200 dark:border-gray-600">
       <div class="text-sm">
-        <a routerLink="/admin/posts" class="font-medium text-green-700 hover:text-green-600">
+        <a routerLink="/admin/posts" class="font-medium text-green-600 dark:text-green-400 hover:text-green-500 dark:hover:text-green-300 transition-colors">
           View all posts
         </a>
       </div>
@@ -85,7 +85,7 @@
   </div>
 
   <!-- Total Listings -->
-  <div class="bg-white overflow-hidden shadow rounded-lg admin-card">
+  <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-lg rounded-lg admin-card border border-gray-200 dark:border-gray-700 transition-all hover:shadow-xl">
     <div class="p-5">
       <div class="flex items-center">
         <div class="flex-shrink-0">
@@ -97,15 +97,15 @@
         </div>
         <div class="ml-5 w-0 flex-1">
           <dl>
-            <dt class="text-sm font-medium text-gray-500 truncate">Total Listings</dt>
-            <dd class="text-lg font-medium text-gray-900">{{stats.totalListings | number}}</dd>
+            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Total Listings</dt>
+            <dd class="text-lg font-medium text-gray-900 dark:text-white">{{stats.totalListings | number}}</dd>
           </dl>
         </div>
       </div>
     </div>
-    <div class="bg-gray-50 px-5 py-3">
+    <div class="bg-gray-50 dark:bg-gray-700/50 px-5 py-3 border-t border-gray-200 dark:border-gray-600">
       <div class="text-sm">
-        <a routerLink="/admin/listings" class="font-medium text-purple-700 hover:text-purple-600">
+        <a routerLink="/admin/listings" class="font-medium text-purple-600 dark:text-purple-400 hover:text-purple-500 dark:hover:text-purple-300 transition-colors">
           View all listings
         </a>
       </div>
@@ -113,7 +113,7 @@
   </div>
 
   <!-- Active Users -->
-  <div class="bg-white overflow-hidden shadow rounded-lg admin-card">
+  <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-lg rounded-lg admin-card border border-gray-200 dark:border-gray-700 transition-all hover:shadow-xl">
     <div class="p-5">
       <div class="flex items-center">
         <div class="flex-shrink-0">
@@ -125,15 +125,15 @@
         </div>
         <div class="ml-5 w-0 flex-1">
           <dl>
-            <dt class="text-sm font-medium text-gray-500 truncate">Active Users</dt>
-            <dd class="text-lg font-medium text-gray-900">{{stats.activeUsers | number}}</dd>
+            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Active Users</dt>
+            <dd class="text-lg font-medium text-gray-900 dark:text-white">{{stats.activeUsers | number}}</dd>
           </dl>
         </div>
       </div>
     </div>
-    <div class="bg-gray-50 px-5 py-3">
+    <div class="bg-gray-50 dark:bg-gray-700/50 px-5 py-3 border-t border-gray-200 dark:border-gray-600">
       <div class="text-sm">
-        <span class="font-medium text-yellow-700">Online now</span>
+        <span class="font-medium text-yellow-600 dark:text-yellow-400">Online now</span>
       </div>
     </div>
   </div>
@@ -142,9 +142,9 @@
 <!-- Charts Section -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
   <!-- User Growth Chart -->
-  <div class="bg-white overflow-hidden shadow rounded-lg">
+  <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-lg rounded-lg border border-gray-200 dark:border-gray-700">
     <div class="p-6">
-      <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">User Growth</h3>
+      <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">User Growth</h3>
       <div class="chart-container">
         <canvas id="userGrowthChart"></canvas>
       </div>
@@ -152,9 +152,9 @@
   </div>
 
   <!-- Content Distribution Chart -->
-  <div class="bg-white overflow-hidden shadow rounded-lg">
+  <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-lg rounded-lg border border-gray-200 dark:border-gray-700">
     <div class="p-6">
-      <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Content Distribution</h3>
+      <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">Content Distribution</h3>
       <div class="chart-container">
         <canvas id="contentChart"></canvas>
       </div>
@@ -163,42 +163,42 @@
 </div>
 
 <!-- Recent Activity -->
-<div class="bg-white shadow overflow-hidden sm:rounded-md">
-  <div class="px-4 py-5 sm:px-6">
-    <h3 class="text-lg leading-6 font-medium text-gray-900">Recent Activity</h3>
-    <p class="mt-1 max-w-2xl text-sm text-gray-500">Latest system activity and user interactions.</p>
+<div class="bg-white dark:bg-gray-800 shadow-lg overflow-hidden sm:rounded-md border border-gray-200 dark:border-gray-700">
+  <div class="px-4 py-5 sm:px-6 border-b border-gray-200 dark:border-gray-700">
+    <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">Recent Activity</h3>
+    <p class="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">Latest system activity and user interactions.</p>
   </div>
   
   <div *ngIf="recentActivity.length === 0" class="px-4 py-5 sm:p-6">
     <div class="text-center">
-      <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
       </svg>
-      <h3 class="mt-2 text-sm font-medium text-gray-900">No recent activity</h3>
-      <p class="mt-1 text-sm text-gray-500">Check back later for system updates.</p>
+      <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No recent activity</h3>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Check back later for system updates.</p>
     </div>
   </div>
 
-  <ul role="list" class="divide-y divide-gray-200">
-    <li *ngFor="let activity of recentActivity; trackBy: trackActivity" class="px-4 py-4 sm:px-6 hover:bg-gray-50">
+  <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
+    <li *ngFor="let activity of recentActivity; trackBy: trackActivity" class="px-4 py-4 sm:px-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
       <div class="flex items-center space-x-4">
         <div class="flex-shrink-0">
-          <div [class]="'w-8 h-8 rounded-full flex items-center justify-center ' + getActivityColor(activity.type)">
+          <div [class]="'w-8 h-8 rounded-full flex items-center justify-center text-white ' + getActivityColor(activity.type)">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="getActivityIcon(activity.type)"></path>
             </svg>
           </div>
         </div>
         <div class="flex-1 min-w-0">
-          <p class="text-sm font-medium text-gray-900 truncate">
+          <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
             {{activity.description}}
           </p>
-          <p class="text-sm text-gray-500">
+          <p class="text-sm text-gray-500 dark:text-gray-400">
             {{activity.createdAt | date:'medium'}}
           </p>
         </div>
         <div class="flex-shrink-0 text-right">
-          <p class="text-sm text-gray-500">
+          <p class="text-sm text-gray-500 dark:text-gray-400">
             {{activity.userName}}
           </p>
         </div>
@@ -206,9 +206,9 @@
     </li>
   </ul>
   
-  <div class="bg-gray-50 px-4 py-3 sm:px-6">
+  <div class="bg-gray-50 dark:bg-gray-700/50 px-4 py-3 sm:px-6 border-t border-gray-200 dark:border-gray-600">
     <div class="text-sm">
-      <a routerLink="/admin/reports" class="font-medium text-indigo-600 hover:text-indigo-500">
+      <a routerLink="/admin/reports" class="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 transition-colors">
         View detailed reports
         <span aria-hidden="true"> &rarr;</span>
       </a>

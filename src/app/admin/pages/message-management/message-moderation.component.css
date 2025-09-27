@@ -18,10 +18,6 @@
   }
 }
 
-.privacy-notice {
-  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-}
-
 .stat-card {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }

@@ -2,25 +2,25 @@
   <!-- Header -->
   <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
     <div>
-      <h1 class="text-2xl font-bold text-gray-900 mb-2">Reports & Analytics</h1>
-      <p class="text-gray-600">View detailed insights and statistics about your platform</p>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Reports & Analytics</h1>
+      <p class="text-gray-600 dark:text-gray-400">View detailed insights and statistics about your platform</p>
     </div>
     <div class="flex gap-2 mt-4 sm:mt-0">
       <button
         (click)="exportReport('general')"
-        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-lg transition-colors"
       >
         Export General
       </button>
       <button
         (click)="exportReport('users')"
-        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+        class="px-4 py-2 bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white rounded-lg transition-colors"
       >
         Export Users
       </button>
       <button
         (click)="exportReport('content')"
-        class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+        class="px-4 py-2 bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 text-white rounded-lg transition-colors"
       >
         Export Content
       </button>
@@ -28,34 +28,34 @@
   </div>
 
   <!-- Date Range Filter -->
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Start Date</label>
         <input
           type="date"
           [(ngModel)]="dateRange.start"
           (change)="onDateRangeChange()"
-          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
         >
       </div>
       
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">End Date</label>
         <input
           type="date"
           [(ngModel)]="dateRange.end"
           (change)="onDateRangeChange()"
-          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
         >
       </div>
       
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">Period</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Period</label>
         <select
           [(ngModel)]="selectedPeriod"
           (change)="onPeriodChange()"
-          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
         >
           <option *ngFor="let period of periods" [value]="period.value">
             {{ period.label }}
@@ -66,7 +66,7 @@
       <div class="flex items-end">
         <button
           (click)="loadReports(); loadUserGrowthStats(); loadContentStats()"
-          class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          class="w-full px-4 py-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-lg transition-colors"
         >
           Refresh
         </button>
@@ -77,21 +77,21 @@
   <!-- Loading State -->
   <div *ngIf="loading" class="text-center py-12">
     <div class="inline-flex items-center">
-      <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-      <span class="ml-2 text-gray-600">Loading reports...</span>
+      <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600 dark:border-indigo-400"></div>
+      <span class="ml-2 text-gray-600 dark:text-gray-400">Loading reports...</span>
     </div>
   </div>
 
   <!-- Summary Cards -->
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8" *ngIf="!loading && generalReports.summary">
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-sm font-medium text-gray-600">Total Users</p>
-          <p class="text-2xl font-bold text-gray-900">{{ generalReports.summary.totalUsers | number }}</p>
+          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Users</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ generalReports.summary.totalUsers | number }}</p>
         </div>
-        <div class="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
-          <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="h-12 w-12 bg-blue-100 dark:bg-blue-500/20 rounded-lg flex items-center justify-center">
+          <svg class="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
           </svg>
         </div>
@@ -100,18 +100,18 @@
         <span [class]="getGrowthColor(generalReports.summary.totalUsers, generalReports.summary.previousTotalUsers)" class="text-sm font-medium">
           {{ calculateGrowthPercentage(generalReports.summary.totalUsers, generalReports.summary.previousTotalUsers) }}
         </span>
-        <span class="text-sm text-gray-500 ml-1">from last period</span>
+        <span class="text-sm text-gray-500 dark:text-gray-400 ml-1">from last period</span>
       </div>
     </div>
 
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-sm font-medium text-gray-600">Total Posts</p>
-          <p class="text-2xl font-bold text-gray-900">{{ generalReports.summary.totalPosts | number }}</p>
+          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Posts</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ generalReports.summary.totalPosts | number }}</p>
         </div>
-        <div class="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
-          <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="h-12 w-12 bg-green-100 dark:bg-green-500/20 rounded-lg flex items-center justify-center">
+          <svg class="h-6 w-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path>
           </svg>
         </div>
@@ -120,18 +120,18 @@
         <span [class]="getGrowthColor(generalReports.summary.totalPosts, generalReports.summary.previousTotalPosts)" class="text-sm font-medium">
           {{ calculateGrowthPercentage(generalReports.summary.totalPosts, generalReports.summary.previousTotalPosts) }}
         </span>
-        <span class="text-sm text-gray-500 ml-1">from last period</span>
+        <span class="text-sm text-gray-500 dark:text-gray-400 ml-1">from last period</span>
       </div>
     </div>
 
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-sm font-medium text-gray-600">Total Listings</p>
-          <p class="text-2xl font-bold text-gray-900">{{ generalReports.summary.totalListings | number }}</p>
+          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Listings</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ generalReports.summary.totalListings | number }}</p>
         </div>
-        <div class="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
-          <svg class="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="h-12 w-12 bg-purple-100 dark:bg-purple-500/20 rounded-lg flex items-center justify-center">
+          <svg class="h-6 w-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
           </svg>
         </div>
@@ -140,27 +140,27 @@
         <span [class]="getGrowthColor(generalReports.summary.totalListings, generalReports.summary.previousTotalListings)" class="text-sm font-medium">
           {{ calculateGrowthPercentage(generalReports.summary.totalListings, generalReports.summary.previousTotalListings) }}
         </span>
-        <span class="text-sm text-gray-500 ml-1">from last period</span>
+        <span class="text-sm text-gray-500 dark:text-gray-400 ml-1">from last period</span>
       </div>
     </div>
 
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-sm font-medium text-gray-600">Active Users</p>
-          <p class="text-2xl font-bold text-gray-900">{{ generalReports.summary.activeUsers | number }}</p>
+          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Active Users</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ generalReports.summary.activeUsers | number }}</p>
         </div>
-        <div class="h-12 w-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-          <svg class="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="h-12 w-12 bg-yellow-100 dark:bg-yellow-500/20 rounded-lg flex items-center justify-center">
+          <svg class="h-6 w-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
           </svg>
         </div>
       </div>
       <div class="mt-4">
-        <span class="text-sm font-medium text-gray-600">
+        <span class="text-sm font-medium text-gray-600 dark:text-gray-400">
           {{ getActiveUserPercentage() }}%
         </span>
-        <span class="text-sm text-gray-500 ml-1">of total users</span>
+        <span class="text-sm text-gray-500 dark:text-gray-400 ml-1">of total users</span>
       </div>
     </div>
   </div>
@@ -168,12 +168,12 @@
   <!-- Charts -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8" *ngIf="!loading">
     <!-- User Growth Chart -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-medium text-gray-900">User Growth</h3>
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white">User Growth</h3>
         <button
           (click)="exportReport('users')"
-          class="text-sm text-blue-600 hover:text-blue-800"
+          class="text-sm text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors"
         >
           Export
         </button>
@@ -181,14 +181,14 @@
       
       <div *ngIf="userGrowthStats.hasData && userGrowthStats.labels && userGrowthStats.labels.length > 0" class="h-64">
         <!-- Chart placeholder - would integrate with Chart.js here -->
-        <div class="h-full bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg flex items-center justify-center">
+        <div class="h-full bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg flex items-center justify-center border border-blue-200 dark:border-blue-700">
           <div class="text-center">
-            <svg class="mx-auto h-12 w-12 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="mx-auto h-12 w-12 text-blue-400 dark:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
             </svg>
-            <p class="mt-2 text-sm text-blue-600">User Growth Chart</p>
-            <p class="text-xs text-blue-500">{{ userGrowthStats.labels.length }} data points</p>
-            <div class="mt-3 text-xs text-blue-600">
+            <p class="mt-2 text-sm text-blue-600 dark:text-blue-300 font-medium">User Growth Chart</p>
+            <p class="text-xs text-blue-500 dark:text-blue-400">{{ userGrowthStats.labels.length }} data points</p>
+            <div class="mt-3 text-xs text-blue-600 dark:text-blue-300 space-y-1">
               <p>Latest: {{ getUserGrowthLatest() }} users</p>
               <p>Total Growth: {{ getUserGrowthTotal() }} users</p>
             </div>
@@ -196,18 +196,23 @@
         </div>
       </div>
       
-      <div *ngIf="!userGrowthStats.hasData" class="h-64 flex items-center justify-center text-gray-500">
-        No user growth data available
+      <div *ngIf="!userGrowthStats.hasData" class="h-64 flex items-center justify-center text-gray-500 dark:text-gray-400">
+        <div class="text-center">
+          <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+          </svg>
+          <p class="mt-2">No user growth data available</p>
+        </div>
       </div>
     </div>
 
     <!-- Content Chart -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-medium text-gray-900">Content Growth</h3>
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Content Growth</h3>
         <button
           (click)="exportReport('content')"
-          class="text-sm text-purple-600 hover:text-purple-800"
+          class="text-sm text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 transition-colors"
         >
           Export
         </button>
@@ -215,13 +220,13 @@
       
       <div *ngIf="contentStats.hasData" class="h-64">
         <!-- Chart placeholder - would integrate with Chart.js here -->
-        <div class="h-full bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg flex items-center justify-center">
+        <div class="h-full bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-lg flex items-center justify-center border border-purple-200 dark:border-purple-700">
           <div class="text-center">
-            <svg class="mx-auto h-12 w-12 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="mx-auto h-12 w-12 text-purple-400 dark:text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
             </svg>
-            <p class="mt-2 text-sm text-purple-600">Content Statistics</p>
-            <div class="mt-3 text-xs text-purple-600 space-y-1">
+            <p class="mt-2 text-sm text-purple-600 dark:text-purple-300 font-medium">Content Statistics</p>
+            <div class="mt-3 text-xs text-purple-600 dark:text-purple-300 space-y-1">
               <p>Posts: {{ contentStats.posts || 0 }}</p>
               <p>Listings: {{ contentStats.listings || 0 }}</p>
               <p>Comments: {{ contentStats.comments || 0 }}</p>
@@ -230,8 +235,13 @@
         </div>
       </div>
       
-      <div *ngIf="!contentStats.hasData" class="h-64 flex items-center justify-center text-gray-500">
-        No content data available
+      <div *ngIf="!contentStats.hasData" class="h-64 flex items-center justify-center text-gray-500 dark:text-gray-400">
+        <div class="text-center">
+          <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+          <p class="mt-2">No content data available</p>
+        </div>
       </div>
     </div>
   </div>
@@ -239,72 +249,72 @@
   <!-- Detailed Statistics -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" *ngIf="!loading">
     <!-- User Statistics -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <h3 class="text-lg font-medium text-gray-900 mb-4">User Statistics</h3>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">User Statistics</h3>
       
       <div class="space-y-4" *ngIf="userGrowthStats.hasData">
-        <div class="flex items-center justify-between py-2 border-b border-gray-100">
-          <span class="text-sm text-gray-600">Total Data Points</span>
-          <span class="text-sm font-medium text-gray-900">{{ userGrowthStats.labels?.length || 0 }}</span>
+        <div class="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+          <span class="text-sm text-gray-600 dark:text-gray-400">Total Data Points</span>
+          <span class="text-sm font-medium text-gray-900 dark:text-white">{{ userGrowthStats.labels?.length || 0 }}</span>
         </div>
         
-        <div class="flex items-center justify-between py-2 border-b border-gray-100">
-          <span class="text-sm text-gray-600">Latest Period</span>
-          <span class="text-sm font-medium text-gray-900">{{ getUserGrowthLatest() }}</span>
+        <div class="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+          <span class="text-sm text-gray-600 dark:text-gray-400">Latest Period</span>
+          <span class="text-sm font-medium text-gray-900 dark:text-white">{{ getUserGrowthLatest() }}</span>
         </div>
         
-        <div class="flex items-center justify-between py-2 border-b border-gray-100">
-          <span class="text-sm text-gray-600">Total Growth</span>
-          <span class="text-sm font-medium text-green-600">{{ getUserGrowthTotal() }}</span>
+        <div class="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+          <span class="text-sm text-gray-600 dark:text-gray-400">Total Growth</span>
+          <span class="text-sm font-medium text-green-600 dark:text-green-400">{{ getUserGrowthTotal() }}</span>
         </div>
         
         <div class="flex items-center justify-between py-2">
-          <span class="text-sm text-gray-600">Period</span>
-          <span class="text-sm font-medium text-blue-600">{{ selectedPeriod }}</span>
+          <span class="text-sm text-gray-600 dark:text-gray-400">Period</span>
+          <span class="text-sm font-medium text-indigo-600 dark:text-indigo-400">{{ selectedPeriod }}</span>
         </div>
       </div>
       
-      <div *ngIf="!userGrowthStats.hasData" class="text-center py-8 text-gray-500">
-        <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div *ngIf="!userGrowthStats.hasData" class="text-center py-8 text-gray-500 dark:text-gray-400">
+        <svg class="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
         </svg>
-        <p class="mt-2">No user statistics available</p>
+        <p class="mt-2 text-gray-900 dark:text-white">No user statistics available</p>
       </div>
     </div>
 
     <!-- Content Statistics -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <h3 class="text-lg font-medium text-gray-900 mb-4">Content Statistics</h3>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Content Statistics</h3>
       
       <div class="space-y-4" *ngIf="contentStats.hasData">
-        <div class="flex items-center justify-between py-2 border-b border-gray-100">
-          <span class="text-sm text-gray-600">Posts</span>
-          <span class="text-sm font-medium text-gray-900">{{ contentStats.posts | number }}</span>
+        <div class="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+          <span class="text-sm text-gray-600 dark:text-gray-400">Posts</span>
+          <span class="text-sm font-medium text-gray-900 dark:text-white">{{ contentStats.posts | number }}</span>
         </div>
         
-        <div class="flex items-center justify-between py-2 border-b border-gray-100">
-          <span class="text-sm text-gray-600">Listings</span>
-          <span class="text-sm font-medium text-gray-900">{{ contentStats.listings | number }}</span>
+        <div class="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+          <span class="text-sm text-gray-600 dark:text-gray-400">Listings</span>
+          <span class="text-sm font-medium text-gray-900 dark:text-white">{{ contentStats.listings | number }}</span>
         </div>
         
-        <div class="flex items-center justify-between py-2 border-b border-gray-100">
-          <span class="text-sm text-gray-600">Comments</span>
-          <span class="text-sm font-medium text-blue-600">{{ contentStats.comments | number }}</span>
+        <div class="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+          <span class="text-sm text-gray-600 dark:text-gray-400">Comments</span>
+          <span class="text-sm font-medium text-indigo-600 dark:text-indigo-400">{{ contentStats.comments | number }}</span>
         </div>
         
         <div class="flex items-center justify-between py-2">
-          <span class="text-sm text-gray-600">Total Content</span>
-          <span class="text-sm font-medium text-green-600">
+          <span class="text-sm text-gray-600 dark:text-gray-400">Total Content</span>
+          <span class="text-sm font-medium text-green-600 dark:text-green-400">
             {{ (contentStats.posts + contentStats.listings + contentStats.comments) | number }}
           </span>
         </div>
       </div>
       
-      <div *ngIf="!contentStats.hasData" class="text-center py-8 text-gray-500">
-        <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div *ngIf="!contentStats.hasData" class="text-center py-8 text-gray-500 dark:text-gray-400">
+        <svg class="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
         </svg>
-        <p class="mt-2">No content statistics available</p>
+        <p class="mt-2 text-gray-900 dark:text-white">No content statistics available</p>
       </div>
     </div>
   </div>

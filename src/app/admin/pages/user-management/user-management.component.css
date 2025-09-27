@@ -1,4 +1,4 @@
-/* User Management specific styles */
+/* User Management specific styles - Dark Mode Compatible */
 .admin-table {
   font-size: 0.875rem;
 }
@@ -6,12 +6,7 @@
 .admin-table th {
   position: sticky;
   top: 0;
-  background-color: #f9fafb;
   z-index: 10;
-}
-
-.admin-table tr:hover {
-  background-color: #f8fafc;
 }
 
 /* User avatar styles */
@@ -40,13 +35,13 @@
   transition: all 0.2s ease-out;
 }
 
-/* Search input enhancements */
+/* Search input enhancements - Dark Mode Compatible */
 .search-input {
   transition: all 0.2s ease-in-out;
 }
 
 .search-input:focus {
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 /* Bulk actions bar */

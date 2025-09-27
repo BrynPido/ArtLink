@@ -2,69 +2,69 @@
   <!-- Header -->
   <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
     <div>
-      <h1 class="text-2xl font-bold text-gray-900 mb-2">Report Management</h1>
-      <p class="text-gray-600">Review and manage user reports</p>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Report Management</h1>
+      <p class="text-gray-600 dark:text-gray-400">Review and manage user reports</p>
     </div>
   </div>
 
   <!-- Stats Cards -->
   <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6" *ngIf="stats">
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 stats-card">
       <div class="flex items-center">
         <div class="flex-shrink-0">
-          <span class="material-symbols-rounded text-blue-500 text-2xl">report</span>
+          <span class="material-symbols-rounded text-indigo-500 dark:text-indigo-400 text-2xl">report</span>
         </div>
         <div class="ml-3">
-          <p class="text-sm font-medium text-gray-500">Total Reports</p>
-          <p class="text-2xl font-semibold text-gray-900">{{ stats.totalReports }}</p>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Reports</p>
+          <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ stats.totalReports }}</p>
         </div>
       </div>
     </div>
 
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 stats-card">
       <div class="flex items-center">
         <div class="flex-shrink-0">
-          <span class="material-symbols-rounded text-orange-500 text-2xl">pending</span>
+          <span class="material-symbols-rounded text-orange-500 dark:text-orange-400 text-2xl">pending</span>
         </div>
         <div class="ml-3">
-          <p class="text-sm font-medium text-gray-500">Pending</p>
-          <p class="text-2xl font-semibold text-gray-900">{{ getPendingCount() }}</p>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Pending</p>
+          <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ getPendingCount() }}</p>
         </div>
       </div>
     </div>
 
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 stats-card">
       <div class="flex items-center">
         <div class="flex-shrink-0">
-          <span class="material-symbols-rounded text-red-500 text-2xl">schedule</span>
+          <span class="material-symbols-rounded text-red-500 dark:text-red-400 text-2xl">schedule</span>
         </div>
         <div class="ml-3">
-          <p class="text-sm font-medium text-gray-500">Recent (24h)</p>
-          <p class="text-2xl font-semibold text-gray-900">{{ stats.recentReports }}</p>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Recent (24h)</p>
+          <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ stats.recentReports }}</p>
         </div>
       </div>
     </div>
 
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 stats-card">
       <div class="flex items-center">
         <div class="flex-shrink-0">
-          <span class="material-symbols-rounded text-green-500 text-2xl">check_circle</span>
+          <span class="material-symbols-rounded text-green-500 dark:text-green-400 text-2xl">check_circle</span>
         </div>
         <div class="ml-3">
-          <p class="text-sm font-medium text-gray-500">Resolved</p>
-          <p class="text-2xl font-semibold text-gray-900">{{ getResolvedCount() }}</p>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Resolved</p>
+          <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ getResolvedCount() }}</p>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Filters -->
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">Filter by Status</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filter by Status</label>
         <select [(ngModel)]="selectedStatus" (change)="onFilterChange()" 
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
           <option value="all">All Reports</option>
           <option value="pending">Pending</option>
           <option value="approved">Approved</option>
@@ -74,14 +74,14 @@
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Search</label>
         <input type="text" [(ngModel)]="searchTerm" (keyup)="onSearchChange()" placeholder="Search by post title or reporter..."
-               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
       </div>
 
       <div class="flex items-end">
         <button (click)="refreshReports()" 
-                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-lg transition-colors flex items-center">
           <span class="material-symbols-rounded mr-2">refresh</span>
           Refresh
         </button>
@@ -91,47 +91,47 @@
 
   <!-- Loading State -->
   <div *ngIf="loading" class="flex justify-center items-center py-8">
-    <div class="w-8 h-8 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin"></div>
-    <span class="ml-3 text-gray-600">Loading reports...</span>
+    <div class="w-8 h-8 border-2 border-indigo-300 dark:border-indigo-600 border-t-indigo-600 dark:border-t-indigo-400 rounded-full animate-spin"></div>
+    <span class="ml-3 text-gray-600 dark:text-gray-400">Loading reports...</span>
   </div>
 
   <!-- Reports Table -->
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden" *ngIf="!loading">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden" *ngIf="!loading">
     <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
+      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <thead class="bg-gray-50 dark:bg-gray-900">
           <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Report ID</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Post</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reporter</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Report ID</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Post</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Reporter</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Reason</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          <tr *ngFor="let report of paginatedReports" class="hover:bg-gray-50">
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{{ report.id }}</td>
+        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+          <tr *ngFor="let report of paginatedReports" class="hover:bg-gray-50 dark:hover:bg-gray-700">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">#{{ report.id }}</td>
             
             <td class="px-6 py-4 whitespace-nowrap">
-              <div class="text-sm text-gray-900 max-w-xs truncate">{{ report.postTitle || 'No title' }}</div>
-              <div class="text-sm text-gray-500">by &#64;{{ report.postAuthorUsername }}</div>
+              <div class="text-sm text-gray-900 dark:text-white max-w-xs truncate">{{ report.postTitle || 'No title' }}</div>
+              <div class="text-sm text-gray-500 dark:text-gray-400">by &#64;{{ report.postAuthorUsername }}</div>
             </td>
             
             <td class="px-6 py-4 whitespace-nowrap">
-              <div class="text-sm text-gray-900">{{ report.reporterName }}</div>
-              <div class="text-sm text-gray-500">&#64;{{ report.reporterUsername }}</div>
+              <div class="text-sm text-gray-900 dark:text-white">{{ report.reporterName }}</div>
+              <div class="text-sm text-gray-500 dark:text-gray-400">&#64;{{ report.reporterUsername }}</div>
             </td>
             
             <td class="px-6 py-4 whitespace-nowrap">
               <span class="px-2 py-1 text-xs font-medium rounded-full"
                     [ngClass]="{
-                      'bg-red-100 text-red-800': report.reason === 'harassment' || report.reason === 'hate_speech',
-                      'bg-orange-100 text-orange-800': report.reason === 'spam' || report.reason === 'misinformation',
-                      'bg-purple-100 text-purple-800': report.reason === 'nudity' || report.reason === 'violence',
-                      'bg-blue-100 text-blue-800': report.reason === 'copyright',
-                      'bg-gray-100 text-gray-800': report.reason === 'other'
+                      'bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-400': report.reason === 'harassment' || report.reason === 'hate_speech',
+                      'bg-orange-100 dark:bg-orange-500/20 text-orange-800 dark:text-orange-400': report.reason === 'spam' || report.reason === 'misinformation',
+                      'bg-purple-100 dark:bg-purple-500/20 text-purple-800 dark:text-purple-400': report.reason === 'nudity' || report.reason === 'violence',
+                      'bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-400': report.reason === 'copyright',
+                      'bg-gray-100 dark:bg-gray-500/20 text-gray-800 dark:text-gray-400': report.reason === 'other'
                     }">
                 {{ formatReason(report.reason) }}
               </span>
@@ -140,15 +140,15 @@
             <td class="px-6 py-4 whitespace-nowrap">
               <span class="px-2 py-1 text-xs font-medium rounded-full"
                     [ngClass]="{
-                      'bg-yellow-100 text-yellow-800': report.status === 'pending',
-                      'bg-green-100 text-green-800': report.status === 'approved' || report.status === 'resolved',
-                      'bg-red-100 text-red-800': report.status === 'rejected'
+                      'bg-yellow-100 dark:bg-yellow-500/20 text-yellow-800 dark:text-yellow-400': report.status === 'pending',
+                      'bg-green-100 dark:bg-green-500/20 text-green-800 dark:text-green-400': report.status === 'approved' || report.status === 'resolved',
+                      'bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-400': report.status === 'rejected'
                     }">
                 {{ report.status | titlecase }}
               </span>
             </td>
             
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
               {{ report.createdAt | date:'short' }}
             </td>
             
@@ -156,45 +156,45 @@
               <div class="flex space-x-3 justify-end">
                 <div class="relative group">
                   <button (click)="viewReportDetails(report)" 
-                          class="text-blue-600 hover:text-blue-900 transition-colors p-1 rounded-full hover:bg-blue-100">
+                          class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors p-1 rounded-full hover:bg-indigo-100 dark:hover:bg-indigo-500/20">
                     <span class="material-icons text-sm">visibility</span>
                   </button>
-                  <div class="absolute bottom-full right-0 mb-2 w-24 bg-black text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                  <div class="absolute bottom-full right-0 mb-2 w-24 bg-black dark:bg-gray-900 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
                     View Details
-                    <div class="absolute top-full right-2 -mt-1 border-4 border-transparent border-t-black"></div>
+                    <div class="absolute top-full right-2 -mt-1 border-4 border-transparent border-t-black dark:border-t-gray-900"></div>
                   </div>
                 </div>
                 
                 <div class="relative group" *ngIf="report.status === 'pending'">
                   <button (click)="updateReportStatus(report.id, 'approved')"
-                          class="text-green-600 hover:text-green-900 transition-colors p-1 rounded-full hover:bg-green-100">
+                          class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 transition-colors p-1 rounded-full hover:bg-green-100 dark:hover:bg-green-500/20">
                     <span class="material-icons text-sm">check_circle</span>
                   </button>
-                  <div class="absolute bottom-full right-0 mb-2 w-16 bg-black text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                  <div class="absolute bottom-full right-0 mb-2 w-16 bg-black dark:bg-gray-900 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
                     Approve
-                    <div class="absolute top-full right-2 -mt-1 border-4 border-transparent border-t-black"></div>
+                    <div class="absolute top-full right-2 -mt-1 border-4 border-transparent border-t-black dark:border-t-gray-900"></div>
                   </div>
                 </div>
                 
                 <div class="relative group" *ngIf="report.status === 'pending'">
                   <button (click)="updateReportStatus(report.id, 'rejected')"
-                          class="text-red-600 hover:text-red-900 transition-colors p-1 rounded-full hover:bg-red-100">
+                          class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 transition-colors p-1 rounded-full hover:bg-red-100 dark:hover:bg-red-500/20">
                     <span class="material-icons text-sm">cancel</span>
                   </button>
-                  <div class="absolute bottom-full right-0 mb-2 w-14 bg-black text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                  <div class="absolute bottom-full right-0 mb-2 w-14 bg-black dark:bg-gray-900 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
                     Reject
-                    <div class="absolute top-full right-2 -mt-1 border-4 border-transparent border-t-black"></div>
+                    <div class="absolute top-full right-2 -mt-1 border-4 border-transparent border-t-black dark:border-t-gray-900"></div>
                   </div>
                 </div>
                 
                 <div class="relative group">
                   <button (click)="deleteReport(report.id)"
-                          class="text-gray-600 hover:text-gray-900 transition-colors p-1 rounded-full hover:bg-gray-100">
+                          class="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300 transition-colors p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-500/20">
                     <span class="material-icons text-sm">delete</span>
                   </button>
-                  <div class="absolute bottom-full right-0 mb-2 w-14 bg-black text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                  <div class="absolute bottom-full right-0 mb-2 w-14 bg-black dark:bg-gray-900 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
                     Delete
-                    <div class="absolute top-full right-2 -mt-1 border-4 border-transparent border-t-black"></div>
+                    <div class="absolute top-full right-2 -mt-1 border-4 border-transparent border-t-black dark:border-t-gray-900"></div>
                   </div>
                 </div>
               </div>
@@ -202,7 +202,7 @@
           </tr>
           
           <tr *ngIf="paginatedReports.length === 0">
-            <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+            <td colspan="7" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
               <span class="material-symbols-rounded text-4xl mb-2 block">report_off</span>
               No reports found
             </td>
@@ -212,20 +212,20 @@
     </div>
 
     <!-- Pagination -->
-    <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6" *ngIf="filteredReports.length > itemsPerPage">
+    <div class="bg-white dark:bg-gray-800 px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 sm:px-6" *ngIf="filteredReports.length > itemsPerPage">
       <div class="flex-1 flex justify-between sm:hidden">
         <button (click)="previousPage()" [disabled]="currentPage === 1"
-                class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed">
           Previous
         </button>
         <button (click)="nextPage()" [disabled]="currentPage === totalPages"
-                class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed">
           Next
         </button>
       </div>
       <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
         <div>
-          <p class="text-sm text-gray-700">
+          <p class="text-sm text-gray-700 dark:text-gray-300">
             Showing <span class="font-medium">{{ (currentPage - 1) * itemsPerPage + 1 }}</span>
             to <span class="font-medium">{{ Math.min(currentPage * itemsPerPage, filteredReports.length) }}</span>
             of <span class="font-medium">{{ filteredReports.length }}</span> results
@@ -234,19 +234,19 @@
         <div>
           <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
             <button (click)="previousPage()" [disabled]="currentPage === 1"
-                    class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                    class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed">
               <span class="material-symbols-rounded">chevron_left</span>
             </button>
             <button *ngFor="let page of getPageNumbers()" (click)="goToPage(page)"
                     [ngClass]="{
-                      'bg-blue-50 border-blue-500 text-blue-600': page === currentPage,
-                      'bg-white border-gray-300 text-gray-500 hover:bg-gray-50': page !== currentPage
+                      'bg-indigo-50 dark:bg-indigo-500/20 border-indigo-500 text-indigo-600 dark:text-indigo-400': page === currentPage,
+                      'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600': page !== currentPage
                     }"
                     class="relative inline-flex items-center px-4 py-2 border text-sm font-medium">
               {{ page }}
             </button>
             <button (click)="nextPage()" [disabled]="currentPage === totalPages"
-                    class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                    class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed">
               <span class="material-symbols-rounded">chevron_right</span>
             </button>
           </nav>
@@ -258,12 +258,12 @@
 
 <!-- Report Details Modal -->
 <div *ngIf="showDetailsModal" 
-     class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 transition-opacity duration-300">
-  <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+     class="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 transition-opacity duration-300">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700">
     <!-- Modal Header -->
-    <div class="flex items-center justify-between p-6 border-b border-gray-200">
-      <h2 class="text-xl font-semibold text-gray-900">Report Details</h2>
-      <button (click)="closeDetailsModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+    <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Report Details</h2>
+      <button (click)="closeDetailsModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
         <span class="material-symbols-rounded">close</span>
       </button>
     </div>
@@ -273,84 +273,84 @@
       <div class="grid grid-cols-2 gap-6">
         <!-- Report Information -->
         <div>
-          <h3 class="text-lg font-medium text-gray-900 mb-4">Report Information</h3>
+          <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Report Information</h3>
           <dl class="space-y-3">
             <div>
-              <dt class="text-sm font-medium text-gray-500">Report ID</dt>
-              <dd class="text-sm text-gray-900">#{{ selectedReport.id }}</dd>
+              <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Report ID</dt>
+              <dd class="text-sm text-gray-900 dark:text-white">#{{ selectedReport.id }}</dd>
             </div>
             <div>
-              <dt class="text-sm font-medium text-gray-500">Status</dt>
+              <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Status</dt>
               <dd>
                 <span class="px-2 py-1 text-xs font-medium rounded-full"
                       [ngClass]="{
-                        'bg-yellow-100 text-yellow-800': selectedReport.status === 'pending',
-                        'bg-green-100 text-green-800': selectedReport.status === 'approved' || selectedReport.status === 'resolved',
-                        'bg-red-100 text-red-800': selectedReport.status === 'rejected'
+                        'bg-yellow-100 dark:bg-yellow-500/20 text-yellow-800 dark:text-yellow-400': selectedReport.status === 'pending',
+                        'bg-green-100 dark:bg-green-500/20 text-green-800 dark:text-green-400': selectedReport.status === 'approved' || selectedReport.status === 'resolved',
+                        'bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-400': selectedReport.status === 'rejected'
                       }">
                   {{ selectedReport.status | titlecase }}
                 </span>
               </dd>
             </div>
             <div>
-              <dt class="text-sm font-medium text-gray-500">Reason</dt>
-              <dd class="text-sm text-gray-900">{{ formatReason(selectedReport.reason) }}</dd>
+              <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Reason</dt>
+              <dd class="text-sm text-gray-900 dark:text-white">{{ formatReason(selectedReport.reason) }}</dd>
             </div>
             <div>
-              <dt class="text-sm font-medium text-gray-500">Reported Date</dt>
-              <dd class="text-sm text-gray-900">{{ selectedReport.createdAt | date:'full' }}</dd>
+              <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Reported Date</dt>
+              <dd class="text-sm text-gray-900 dark:text-white">{{ selectedReport.createdAt | date:'full' }}</dd>
             </div>
             <div *ngIf="selectedReport.description">
-              <dt class="text-sm font-medium text-gray-500">Description</dt>
-              <dd class="text-sm text-gray-900">{{ selectedReport.description }}</dd>
+              <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Description</dt>
+              <dd class="text-sm text-gray-900 dark:text-white">{{ selectedReport.description }}</dd>
             </div>
           </dl>
         </div>
 
         <!-- Post and User Information -->
         <div>
-          <h3 class="text-lg font-medium text-gray-900 mb-4">Post &amp; User Information</h3>
+          <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Post &amp; User Information</h3>
           <dl class="space-y-3">
             <div>
-              <dt class="text-sm font-medium text-gray-500">Post Title</dt>
-              <dd class="text-sm text-gray-900">{{ selectedReport.postTitle || 'No title' }}</dd>
+              <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Post Title</dt>
+              <dd class="text-sm text-gray-900 dark:text-white">{{ selectedReport.postTitle || 'No title' }}</dd>
             </div>
             <div>
-              <dt class="text-sm font-medium text-gray-500">Post Author</dt>
-              <dd class="text-sm text-gray-900">{{ selectedReport.postAuthorName }} (&#64;{{ selectedReport.postAuthorUsername }})</dd>
+              <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Post Author</dt>
+              <dd class="text-sm text-gray-900 dark:text-white">{{ selectedReport.postAuthorName }} (&#64;{{ selectedReport.postAuthorUsername }})</dd>
             </div>
             <div>
-              <dt class="text-sm font-medium text-gray-500">Reporter</dt>
-              <dd class="text-sm text-gray-900">{{ selectedReport.reporterName }} (&#64;{{ selectedReport.reporterUsername }})</dd>
+              <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Reporter</dt>
+              <dd class="text-sm text-gray-900 dark:text-white">{{ selectedReport.reporterName }} (&#64;{{ selectedReport.reporterUsername }})</dd>
             </div>
             <div *ngIf="selectedReport.postContent">
-              <dt class="text-sm font-medium text-gray-500">Post Content</dt>
-              <dd class="text-sm text-gray-900 max-h-32 overflow-y-auto">{{ selectedReport.postContent }}</dd>
+              <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Post Content</dt>
+              <dd class="text-sm text-gray-900 dark:text-white max-h-32 overflow-y-auto bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">{{ selectedReport.postContent }}</dd>
             </div>
           </dl>
         </div>
       </div>
 
       <!-- Actions -->
-      <div class="mt-6 pt-6 border-t border-gray-200">
-        <div class="flex gap-3">
+      <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+        <div class="flex gap-3 flex-wrap">
           <button *ngIf="selectedReport.status === 'pending'" 
                   (click)="updateReportStatus(selectedReport.id, 'approved')"
-                  class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                  class="px-4 py-2 bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white rounded-lg transition-colors">
             Approve Report
           </button>
           <button *ngIf="selectedReport.status === 'pending'" 
                   (click)="updateReportStatus(selectedReport.id, 'rejected')"
-                  class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                  class="px-4 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white rounded-lg transition-colors">
             Reject Report
           </button>
           <button *ngIf="selectedReport.status !== 'resolved'" 
                   (click)="updateReportStatus(selectedReport.id, 'resolved')"
-                  class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                  class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-lg transition-colors">
             Mark as Resolved
           </button>
           <button (click)="deleteReport(selectedReport.id)"
-                  class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                  class="px-4 py-2 bg-gray-600 hover:bg-gray-700 dark:bg-gray-500 dark:hover:bg-gray-600 text-white rounded-lg transition-colors">
             Delete Report
           </button>
         </div>
