@@ -34,14 +34,17 @@ const authenticateToken = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     console.log('🔍 Auth middleware - Token decoded:', {
-      userId: decoded.userId,
+      userId: decoded.userId || decoded.id,
       email: decoded.email,
       issuer: decoded.iss,
       expiresAt: decoded.exp ? new Date(decoded.exp * 1000).toISOString() : 'no expiry'
     });
     
+    // Support both 'id' and 'userId' fields for compatibility
+    const userId = decoded.id || decoded.userId;
+    
     // Additional validation: Check if token has required fields
-    if (!decoded.userId || !decoded.email) {
+    if (!userId || !decoded.email) {
       console.log('🔍 Auth middleware - Invalid token structure');
       return res.status(403).json({
         status: 'error',
@@ -61,11 +64,11 @@ const authenticateToken = async (req, res, next) => {
     // Verify user still exists in database
     const user = await queryOne(
       'SELECT id, email, name, username FROM "user" WHERE id = $1',
-      [decoded.userId]
+      [userId]
     );
 
     if (!user) {
-      console.log('🔍 Auth middleware - User not found in database:', decoded.userId);
+      console.log('🔍 Auth middleware - User not found in database:', userId);
       return res.status(401).json({
         status: 'error',
         message: 'User not found'
@@ -103,20 +106,44 @@ const optionalAuth = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
+  console.log('🔍 OptionalAuth - Processing request:', {
+    url: req.url,
+    hasAuthHeader: !!authHeader,
+    hasToken: !!token,
+    userAgent: req.headers['user-agent']
+  });
+
   if (token) {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      const user = await queryOne(
-        'SELECT id, email, name, username FROM user WHERE id = ?',
-        [decoded.userId]
-      );
-      req.user = user;
+      
+      // Support both 'id' and 'userId' fields for compatibility
+      const userId = decoded.id || decoded.userId;
+      
+      console.log('🔍 OptionalAuth - Token decoded:', { userId, email: decoded.email });
+      
+      if (userId) {
+        const user = await queryOne(
+          'SELECT id, email, name, username FROM "user" WHERE id = $1',
+          [userId]
+        );
+        req.user = user;
+        console.log('🔍 OptionalAuth - User found:', { id: user?.id, email: user?.email });
+      } else {
+        req.user = null;
+        console.log('🔍 OptionalAuth - No userId in token');
+      }
     } catch (error) {
       // Token is invalid, but we continue without user
+      console.log('🔍 OptionalAuth - Token error:', error.message);
       req.user = null;
     }
+  } else {
+    console.log('🔍 OptionalAuth - No token provided');
+    req.user = null;
   }
 
+  console.log('🔍 OptionalAuth - Final user state:', { userId: req.user?.id || 'null' });
   next();
 };
 

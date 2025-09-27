@@ -85,9 +85,7 @@ export class DataService {
 
   // Fetch posts from the backend
   getPosts(): Observable<any> {
-    const currentUser = this.getCurrentUser();
-    const userId = currentUser ? currentUser.id : null;
-    return this.http.get(`${this.apiUrl}posts/getPosts${userId ? `?userId=${userId}` : ''}`).pipe(
+    return this.http.get(`${this.apiUrl}posts/getPosts`).pipe(
       catchError(this.handleError)
     );
   }
@@ -114,17 +112,13 @@ export class DataService {
   }
 
   getSavedPosts(): Observable<any> {
-    const currentUser = this.getCurrentUser();
-    const userId = currentUser ? currentUser.id : null; // Get user ID from local storage
-    return this.http.get(`${this.apiUrl}posts/getSavedPosts${userId ? `?userId=${userId}` : ''}`).pipe(
+    return this.http.get(`${this.apiUrl}posts/getSavedPosts`).pipe(
       catchError(this.handleError)
     );
   }
 
   getLikedPosts(): Observable<any> {
-    const currentUser = this.getCurrentUser();
-    const userId = currentUser ? currentUser.id : null; // Get user ID from local storage
-    return this.http.get(`${this.apiUrl}posts/getLikedPosts${userId ? `?userId=${userId}` : ''}`).pipe(
+    return this.http.get(`${this.apiUrl}posts/getLikedPosts`).pipe(
       catchError(this.handleError)
     );
   }
@@ -198,9 +192,7 @@ export class DataService {
 
   // Consolidated method to fetch user profile by ID
   getUserProfile(userId: string): Observable<any> {
-    const currentUser = this.getCurrentUser();
-    const currentUserId = currentUser ? currentUser.id : null;
-    return this.http.get(`${this.apiUrl}users/user/${userId}${currentUserId ? `?userId=${currentUserId}` : ''}`).pipe(
+    return this.http.get(`${this.apiUrl}users/user/${userId}`).pipe(
       catchError(this.handleError)
     );
   }
@@ -214,9 +206,7 @@ export class DataService {
 
   // Get post by ID
   getPostById(postId: string): Observable<any> {
-    const currentUser = this.getCurrentUser();
-    const userId = currentUser ? currentUser.id : null;
-    return this.http.get(`${this.apiUrl}posts/post/${postId}${userId ? `?userId=${userId}` : ''}`).pipe(
+    return this.http.get(`${this.apiUrl}posts/post/${postId}`).pipe(
       catchError(this.handleError)
     );
   }

@@ -188,8 +188,8 @@ router.get('/getPosts', optionalAuth, async (req, res) => {
         COUNT(DISTINCT l.id) as "likesCount",
         COUNT(DISTINCT c.id) as "commentsCount",
         COUNT(DISTINCT s.id) as "savesCount",
-        ${userId ? 'MAX(CASE WHEN l."userId" = $1 THEN 1 ELSE 0 END)' : '0'} as "isLiked",
-        ${userId ? 'MAX(CASE WHEN s."userId" = $2 THEN 1 ELSE 0 END)' : '0'} as "isSaved"
+        ${userId ? 'CASE WHEN user_likes.id IS NOT NULL THEN 1 ELSE 0 END' : '0'} as "isLiked",
+        ${userId ? 'CASE WHEN user_saves.id IS NOT NULL THEN 1 ELSE 0 END' : '0'} as "isSaved"
       FROM post p
       LEFT JOIN "user" u ON p."authorId" = u.id
       LEFT JOIN profile pr ON u.id = pr."userId"
@@ -197,8 +197,10 @@ router.get('/getPosts', optionalAuth, async (req, res) => {
       LEFT JOIN "like" l ON p.id = l."postId"
       LEFT JOIN comment c ON p.id = c."postId"
       LEFT JOIN save s ON p.id = s."postId"
+      ${userId ? 'LEFT JOIN "like" user_likes ON p.id = user_likes."postId" AND user_likes."userId" = $1' : ''}
+      ${userId ? 'LEFT JOIN save user_saves ON p.id = user_saves."postId" AND user_saves."userId" = $2' : ''}
       WHERE p.published = true
-      GROUP BY p.id, u.id, pr."profilePictureUrl"
+      GROUP BY p.id, u.id, pr."profilePictureUrl"${userId ? ', user_likes.id, user_saves.id' : ''}
       ORDER BY p."createdAt" DESC
       LIMIT $${userId ? '3' : '1'} OFFSET $${userId ? '4' : '2'}
     `, userId ? [userId, userId, limit, offset] : [limit, offset]);
@@ -247,8 +249,8 @@ router.get('/post/:id', optionalAuth, async (req, res) => {
         COUNT(DISTINCT l.id) as "likesCount",
         COUNT(DISTINCT c.id) as "commentsCount",
         COUNT(DISTINCT s.id) as "savesCount",
-        ${userId ? 'MAX(CASE WHEN l."userId" = $1 THEN 1 ELSE 0 END)' : '0'} as "isLiked",
-        ${userId ? 'MAX(CASE WHEN s."userId" = $2 THEN 1 ELSE 0 END)' : '0'} as "isSaved"
+        ${userId ? 'CASE WHEN user_likes.id IS NOT NULL THEN 1 ELSE 0 END' : '0'} as "isLiked",
+        ${userId ? 'CASE WHEN user_saves.id IS NOT NULL THEN 1 ELSE 0 END' : '0'} as "isSaved"
       FROM post p
       LEFT JOIN "user" u ON p."authorId" = u.id
       LEFT JOIN profile pr ON u.id = pr."userId"
@@ -256,8 +258,10 @@ router.get('/post/:id', optionalAuth, async (req, res) => {
       LEFT JOIN "like" l ON p.id = l."postId"
       LEFT JOIN comment c ON p.id = c."postId"
       LEFT JOIN save s ON p.id = s."postId"
+      ${userId ? 'LEFT JOIN "like" user_likes ON p.id = user_likes."postId" AND user_likes."userId" = $1' : ''}
+      ${userId ? 'LEFT JOIN save user_saves ON p.id = user_saves."postId" AND user_saves."userId" = $2' : ''}
       WHERE p.id = $${userId ? '3' : '1'} AND p.published = true
-      GROUP BY p.id, u.id, pr."profilePictureUrl"
+      GROUP BY p.id, u.id, pr."profilePictureUrl"${userId ? ', user_likes.id, user_saves.id' : ''}
     `, userId ? [userId, userId, postId] : [postId]);
 
     if (!post) {
@@ -274,13 +278,14 @@ router.get('/post/:id', optionalAuth, async (req, res) => {
         u.id as "authorId", u.name as "authorName", u.username as "authorUsername",
         pr."profilePictureUrl" as "authorProfilePicture",
         COUNT(DISTINCT cl.id) as "likesCount",
-        ${userId ? 'MAX(CASE WHEN cl."userId" = $1 THEN 1 ELSE 0 END)' : '0'} as "isLiked"
+        ${userId ? 'CASE WHEN user_comment_likes.id IS NOT NULL THEN 1 ELSE 0 END' : '0'} as "isLiked"
       FROM comment c
       LEFT JOIN "user" u ON c."authorId" = u.id
       LEFT JOIN profile pr ON u.id = pr."userId"
       LEFT JOIN "like" cl ON c.id = cl."commentId"
+      ${userId ? 'LEFT JOIN "like" user_comment_likes ON c.id = user_comment_likes."commentId" AND user_comment_likes."userId" = $1' : ''}
       WHERE c."postId" = $${userId ? '2' : '1'}
-      GROUP BY c.id, u.id, pr."profilePictureUrl"
+      GROUP BY c.id, u.id, pr."profilePictureUrl"${userId ? ', user_comment_likes.id' : ''}
       ORDER BY c."createdAt" ASC
     `, userId ? [userId, postId] : [postId]);
 
@@ -678,8 +683,8 @@ router.get('/search', optionalAuth, async (req, res) => {
         STRING_AGG(DISTINCT m."mediaUrl", ',') as "mediaUrls",
         COUNT(DISTINCT l.id) as "likesCount",
         COUNT(DISTINCT c.id) as "commentsCount",
-        ${userId ? 'MAX(CASE WHEN l."userId" = $1 THEN 1 ELSE 0 END)' : '0'} as "isLiked",
-        ${userId ? 'MAX(CASE WHEN s."userId" = $2 THEN 1 ELSE 0 END)' : '0'} as "isSaved"
+        ${userId ? 'CASE WHEN user_likes.id IS NOT NULL THEN 1 ELSE 0 END' : '0'} as "isLiked",
+        ${userId ? 'CASE WHEN user_saves.id IS NOT NULL THEN 1 ELSE 0 END' : '0'} as "isSaved"
       FROM post p
       LEFT JOIN "user" u ON p."authorId" = u.id
       LEFT JOIN profile pr ON u.id = pr."userId"
@@ -687,13 +692,15 @@ router.get('/search', optionalAuth, async (req, res) => {
       LEFT JOIN "like" l ON p.id = l."postId"
       LEFT JOIN comment c ON p.id = c."postId"
       LEFT JOIN save s ON p.id = s."postId"
+      ${userId ? 'LEFT JOIN "like" user_likes ON p.id = user_likes."postId" AND user_likes."userId" = $1' : ''}
+      ${userId ? 'LEFT JOIN save user_saves ON p.id = user_saves."postId" AND user_saves."userId" = $2' : ''}
       WHERE p.published = true AND (
         p.title ILIKE $${userId ? '3' : '1'} OR 
         p.content ILIKE $${userId ? '4' : '2'} OR 
         u.name ILIKE $${userId ? '5' : '3'} OR 
         u.username ILIKE $${userId ? '6' : '4'}
       )
-      GROUP BY p.id, u.id, pr."profilePictureUrl"
+      GROUP BY p.id, u.id, pr."profilePictureUrl"${userId ? ', user_likes.id, user_saves.id' : ''}
       ORDER BY p."createdAt" DESC
       LIMIT 50
     `, userId ? 
@@ -741,8 +748,8 @@ router.get('/trending', optionalAuth, async (req, res) => {
         STRING_AGG(DISTINCT m."mediaUrl", ',') as "mediaUrls",
         COUNT(DISTINCT l.id) as "likesCount",
         COUNT(DISTINCT c.id) as "commentsCount",
-        ${currentUserId ? 'MAX(CASE WHEN l."userId" = $1 THEN 1 ELSE 0 END)' : '0'} as "isLiked",
-        ${currentUserId ? 'MAX(CASE WHEN s."userId" = $2 THEN 1 ELSE 0 END)' : '0'} as "isSaved"
+        ${currentUserId ? 'CASE WHEN user_likes.id IS NOT NULL THEN 1 ELSE 0 END' : '0'} as "isLiked",
+        ${currentUserId ? 'CASE WHEN user_saves.id IS NOT NULL THEN 1 ELSE 0 END' : '0'} as "isSaved"
       FROM post p
       LEFT JOIN "user" u ON p."authorId" = u.id
       LEFT JOIN profile pr ON u.id = pr."userId"
@@ -750,8 +757,10 @@ router.get('/trending', optionalAuth, async (req, res) => {
       LEFT JOIN "like" l ON p.id = l."postId"
       LEFT JOIN comment c ON p.id = c."postId"
       LEFT JOIN save s ON p.id = s."postId"
+      ${currentUserId ? 'LEFT JOIN "like" user_likes ON p.id = user_likes."postId" AND user_likes."userId" = $1' : ''}
+      ${currentUserId ? 'LEFT JOIN save user_saves ON p.id = user_saves."postId" AND user_saves."userId" = $2' : ''}
       WHERE p."createdAt" >= CURRENT_DATE - INTERVAL '7 days' AND p.published = true
-      GROUP BY p.id, p.title, p.content, p."createdAt", p."updatedAt", p."authorId", u.name, u.username, pr."profilePictureUrl"
+      GROUP BY p.id, p.title, p.content, p."createdAt", p."updatedAt", p."authorId", u.name, u.username, pr."profilePictureUrl"${currentUserId ? ', user_likes.id, user_saves.id' : ''}
       ORDER BY (COUNT(DISTINCT l.id) * 2 + COUNT(DISTINCT c.id)) DESC, p."createdAt" DESC
       LIMIT 20
     `, currentUserId ? [currentUserId, currentUserId] : []);

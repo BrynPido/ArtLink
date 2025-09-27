@@ -1,32 +1,32 @@
 <div class="max-w-4xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 pb-24 md:pb-6">
   <!-- Back Button - More compact on mobile -->
-  <button (click)="goBack()" class="mb-3 sm:mb-4 flex items-center gap-1 sm:gap-2 text-gray-600 hover:text-gray-900 transition-colors">
+  <button (click)="goBack()" class="mb-3 sm:mb-4 flex items-center gap-1 sm:gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
     <span class="material-symbols-rounded text-lg sm:text-xl">arrow_back</span>
     <span class="text-sm sm:text-base">Back</span>
   </button>
 
   <!-- Loading State -->
-  <div *ngIf="loading" class="bg-white rounded-lg sm:rounded-xl overflow-hidden p-8 text-center">
-    <div class="w-6 h-6 border-2 border-indigo-300 border-t-indigo-600 rounded-full animate-spin mx-auto"></div>
-    <p class="text-gray-400 mt-2">Loading post...</p>
+  <div *ngIf="loading" class="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl overflow-hidden p-8 text-center">
+    <div class="w-6 h-6 border-2 border-gray-200 dark:border-gray-700 border-t-indigo-600 dark:border-t-indigo-400 rounded-full animate-spin mx-auto"></div>
+    <p class="text-gray-400 dark:text-gray-500 mt-2">Loading post...</p>
   </div>
 
   <!-- Post Content -->
-  <div *ngIf="!loading && post" class="bg-white rounded-lg sm:rounded-xl overflow-hidden">
+  <div *ngIf="!loading && post" class="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl overflow-hidden">
     <!-- Author Header - More compact on mobile -->
-    <div class="p-3 sm:p-4 flex items-center gap-3 sm:gap-4 border-b">
-      <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-200 overflow-hidden">
+    <div class="p-3 sm:p-4 flex items-center gap-3 sm:gap-4 border-b border-gray-200 dark:border-gray-700">
+      <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
         <img [src]="post?.author?.profileImage || 'assets/images/default-avatar.svg'" alt="Author profile"
           class="w-full h-full object-cover cursor-pointer" (click)="goToAuthorProfile()">
       </div>
       <div class="cursor-pointer" (click)="goToAuthorProfile()">
-        <h2 class="font-medium text-gray-900 text-sm sm:text-base">{{ post?.authorName }}</h2>
-        <p class="text-xs sm:text-sm text-gray-500">&commat;{{ post?.authorUsername }}</p>
+        <h2 class="font-medium text-gray-900 dark:text-white text-sm sm:text-base">{{ post?.authorName }}</h2>
+        <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">&commat;{{ post?.authorUsername }}</p>
       </div>
       <button *ngIf="showFollowButton" class="ml-auto px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg transition-colors text-xs sm:text-sm"
         [ngClass]="{
           'bg-indigo-600 text-white hover:bg-indigo-700': !isFollowing,
-          'border border-gray-300 text-gray-700 hover:bg-gray-50': isFollowing
+          'border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700': isFollowing
         }" (click)="toggleFollow()">
         {{ isFollowing ? 'Following' : 'Follow' }}
       </button>
@@ -56,12 +56,12 @@
 
         <!-- Carousel Controls - Smaller on mobile -->
         <button *ngIf="currentMediaIndex > 0" (click)="previousMedia()"
-          class="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/80 shadow-lg flex items-center justify-center hover:bg-white transition-colors z-10">
-          <span class="material-symbols-rounded text-base sm:text-lg">chevron_left</span>
+          class="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/80 dark:bg-gray-800/80 shadow-lg flex items-center justify-center hover:bg-white dark:hover:bg-gray-700 transition-colors z-10">
+          <span class="material-symbols-rounded text-base sm:text-lg text-gray-700 dark:text-gray-300">chevron_left</span>
         </button>
         <button *ngIf="currentMediaIndex < (post?.media?.length || 0) - 1" (click)="nextMedia()"
-          class="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/80 shadow-lg flex items-center justify-center hover:bg-white transition-colors z-10">
-          <span class="material-symbols-rounded text-base sm:text-lg">chevron_right</span>
+          class="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/80 dark:bg-gray-800/80 shadow-lg flex items-center justify-center hover:bg-white dark:hover:bg-gray-700 transition-colors z-10">
+          <span class="material-symbols-rounded text-base sm:text-lg text-gray-700 dark:text-gray-300">chevron_right</span>
         </button>
       </div>
 
@@ -90,44 +90,44 @@
         <span class="material-symbols-rounded text-xl sm:text-2xl cursor-pointer transition-transform duration-200 ease-in-out select-none"
           [ngClass]="{'animate-pop': isLiked(post?.id)}" [ngStyle]="{
           'font-variation-settings': '\'FILL\' ' + (isLiked(post?.id) ? 1 : 0),
-          'color': isLiked(post?.id) ? '#ff3040' : 'black'
+          'color': isLiked(post?.id) ? '#ef4444' : '#6b7280'
         }" (click)="toggleLike(post?.id)">
           favorite
         </span>
         <span class="material-symbols-rounded text-xl sm:text-2xl cursor-pointer transition-transform duration-200 ease-in-out select-none"
           [ngClass]="{'animate-pop': isSaved(post?.id)}" [ngStyle]="{
           'font-variation-settings': '\'FILL\' ' + (isSaved(post?.id) ? 1 : 0),
-          'color': isSaved(post?.id) ? '#007bff' : 'black'
+          'color': isSaved(post?.id) ? '#6366f1' : '#6b7280'
         }" (click)="toggleSave(post?.id)">
           bookmark
         </span>
       </div>
 
       <!-- Likes Count -->
-      <p class="font-medium mb-2 text-sm sm:text-base">{{ likesCount(post?.id) }} likes</p>
+      <p class="font-medium mb-2 text-sm sm:text-base text-gray-900 dark:text-white">{{ likesCount(post?.id) }} likes</p>
 
       <!-- Post Title & Description -->
-      <h1 class="text-lg sm:text-xl font-bold mb-2">{{ post?.title }}</h1>
-      <p class="text-gray-600 whitespace-pre-line text-sm sm:text-base">{{ post?.content }}</p>
+      <h1 class="text-lg sm:text-xl font-bold mb-2 text-gray-900 dark:text-white">{{ post?.title }}</h1>
+      <p class="text-gray-600 dark:text-gray-300 whitespace-pre-line text-sm sm:text-base">{{ post?.content }}</p>
 
       <!-- Timestamp -->
-      <p class="text-xs sm:text-sm text-gray-400 mt-2">
+      <p class="text-xs sm:text-sm text-gray-400 dark:text-gray-500 mt-2">
         {{ post?.createdAt | timeAgo:'full' }}
       </p>
 
       <!-- Comments Section -->
-      <div class="mt-4 sm:mt-6 border-t pt-3 sm:pt-4">
-        <h3 class="font-medium mb-3 sm:mb-4 text-sm sm:text-base">Comments</h3>
+      <div class="mt-4 sm:mt-6 border-t border-gray-200 dark:border-gray-700 pt-3 sm:pt-4">
+        <h3 class="font-medium mb-3 sm:mb-4 text-sm sm:text-base text-gray-900 dark:text-white">Comments</h3>
 
         <!-- Add Comment - More compact on mobile -->
         <div class="mb-4 sm:mb-6 flex gap-2 sm:gap-3">
-          <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-200 flex-shrink-0 overflow-hidden">
+          <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex-shrink-0 overflow-hidden">
             <img [src]="currentUser?.profileImage || 'assets/images/default-avatar.svg'" alt="Your profile"
               class="w-full h-full object-cover">
           </div>
           <form class="flex-1 flex gap-2" (ngSubmit)="addComment()">
             <input type="text" [(ngModel)]="newComment" name="comment"
-              class="flex-1 border rounded-full px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm focus:outline-none focus:border-indigo-500"
+              class="flex-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-full px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400"
               placeholder="Add a comment...">
             <button type="submit"
               class="px-3 py-1.5 sm:px-4 sm:py-2 bg-indigo-600 text-white rounded-full text-xs sm:text-sm hover:bg-indigo-700 transition-colors">
@@ -149,50 +149,50 @@
           <div class="group" [ngStyle]="{'margin-left.px': level > 0 ? Math.min(level * 16, 48) : 0}">
             <!-- Comment -->
             <div class="flex gap-2 sm:gap-3">
-              <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-200 flex-shrink-0 overflow-hidden">
+              <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex-shrink-0 overflow-hidden">
                 <img [src]="comment.author?.profileImage || 'assets/images/default-avatar.svg'" alt="Commenter profile"
                   class="w-full h-full object-cover">
               </div>
               <div class="flex-1">
-                <div class="bg-gray-50 rounded-2xl px-3 py-1.5 sm:px-4 sm:py-2">
-                  <p class="font-medium text-xs sm:text-sm">{{ comment.author?.name }}</p>
-                  <p class="text-gray-600 text-xs sm:text-sm">{{ comment.content }}</p>
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-2xl px-3 py-1.5 sm:px-4 sm:py-2">
+                  <p class="font-medium text-xs sm:text-sm text-gray-900 dark:text-white">{{ comment.author?.name }}</p>
+                  <p class="text-gray-600 dark:text-gray-300 text-xs sm:text-sm">{{ comment.content }}</p>
                 </div>
                 <div class="flex items-center flex-wrap gap-2 sm:gap-4 mt-1 sm:mt-2 text-xs sm:text-sm">
-                  <button class="text-gray-500 hover:text-gray-700" (click)="toggleCommentLike(comment.id)">
+                  <button class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200" (click)="toggleCommentLike(comment.id)">
                     <span 
                       class="material-symbols-rounded text-sm sm:text-base transition-transform duration-200 ease-in-out select-none"
                       [ngClass]="{'animate-pop': isCommentLiked(comment.id)}"
                       [ngStyle]="{
                         'font-variation-settings': '\'FILL\' ' + (isCommentLiked(comment.id) ? 1 : 0),
-                        'color': isCommentLiked(comment.id) ? '#ff3040' : 'inherit'
+                        'color': isCommentLiked(comment.id) ? '#ef4444' : 'inherit'
                       }"
                     >favorite</span>
                     {{ getCommentLikeCount(comment.id) }}
                   </button>
-                  <button class="text-gray-500 hover:text-gray-700" (click)="startReply(comment.id, level + 1)">
+                  <button class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200" (click)="startReply(comment.id, level + 1)">
                     Reply
                   </button>
                   <button *ngIf="canDeleteComment(comment)" 
-                          class="text-red-500 hover:text-red-700" 
+                          class="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300" 
                           (click)="deleteComment(comment.id)">
                     <span class="material-symbols-rounded text-sm sm:text-base">delete</span>
                   </button>
-                  <span class="text-gray-400">{{ comment.createdAt | timeAgo }}</span>
+                  <span class="text-gray-400 dark:text-gray-500">{{ comment.createdAt | timeAgo }}</span>
                 </div>
 
                 <!-- Reply Form - More compact on mobile -->
                 <div *ngIf="replyingTo === comment.id" class="mt-2 sm:mt-3">
                   <div class="flex gap-2">
                     <input type="text" [(ngModel)]="replyContent"
-                      class="flex-1 border rounded-full px-3 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm focus:outline-none focus:border-indigo-500"
+                      class="flex-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-full px-3 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400"
                       placeholder="Write a reply...">
                     <button (click)="submitReply(comment.id)"
                       class="px-2 py-1 sm:px-4 sm:py-2 bg-indigo-600 text-white rounded-full text-xs sm:text-sm hover:bg-indigo-700">
                       Reply
                     </button>
                     <button (click)="cancelReply()"
-                      class="px-2 py-1 sm:px-4 sm:py-2 bg-gray-100 text-gray-700 rounded-full text-xs sm:text-sm hover:bg-gray-200">
+                      class="px-2 py-1 sm:px-4 sm:py-2 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-xs sm:text-sm hover:bg-gray-200 dark:hover:bg-gray-500">
                       Cancel
                     </button>
                   </div>

@@ -1,142 +1,181 @@
-<div class="flex h-screen">
+<div class="flex h-screen bg-gray-50 dark:bg-gray-900">
+  <!-- Modern Sidebar -->
   <div
-    class="fixed top-0 left-0 h-full bg-gray-800 text-white p-4 md:p-6 lg:p-8 flex flex-col rounded-r-3xl transition-all duration-300 z-10"
+    class="fixed top-0 left-0 h-full bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300 z-20 shadow-sm dark:shadow-gray-900/20"
     [ngClass]="{
       'hidden': isMobileView,
-      'w-16': !isMobileView,
-      'md:w-56': !isMobileView, 
-      'lg:w-64': !isMobileView,
-      'xl:w-72': !isMobileView
+      'w-20': !isMobileView,
+      'md:w-64': !isMobileView, 
+      'lg:w-72': !isMobileView,
+      'xl:w-80': !isMobileView
     }"
   >
-    <div class="flex flex-col items-center mb-6 md:mb-8">
-      <div class="w-10 h-10 md:w-16 md:h-16 lg:w-20 lg:h-20 rounded-full bg-gray-200 flex-shrink-0 overflow-hidden">
-        <img [src]="currentUser?.profileImage || 'assets/images/default-avatar.svg'" 
-          alt="Profile picture" 
-          class="w-full h-full object-cover">
-      </div>
-      <div class="hidden md:block text-base lg:text-lg font-semibold mt-2">{{currentUser?.name}}</div>
-      <div class="hidden md:block text-xs lg:text-sm text-gray-400">&commat;{{currentUser?.username}}</div>
-    </div>
-    <ul class="md:ml-2">
-      <li class="mb-8 md:mb-5 flex items-center">
-        <a
-          routerLink="/home"
-          routerLinkActive="text-blue-500"
-          class="flex items-center hover:text-blue-400"
-        >
-          <span class="material-symbols-rounded align-sub text-xl md:text-2xl">home</span>
-          <span class="hidden md:inline ml-3 text-base lg:text-lg">Home</span>
-        </a>
-      </li>
-      <li class="mb-8 md:mb-5 flex items-center">
-        <a
-          routerLink="/explore"
-          routerLinkActive="text-blue-500"
-          class="flex items-center hover:text-blue-400"
-        >
-          <span class="material-symbols-rounded align-sub text-xl md:text-2xl">explore</span>
-          <span class="hidden md:inline ml-3 text-base lg:text-lg">Explore</span>
-        </a>
-      </li>
-      <li class="mb-8 md:mb-5 flex items-center">
-        <a
-          routerLink="/listings"
-          routerLinkActive="text-blue-500"
-          class="flex items-center hover:text-blue-400"
-        >
-          <span class="material-symbols-rounded align-sub text-xl md:text-2xl">storefront</span>
-          <span class="hidden md:inline ml-3 text-base lg:text-lg">Marketplace</span>
-        </a>
-      </li>
-      <li class="mb-8 md:mb-5 flex items-center">
-        <a
-          routerLink="/create"
-          routerLinkActive="text-blue-500"
-          class="flex items-center hover:text-blue-400"
-        >
-          <span class="material-symbols-rounded align-sub text-xl md:text-2xl">add_circle</span>
-          <span class="hidden md:inline ml-3 text-base lg:text-lg">Create</span>
-        </a>
-      </li>
-      <li class="mb-8 md:mb-5 flex items-center">
-        <a
-          routerLink="/inbox"
-          routerLinkActive="text-blue-500"
-          class="flex items-center hover:text-blue-400"
-        >
-          <div class="relative">
-            <span class="material-symbols-rounded align-sub text-xl md:text-2xl">inbox</span>
-            <span *ngIf="(unreadNotificationsCount + unreadMessagesCount) > 0" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-              {{unreadNotificationsCount + unreadMessagesCount}}
-            </span>
+    <!-- User Profile Section -->
+    <div class="px-4 py-6 border-b border-gray-100 dark:border-gray-700">
+      <div class="flex flex-col items-center md:flex-row md:items-center">
+        <div class="relative">
+          <div class="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-gradient-to-br from-blue-100 to-blue-50 dark:from-blue-900/30 dark:to-blue-800/30 flex-shrink-0 overflow-hidden ring-2 ring-white dark:ring-gray-600 shadow-sm">
+            <img [src]="currentUser?.profileImage || 'assets/images/default-avatar.svg'" 
+              alt="Profile picture" 
+              class="w-full h-full object-cover">
           </div>
-          <span class="hidden md:inline ml-3 text-base lg:text-lg">Inbox</span>
-        </a>
-      </li>
-      <li class="mb-8 md:mb-5 flex items-center">
-        <a
-          [routerLink]="['/profile', currentUser?.id]"
-          routerLinkActive="text-blue-500"
-          class="flex items-center hover:text-blue-400"
-        >
-          <span class="material-symbols-rounded align-sub text-xl md:text-2xl">person</span>
-          <span class="hidden md:inline ml-3 text-base lg:text-lg">Profile</span>
-        </a>
-      </li>
-      <!-- Admin Panel Link - Only show for admin users -->
-      <li *ngIf="isAdmin()" class="mb-8 md:mb-5 flex items-center">
-        <a
-          routerLink="/admin"
-          class="flex items-center hover:text-blue-400 text-yellow-400"
-        >
-          <span class="material-symbols-rounded align-sub text-xl md:text-2xl">admin_panel_settings</span>
-          <span class="hidden md:inline ml-3 text-base lg:text-lg">Admin Panel</span>
-        </a>
-      </li>
-    </ul>
-    <ul class="md:ml-2 mt-auto">
-      <li class="mb-8 md:mb-5 flex items-center">
-        <button
-          type="button"
-          class="flex items-center hover:text-blue-400 bg-transparent border-none cursor-pointer text-white w-full text-left"
-          (click)="logout()"
-        >
-          <span class="material-symbols-rounded align-sub text-xl md:text-2xl">logout</span>
-          <span class="hidden md:inline ml-3 text-base lg:text-lg">Logout</span>
-        </button>
-      </li>
-    </ul>
+          <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></div>
+        </div>
+        <div class="hidden md:block md:ml-3 flex-1 min-w-0">
+          <div class="text-lg font-semibold text-gray-900 dark:text-white truncate">{{currentUser?.name}}</div>
+          <div class="text-sm text-gray-600 dark:text-gray-400">&commat;{{currentUser?.username}}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Menu -->
+    <nav class="flex-1 px-3 py-4">
+      <ul class="space-y-1">
+        <li>
+          <a
+            routerLink="/home"
+            routerLinkActive="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-700"
+            class="group flex items-center px-3 py-3 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200 border border-transparent font-medium"
+          >
+            <span class="material-symbols-rounded text-xl group-hover:scale-110 transition-transform">home</span>
+            <span class="hidden md:inline ml-3">Home</span>
+          </a>
+        </li>
+        <li>
+          <a
+            routerLink="/explore"
+            routerLinkActive="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-700"
+            class="group flex items-center px-3 py-3 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200 border border-transparent font-medium"
+          >
+            <span class="material-symbols-rounded text-xl group-hover:scale-110 transition-transform">explore</span>
+            <span class="hidden md:inline ml-3">Explore</span>
+          </a>
+        </li>
+        <li>
+          <a
+            routerLink="/listings"
+            routerLinkActive="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-700"
+            class="group flex items-center px-3 py-3 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200 border border-transparent font-medium"
+          >
+            <span class="material-symbols-rounded text-xl group-hover:scale-110 transition-transform">storefront</span>
+            <span class="hidden md:inline ml-3">Marketplace</span>
+          </a>
+        </li>
+        <li>
+          <a
+            routerLink="/create"
+            routerLinkActive="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-700"
+            class="group flex items-center px-3 py-3 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200 border border-transparent font-medium"
+          >
+            <span class="material-symbols-rounded text-xl group-hover:scale-110 transition-transform">add_circle</span>
+            <span class="hidden md:inline ml-3">Create</span>
+          </a>
+        </li>
+        <li>
+          <a
+            routerLink="/inbox"
+            routerLinkActive="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-700"
+            class="group flex items-center px-3 py-3 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200 border border-transparent font-medium"
+          >
+            <div class="relative">
+              <span class="material-symbols-rounded text-xl group-hover:scale-110 transition-transform">inbox</span>
+              <span *ngIf="(unreadNotificationsCount + unreadMessagesCount) > 0" 
+                class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium shadow-sm">
+                {{unreadNotificationsCount + unreadMessagesCount}}
+              </span>
+            </div>
+            <span class="hidden md:inline ml-3">Inbox</span>
+          </a>
+        </li>
+        <li>
+          <a
+            [routerLink]="['/profile', currentUser?.id]"
+            routerLinkActive="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-700"
+            class="group flex items-center px-3 py-3 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200 border border-transparent font-medium"
+          >
+            <span class="material-symbols-rounded text-xl group-hover:scale-110 transition-transform">person</span>
+            <span class="hidden md:inline ml-3">Profile</span>
+          </a>
+        </li>
+        <!-- Admin Panel Link -->
+        <li *ngIf="isAdmin()" class="pt-2 border-t border-gray-100 dark:border-gray-700">
+          <a
+            routerLink="/admin"
+            class="group flex items-center px-3 py-3 text-amber-600 dark:text-amber-500 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-400 transition-all duration-200 border border-transparent font-medium"
+          >
+            <span class="material-symbols-rounded text-xl group-hover:scale-110 transition-transform">admin_panel_settings</span>
+            <span class="hidden md:inline ml-3">Admin Panel</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- Logout Section -->
+    <div class="px-3 py-4 border-t border-gray-100 dark:border-gray-700">
+      <button
+        type="button"
+        class="group flex items-center w-full px-3 py-3 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 bg-transparent border-none cursor-pointer font-medium"
+        (click)="logout()"
+      >
+        <span class="material-symbols-rounded text-xl group-hover:scale-110 transition-transform">logout</span>
+        <span class="hidden md:inline ml-3">Logout</span>
+      </button>
+    </div>
   </div>
 
-  <!-- Main Content - Adjust margin and padding -->
-  <div class="flex-grow p-2 sm:p-3 md:p-4 pb-20 md:pb-4 transition-all duration-300" 
+  <!-- Main Content Area -->
+  <div class="flex-grow transition-all duration-300 bg-gray-50 dark:bg-gray-900" 
        [ngStyle]="{'margin-left': sidebarWidth}">
-    <router-outlet></router-outlet>
+    <main class="h-full overflow-auto">
+      <div class="max-w-4xl mx-auto p-4 md:p-6 lg:p-8 pb-20 md:pb-8">
+        <router-outlet></router-outlet>
+      </div>
+    </main>
   </div>
 
-  <!-- Bottom Navigation - Keep unchanged -->
-  <div class="fixed bottom-0 left-0 w-full bg-gray-800 text-white px-1 py-3 flex justify-around md:hidden">
-    <a routerLink="/home" routerLinkActive="text-blue-500" class="text-center hover:text-blue-400">
-      <span class="material-symbols-rounded text-2xl">home</span>
+  <!-- Modern Bottom Navigation -->
+  <div class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-3 flex justify-around md:hidden z-50 shadow-lg dark:shadow-gray-900/20">
+    <a routerLink="/home" 
+       routerLinkActive="text-indigo-600 dark:text-indigo-400" 
+       class="flex flex-col items-center justify-center min-w-0 text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+      <span class="material-symbols-rounded text-2xl mb-1">home</span>
+      <span class="text-xs font-medium">Home</span>
     </a>
-    <a routerLink="/explore" routerLinkActive="text-blue-500" class="text-center hover:text-blue-400">
-      <span class="material-symbols-rounded text-2xl">explore</span>
+    <a routerLink="/explore" 
+       routerLinkActive="text-indigo-600 dark:text-indigo-400" 
+       class="flex flex-col items-center justify-center min-w-0 text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+      <span class="material-symbols-rounded text-2xl mb-1">explore</span>
+      <span class="text-xs font-medium">Explore</span>
     </a>
-    <a routerLink="/listings" routerLinkActive="text-blue-500" class="text-center hover:text-blue-400">
-      <span class="material-symbols-rounded text-2xl">storefront</span>
+    <a routerLink="/listings" 
+       routerLinkActive="text-indigo-600 dark:text-indigo-400" 
+       class="flex flex-col items-center justify-center min-w-0 text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+      <span class="material-symbols-rounded text-2xl mb-1">storefront</span>
+      <span class="text-xs font-medium">Market</span>
     </a>
-    <a routerLink="/inbox" routerLinkActive="text-blue-500" class="text-center hover:text-blue-400 relative">
-      <span class="material-symbols-rounded text-2xl">inbox</span>
-      <span *ngIf="unreadNotificationsCount > 0" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-        {{unreadNotificationsCount}}
-      </span>
+    <a routerLink="/inbox" 
+       routerLinkActive="text-indigo-600 dark:text-indigo-400" 
+       class="flex flex-col items-center justify-center min-w-0 text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors relative">
+      <div class="relative">
+        <span class="material-symbols-rounded text-2xl mb-1">inbox</span>
+        <span *ngIf="unreadNotificationsCount > 0" 
+          class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium">
+          {{unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount}}
+        </span>
+      </div>
+      <span class="text-xs font-medium">Inbox</span>
     </a>
-    <a routerLink="/create" routerLinkActive="text-blue-500" class="text-center hover:text-blue-400">
-      <span class="material-symbols-rounded text-2xl">add_circle</span>
+    <a routerLink="/create" 
+       routerLinkActive="text-indigo-600 dark:text-indigo-400" 
+       class="flex flex-col items-center justify-center min-w-0 text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+      <span class="material-symbols-rounded text-2xl mb-1">add_circle</span>
+      <span class="text-xs font-medium">Create</span>
     </a>
-    <a [routerLink]="['/profile', currentUser?.id]" routerLinkActive="text-blue-500" class="text-center hover:text-blue-400">
-      <span class="material-symbols-rounded text-2xl">person</span>
+    <a [routerLink]="['/profile', currentUser?.id]" 
+       routerLinkActive="text-indigo-600 dark:text-indigo-400" 
+       class="flex flex-col items-center justify-center min-w-0 text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+      <span class="material-symbols-rounded text-2xl mb-1">person</span>
+      <span class="text-xs font-medium">Profile</span>
     </a>
   </div>
 </div>

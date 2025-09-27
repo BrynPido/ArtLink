@@ -1,18 +1,22 @@
-<div class="tabs flex items-center border-b border-gray-200 mb-4">
+<div class="tabs flex items-center border-b border-gray-200 dark:border-gray-700 mb-4">
   <button 
     (click)="setActiveTab('messages')" 
     [class.active]="activeTab === 'messages'"
-    class="py-3 px-6 font-medium text-gray-600 hover:text-blue-600 border-b-2 mr-2"
-    [class.border-blue-500]="activeTab === 'messages'"
-    [class.border-transparent]="activeTab !== 'messages'">
+    class="py-3 px-6 font-medium text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 border-b-2 mr-2 transition-colors"
+    [class.border-indigo-500]="activeTab === 'messages'"
+    [class.border-transparent]="activeTab !== 'messages'"
+    [class.text-indigo-600]="activeTab === 'messages'"
+    [class.dark:text-indigo-400]="activeTab === 'messages'">
     Messages
   </button>
   <button 
     (click)="setActiveTab('notifications')" 
     [class.active]="activeTab === 'notifications'"
-    class="py-3 px-6 font-medium text-gray-600 hover:text-blue-600 border-b-2"
-    [class.border-blue-500]="activeTab === 'notifications'"
-    [class.border-transparent]="activeTab !== 'notifications'">
+    class="py-3 px-6 font-medium text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 border-b-2 transition-colors"
+    [class.border-indigo-500]="activeTab === 'notifications'"
+    [class.border-transparent]="activeTab !== 'notifications'"
+    [class.text-indigo-600]="activeTab === 'notifications'"
+    [class.dark:text-indigo-400]="activeTab === 'notifications'">
     Notifications
   </button>
 </div>

@@ -120,13 +120,32 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin', adminRoutes);
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    timestamp: new Date().toISOString(),
-    version: '1.0.0',
-    environment: process.env.NODE_ENV || 'development'
-  });
+app.get('/api/health', async (req, res) => {
+  try {
+    // Import database function
+    const { query } = require('./config/database');
+    
+    // Test database connection
+    await query('SELECT 1 as test');
+    
+    res.json({ 
+      status: 'OK', 
+      timestamp: new Date().toISOString(),
+      version: '1.0.0',
+      environment: process.env.NODE_ENV || 'development',
+      database: 'connected'
+    });
+  } catch (error) {
+    console.error('Health check database error:', error.message);
+    res.status(503).json({
+      status: 'ERROR',
+      timestamp: new Date().toISOString(),
+      version: '1.0.0',
+      environment: process.env.NODE_ENV || 'development',
+      database: 'disconnected',
+      error: error.message
+    });
+  }
 });
 
 

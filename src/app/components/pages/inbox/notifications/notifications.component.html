@@ -1,28 +1,28 @@
 <div class="p-4">
-    <h2 class="text-2xl font-bold mb-4">Notifications</h2>
+    <h2 class="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Notifications</h2>
     <div class="space-y-4">
         <div *ngFor="let notification of notifications" 
-             class="p-4 bg-white rounded-lg shadow hover:bg-gray-50 cursor-pointer relative"
+             class="p-4 bg-white dark:bg-gray-800 rounded-lg shadow hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer relative border border-gray-100 dark:border-gray-700"
              (click)="handleNotificationClick(notification)">
             <div class="flex items-start">
                 <div class="flex-1">
-                    <p class="text-sm" [ngClass]="{'font-bold': !notification.read}">
+                    <p class="text-sm text-gray-900 dark:text-white" [ngClass]="{'font-bold': !notification.read}">
                         {{ notification.content }}
                     </p>
-                    <p class="text-xs text-gray-500 mt-1">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                         {{ notification.createdAt | timeAgo }}
                     </p>
                 </div>
                 <div class="flex items-center gap-2">
-                    <span *ngIf="!notification.read" class="h-2 w-2 bg-blue-500 rounded-full"></span>
+                    <span *ngIf="!notification.read" class="h-2 w-2 bg-indigo-500 dark:bg-indigo-400 rounded-full"></span>
                     <button (click)="deleteNotification($event, notification)" 
-                            class="text-red-500 hover:text-red-700">
+                            class="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors">
                         <span class="material-symbols-rounded">delete</span>
                     </button>
                 </div>
             </div>
         </div>
-        <div *ngIf="notifications.length === 0" class="text-center text-gray-500 py-8">
+        <div *ngIf="notifications.length === 0" class="text-center text-gray-500 dark:text-gray-400 py-8">
             No notifications yet
         </div>
     </div>

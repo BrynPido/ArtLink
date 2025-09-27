@@ -9,13 +9,33 @@ const dbConfig = {
   password: process.env.DB_PASS,
   database: process.env.DB_NAME,
   ssl: { rejectUnauthorized: false }, // Always use SSL for Supabase
-  max: 10,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 60000,
+  max: 20, // Increased pool size
+  min: 2, // Minimum connections
+  idleTimeoutMillis: 60000, // Increased idle timeout
+  connectionTimeoutMillis: 10000, // Reduced connection timeout
+  acquireTimeoutMillis: 60000, // Time to wait for connection
+  createTimeoutMillis: 30000, // Time to wait for connection creation
+  destroyTimeoutMillis: 5000, // Time to wait for connection destruction
+  reapIntervalMillis: 1000, // Cleanup interval
+  createRetryIntervalMillis: 200, // Retry interval for failed connections
 };
 
 // Create connection pool
 const pool = new Pool(dbConfig);
+
+// Handle pool errors
+pool.on('error', (err) => {
+  console.error('❌ Unexpected database pool error:', err);
+  // Don't exit process, let the pool handle reconnection
+});
+
+pool.on('connect', () => {
+  console.log('🔗 New database connection established');
+});
+
+pool.on('remove', () => {
+  console.log('🔌 Database connection removed from pool');
+});
 
 // Test database connection
 async function testConnection() {
@@ -32,14 +52,30 @@ async function testConnection() {
 // Initialize database connection
 testConnection();
 
-// Helper function to execute queries
-async function query(text, params = []) {
-  try {
-    const result = await pool.query(text, params);
-    return result.rows;
-  } catch (error) {
-    console.error('Database query error:', error);
-    throw error;
+// Helper function to execute queries with retry logic
+async function query(text, params = [], retries = 3) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const result = await pool.query(text, params);
+      return result.rows;
+    } catch (error) {
+      console.error(`Database query error (attempt ${attempt}/${retries}):`, error.message);
+      
+      // Check if it's a connection error and we have retries left
+      if (attempt < retries && (
+        error.message.includes('Connection terminated') ||
+        error.message.includes('Connection closed') ||
+        error.message.includes('ECONNRESET') ||
+        error.code === 'ECONNRESET' ||
+        error.code === '57P01'
+      )) {
+        console.log(`🔄 Retrying query in ${attempt * 1000}ms...`);
+        await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+        continue;
+      }
+      
+      throw error;
+    }
   }
 }
 

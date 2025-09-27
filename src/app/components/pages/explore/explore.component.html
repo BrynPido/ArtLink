@@ -1,28 +1,28 @@
-<div class="min-h-screen bg-gray-50 p-4">
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
   <div class="max-w-4xl mx-auto">
     <!-- Header -->
     <div class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-900 mb-2">Explore</h1>
-      <p class="text-gray-600">Discover amazing content and connect with people</p>
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Explore</h1>
+      <p class="text-gray-600 dark:text-gray-400">Discover amazing content and connect with people</p>
     </div>
 
     <!-- Enhanced Search Form -->
     <form [formGroup]="searchForm" (ngSubmit)="onSearch()" class="mb-8">
       <div class="relative">
         <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-          <span class="material-symbols-outlined text-gray-400">search</span>
+          <span class="material-symbols-outlined text-gray-400 dark:text-gray-500">search</span>
         </div>
         <input
           type="text"
           formControlName="query"
           placeholder="Search for posts, users, artwork..."
-          class="w-full pl-12 pr-4 py-4 text-lg bg-white border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all duration-200"
+          class="w-full pl-12 pr-4 py-4 text-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent shadow-sm transition-all duration-200"
           (keyup.enter)="onSearch()"
         />
         <button
           type="submit"
           [disabled]="isLoading"
-          class="absolute right-2 top-2 bottom-2 px-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+          class="absolute right-2 top-2 bottom-2 px-6 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
         >
           <span *ngIf="!isLoading" class="material-symbols-outlined">search</span>
           <div *ngIf="isLoading" class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -34,17 +34,17 @@
     <!-- Loading State -->
     <div *ngIf="isLoading" class="flex flex-col items-center justify-center py-16">
       <div class="relative">
-        <div class="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+        <div class="w-16 h-16 border-4 border-indigo-200 dark:border-indigo-800 border-t-indigo-600 dark:border-t-indigo-400 rounded-full animate-spin"></div>
         <div class="absolute inset-0 flex items-center justify-center">
-          <span class="material-symbols-outlined text-blue-600 animate-pulse">search</span>
+          <span class="material-symbols-outlined text-indigo-600 dark:text-indigo-400 animate-pulse">search</span>
         </div>
       </div>
-      <p class="mt-4 text-gray-600 font-medium">Searching for amazing content...</p>
+      <p class="mt-4 text-gray-600 dark:text-gray-400 font-medium">Searching for amazing content...</p>
     </div>
 
     <!-- Error Message -->
-    <div *ngIf="error" class="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl mb-6 flex items-center">
-      <span class="material-symbols-outlined mr-3 text-red-500">error</span>
+    <div *ngIf="error" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-400 p-4 rounded-xl mb-6 flex items-center">
+      <span class="material-symbols-outlined mr-3 text-red-500 dark:text-red-400">error</span>
       <div>
         <p class="font-medium">Oops! Something went wrong</p>
         <p class="text-sm">{{ error }}</p>
@@ -57,33 +57,33 @@
       <!-- Suggested Users -->
       <div *ngIf="suggestedUsers.length > 0">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
             <span class="material-symbols-outlined text-2xl mr-2">recommend</span>
             Suggested People
           </h2>
-          <button class="text-blue-600 hover:text-blue-700 text-sm font-medium">View all</button>
+          <button class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 text-sm font-medium">View all</button>
         </div>
         
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div *ngFor="let user of suggestedUsers" 
                (click)="navigateToProfile(user.id)"
-               class="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-4 cursor-pointer border border-gray-100 hover:border-blue-200 hover:-translate-y-1">
+               class="bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-4 cursor-pointer border border-gray-100 dark:border-gray-700 hover:border-indigo-200 dark:hover:border-indigo-600 hover:-translate-y-1">
             <div class="text-center">
-              <div class="w-16 h-16 mx-auto mb-3 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 overflow-hidden">
+              <div class="w-16 h-16 mx-auto mb-3 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 overflow-hidden">
                 <img [src]="user.profilePictureUrl || 'assets/images/default-avatar.svg'" 
                      [alt]="user.name"
                      class="w-full h-full object-cover">
               </div>
-              <h3 class="font-semibold text-gray-900 truncate hover:text-blue-600 transition-colors">
+              <h3 class="font-semibold text-gray-900 dark:text-white truncate hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
                 {{ user.name }}
               </h3>
-              <p class="text-sm text-gray-500 truncate mb-2">&commat;{{ user.username }}</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400 truncate mb-2">&commat;{{ user.username }}</p>
               
               <!-- Suggestion reason -->
               <div class="mb-2">
                 <span [ngClass]="{
-                  'text-blue-600 bg-blue-50': user.suggestionType === 'friends_of_friends',
-                  'text-purple-600 bg-purple-50': user.suggestionType === 'popular'
+                  'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30': user.suggestionType === 'friends_of_friends',
+                  'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30': user.suggestionType === 'popular'
                 }" 
                 class="text-xs px-2 py-1 rounded-full inline-flex items-center">
                   <span class="material-symbols-outlined text-xs mr-1">
@@ -93,7 +93,7 @@
                 </span>
               </div>
               
-              <div class="flex items-center justify-center space-x-3 text-xs text-gray-600">
+              <div class="flex items-center justify-center space-x-3 text-xs text-gray-600 dark:text-gray-400">
                 <span class="flex items-center">
                   <span class="material-symbols-outlined text-sm mr-1">group</span>
                   {{ user.followersCount || 0 }}
@@ -111,20 +111,20 @@
       <!-- Trending Posts -->
       <div *ngIf="trendingPosts.length > 0">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
             <span class="material-symbols-outlined text-2xl mr-2">trending_up</span>
             Trending Posts
           </h2>
-          <button class="text-blue-600 hover:text-blue-700 text-sm font-medium">View all</button>
+          <button class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 text-sm font-medium">View all</button>
         </div>
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div *ngFor="let post of trendingPosts" 
                (click)="navigateToPost(post.id)"
-               class="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer border border-gray-100 hover:border-blue-200 overflow-hidden">
+               class="bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer border border-gray-100 dark:border-gray-700 hover:border-indigo-200 dark:hover:border-indigo-600 overflow-hidden">
             
             <!-- Post Media Preview -->
-            <div *ngIf="post.mediaUrls?.length > 0" class="relative h-40 bg-gray-100 overflow-hidden">
+            <div *ngIf="post.mediaUrls?.length > 0" class="relative h-40 bg-gray-100 dark:bg-gray-700 overflow-hidden">
               <img [src]="post.mediaUrls[0]" 
                    class="w-full h-full object-cover hover:scale-105 transition-transform duration-200" 
                    alt="Post media">
@@ -137,25 +137,25 @@
             <!-- Post Content -->
             <div class="p-4">
               <div class="flex items-center space-x-2 mb-2">
-                <div class="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 overflow-hidden flex-shrink-0">
+                <div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 overflow-hidden flex-shrink-0">
                   <img [src]="post.authorProfilePicture || 'assets/images/default-avatar.svg'" 
                        [alt]="post.authorName"
                        class="w-full h-full object-cover">
                 </div>
-                <span class="text-sm font-medium text-gray-900 truncate">{{ post.authorName }}</span>
-                <span class="text-xs text-gray-500">&commat;{{ post.authorUsername }}</span>
+                <span class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ post.authorName }}</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">&commat;{{ post.authorUsername }}</span>
               </div>
               
-              <h3 class="font-semibold text-gray-900 mb-1 truncate hover:text-blue-600 transition-colors">
+              <h3 class="font-semibold text-gray-900 dark:text-white mb-1 truncate hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
                 {{ post.title }}
               </h3>
-              <p class="text-sm text-gray-600 mb-3 line-clamp-2">
+              <p class="text-sm text-gray-600 dark:text-gray-300 mb-3 line-clamp-2">
                 {{ post.content }}
               </p>
               
               <!-- Post Stats -->
               <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-3 text-xs text-gray-500">
+                <div class="flex items-center space-x-3 text-xs text-gray-500 dark:text-gray-400">
                   <span class="flex items-center">
                     <span class="material-symbols-outlined text-sm mr-1">favorite</span>
                     {{ post.likesCount || 0 }}
@@ -165,7 +165,7 @@
                     {{ post.commentsCount || 0 }}
                   </span>
                 </div>
-                <span class="text-xs text-gray-400">
+                <span class="text-xs text-gray-400 dark:text-gray-500">
                   {{ post.createdAt | date:'MMM d' }}
                 </span>
               </div>
@@ -187,11 +187,11 @@
       <!-- Users Section -->
       <div *ngIf="userResults.length > 0">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
             <span class="material-symbols-outlined text-2xl mr-2">person</span>
             People
           </h2>
-          <div class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-medium">
+          <div class="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 px-2 py-1 rounded-full text-sm font-medium">
             {{ userResults.length }} {{ userResults.length === 1 ? 'person' : 'people' }}
           </div>
         </div>
@@ -199,30 +199,30 @@
         <div class="space-y-3">
           <div *ngFor="let user of userResults" 
                (click)="navigateToProfile(user.id)"
-               class="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 p-4 cursor-pointer border border-gray-100 hover:border-blue-200">
+               class="bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 p-4 cursor-pointer border border-gray-100 dark:border-gray-700 hover:border-indigo-200 dark:hover:border-indigo-600">
             <div class="flex items-center space-x-3">
-              <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 overflow-hidden flex-shrink-0">
+              <div class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 overflow-hidden flex-shrink-0">
                 <img [src]="user.profilePictureUrl || 'assets/images/default-avatar.svg'" 
                      [alt]="user.name"
                      class="w-full h-full object-cover">
               </div>
               <div class="flex-1 min-w-0">
-                <h3 class="font-semibold text-gray-900 truncate hover:text-blue-600 transition-colors">
+                <h3 class="font-semibold text-gray-900 dark:text-white truncate hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
                   {{ user.name }}
                 </h3>
-                <p class="text-sm text-gray-500 truncate">&commat;{{ user.username }}</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400 truncate">&commat;{{ user.username }}</p>
                 <div class="flex items-center space-x-4 mt-1">
-                  <div class="flex items-center text-xs text-gray-600">
+                  <div class="flex items-center text-xs text-gray-600 dark:text-gray-300">
                     <span class="material-symbols-outlined text-sm mr-1">group</span>
                     {{ user.followersCount || 0 }} followers
                   </div>
-                  <div class="flex items-center text-xs text-gray-600">
+                  <div class="flex items-center text-xs text-gray-600 dark:text-gray-300">
                     <span class="material-symbols-outlined text-sm mr-1">article</span>
                     {{ user.postsCount || 0 }} posts
                   </div>
                 </div>
               </div>
-              <span class="material-symbols-outlined text-gray-400 hover:text-blue-500 transition-colors">
+              <span class="material-symbols-outlined text-gray-400 dark:text-gray-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors">
                 arrow_forward
               </span>
             </div>
@@ -233,11 +233,11 @@
       <!-- Posts Section -->
       <div *ngIf="postResults.length > 0">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
             <span class="material-symbols-outlined text-2xl mr-2">article</span>
             Posts
           </h2>
-          <div class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm font-medium">
+          <div class="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-2 py-1 rounded-full text-sm font-medium">
             {{ postResults.length }} {{ postResults.length === 1 ? 'post' : 'posts' }}
           </div>
         </div>
@@ -245,11 +245,11 @@
         <div class="space-y-3">
           <div *ngFor="let post of postResults" 
                (click)="navigateToPost(post.id)"
-               class="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer border border-gray-100 hover:border-blue-200">
+               class="bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer border border-gray-100 dark:border-gray-700 hover:border-indigo-200 dark:hover:border-indigo-600">
             
             <div class="flex p-4">
               <!-- Post Media Thumbnail -->
-              <div *ngIf="post.mediaUrls?.length > 0" class="w-16 h-16 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0 mr-4">
+              <div *ngIf="post.mediaUrls?.length > 0" class="w-16 h-16 rounded-lg bg-gray-100 dark:bg-gray-700 overflow-hidden flex-shrink-0 mr-4">
                 <img [src]="post.mediaUrls[0]" 
                      class="w-full h-full object-cover hover:scale-105 transition-transform duration-200" 
                      alt="Post media">
@@ -258,25 +258,25 @@
               <!-- Post Content -->
               <div class="flex-1 min-w-0">
                 <div class="flex items-center space-x-2 mb-2">
-                  <div class="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 overflow-hidden flex-shrink-0">
+                  <div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 overflow-hidden flex-shrink-0">
                     <img [src]="post.authorProfilePicture ? getFullMediaUrl(post.authorProfilePicture) : 'assets/images/default-avatar.svg'" 
                          [alt]="post.authorName"
                          class="w-full h-full object-cover">
                   </div>
-                  <span class="text-sm font-medium text-gray-900 truncate">{{ post.authorName }}</span>
-                  <span class="text-xs text-gray-500">&commat;{{ post.authorUsername }}</span>
+                  <span class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ post.authorName }}</span>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">&commat;{{ post.authorUsername }}</span>
                 </div>
                 
-                <h3 class="font-semibold text-gray-900 mb-1 truncate hover:text-blue-600 transition-colors">
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-1 truncate hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
                   {{ post.title }}
                 </h3>
-                <p class="text-sm text-gray-600 mb-2 line-clamp-2">
+                <p class="text-sm text-gray-600 dark:text-gray-300 mb-2 line-clamp-2">
                   {{ post.content }}
                 </p>
                 
                 <!-- Post Stats -->
                 <div class="flex items-center justify-between">
-                  <div class="flex items-center space-x-3 text-xs text-gray-500">
+                  <div class="flex items-center space-x-3 text-xs text-gray-500 dark:text-gray-400">
                     <span class="flex items-center">
                       <span class="material-symbols-outlined text-sm mr-1">favorite</span>
                       {{ post.likesCount || 0 }}
@@ -290,7 +290,7 @@
                       {{ post.mediaUrls.length }}
                     </span>
                   </div>
-                  <span class="text-xs text-gray-400">
+                  <span class="text-xs text-gray-400 dark:text-gray-500">
                     {{ post.createdAt | date:'MMM d' }}
                   </span>
                 </div>
@@ -304,11 +304,11 @@
     <!-- No Results State -->
     <div *ngIf="!isLoading && hasSearched && userResults.length === 0 && postResults.length === 0" 
          class="text-center py-12">
-      <div class="w-24 h-24 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-        <span class="material-symbols-outlined text-4xl text-gray-400">search_off</span>
+      <div class="w-24 h-24 mx-auto mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+        <span class="material-symbols-outlined text-4xl text-gray-400 dark:text-gray-500">search_off</span>
       </div>
-      <h3 class="text-lg font-medium text-gray-900 mb-2">No results found</h3>
-      <p class="text-gray-500 max-w-md mx-auto">
+      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">No results found</h3>
+      <p class="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
         Try searching with different keywords or check your spelling.
       </p>
     </div>
@@ -316,11 +316,11 @@
     <!-- Empty State (before search) -->
     <div *ngIf="!isLoading && !hasSearched" 
          class="text-center py-16">
-      <div class="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center">
-        <span class="material-symbols-outlined text-4xl text-blue-600">explore</span>
+      <div class="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-indigo-100 dark:from-indigo-900/30 to-purple-100 dark:to-purple-900/30 rounded-full flex items-center justify-center">
+        <span class="material-symbols-outlined text-4xl text-indigo-600 dark:text-indigo-400">explore</span>
       </div>
-      <h3 class="text-xl font-semibold text-gray-900 mb-2">Start exploring</h3>
-      <p class="text-gray-600 max-w-md mx-auto">
+      <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Start exploring</h3>
+      <p class="text-gray-600 dark:text-gray-300 max-w-md mx-auto">
         Search for amazing artwork, talented artists, and inspiring content. 
         Discover what the community is creating!
       </p>

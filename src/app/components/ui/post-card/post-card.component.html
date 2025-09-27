@@ -1,53 +1,56 @@
 <div *ngIf="loading" class="w-full flex flex-col items-center justify-center p-8 rounded-xl">
-  <div class="w-6 h-6 border-2 border-indigo-300 border-t-indigo-600 rounded-full animate-spin"></div>
-  <p class="text-gray-400 text-center mt-2">Loading posts...</p>
+  <div class="w-6 h-6 border-2 border-gray-200 dark:border-gray-700 border-t-indigo-600 dark:border-t-indigo-400 rounded-full animate-spin"></div>
+  <p class="text-gray-500 dark:text-gray-400 text-center mt-2">Loading posts...</p>
 </div>
 
 <div *ngIf="!loading && posts.length === 0" class="w-full flex flex-col items-center justify-center p-8 rounded-xl">
-  <span class="material-symbols-outlined text-4xl mb-2">post_add</span>
-  <h2 class="text-xl font-semibold mb-2">No Posts Yet</h2>
-  <p class="text-gray-400 text-center">Be the first to share something amazing!</p>
+  <span class="material-symbols-outlined text-4xl mb-2 text-gray-400 dark:text-gray-600">post_add</span>
+  <h2 class="text-xl font-semibold mb-2 text-gray-800 dark:text-gray-200">No Posts Yet</h2>
+  <p class="text-gray-500 dark:text-gray-400 text-center">Be the first to share something amazing!</p>
 </div>
 
-<div *ngFor="let post of posts" class="flex flex-col w-full max-w-md mx-auto sm:max-w-lg md:max-w-xl lg:max-w-2xl mb-8 md:mb-8 pb-10 md:pb-0 border-gray-200 rounded-lg drop-shadow-lg shadow-lg bg-white px-5" (click)="navigateToPost(post.id)">
-  <div class="flex items-center gap-3 p-2 relative">
-    <div class="flex items-center gap-4">
-      <div class="w-10 h-10 rounded-full bg-gray-200 overflow-hidden">
-        <img [src]="post.authorProfilePicture || '/assets/images/default-avatar.svg'" alt="Author profile"
-          class="w-full h-full object-cover cursor-pointer" (click)="goToAuthorProfile(post.authorId); $event.stopPropagation()">
+<div *ngFor="let post of posts" class="post-card group flex flex-col w-full max-w-md mx-auto sm:max-w-lg md:max-w-xl lg:max-w-2xl mb-6 border border-gray-200/60 dark:border-gray-700/60 rounded-2xl bg-white dark:bg-gray-800 hover:shadow-xl hover:border-gray-300/80 dark:hover:border-gray-600/80 transition-all duration-300 ease-in-out cursor-pointer overflow-hidden" (click)="navigateToPost(post.id)">
+  <!-- Header Section -->
+  <div class="flex items-center justify-between p-4 pb-3">
+    <div class="flex items-center gap-3">
+      <div class="relative">
+        <div class="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden ring-2 ring-transparent group-hover:ring-indigo-100 dark:group-hover:ring-indigo-900/50 transition-all duration-300">
+          <img [src]="post.authorProfilePicture || '/assets/images/default-avatar.svg'" alt="Author profile"
+            class="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-300" (click)="goToAuthorProfile(post.authorId); $event.stopPropagation()">
+        </div>
       </div>
       <div class="cursor-pointer" (click)="goToAuthorProfile(post.authorId); $event.stopPropagation()">
-        <h3 class="font-medium text-gray-900">{{ post.authorName || 'Unknown' }}</h3>
-        <p class="text-sm text-gray-500">&commat;{{ post.authorUsername || 'unknown' }}</p>
+        <h3 class="font-semibold text-gray-900 dark:text-white text-sm hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-200">{{ post.authorName || 'Unknown' }}</h3>
+        <p class="text-xs text-gray-500 dark:text-gray-400">&commat;{{ post.authorUsername || 'unknown' }}</p>
       </div>
     </div>
-    <div class="flex-1 flex items-center justify-end">
+    <div class="relative">
       <!-- Three-dot menu button -->
-      <button (click)="toggleMenu(post.id); $event.stopPropagation()" class="text-gray-600 focus:outline-none relative z-10 menu-button">
-        <span class="material-symbols-rounded">more_vert</span>
+      <button (click)="toggleMenu(post.id); $event.stopPropagation()" class="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/50">
+        <span class="material-symbols-rounded text-sm">more_vert</span>
       </button>
       <!-- Dropdown menu -->
-      <div *ngIf="isMenuOpen(post.id)" class="absolute right-4 top-8 mt-2 w-48 bg-white shadow-lg rounded-md z-20 border border-gray-300/85 dropdown-menu" (click)="$event.stopPropagation()">
+      <div *ngIf="isMenuOpen(post.id)" class="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 shadow-xl rounded-xl z-20 border border-gray-100 dark:border-gray-700 overflow-hidden" (click)="$event.stopPropagation()">
         <button *ngIf="currentUser.id === post.authorId" (click)="openConfirmationModal(post.id); $event.stopPropagation()"
-          class="block w-full text-left px-4 py-2 text-red-500 hover:bg-gray-100">
+          class="block w-full text-left px-4 py-3 text-sm text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors duration-200">
           Delete Post
         </button>
         <button *ngIf="currentUser.id !== post.authorId && !reportedPosts[post.id]" (click)="openReportModal(post.id); $event.stopPropagation()"
-          class="block w-full text-left px-4 py-2 text-orange-500 hover:bg-gray-100">
+          class="block w-full text-left px-4 py-3 text-sm text-orange-500 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors duration-200">
           Report Post
         </button>
         <div *ngIf="currentUser.id !== post.authorId && reportedPosts[post.id]"
-          class="block w-full text-left px-4 py-2 text-gray-400 cursor-not-allowed">
+          class="block w-full text-left px-4 py-3 text-sm text-gray-400 dark:text-gray-500 cursor-not-allowed bg-gray-50 dark:bg-gray-700/50">
           Already Reported
         </div>
       </div>
     </div>
   </div>
 
-
-<div class="relative">
-  <div class="w-full bg-gray-100 rounded-xl overflow-hidden">
-    <!-- Carousel container with improved aspect ratio and loading -->
+  <!-- Media Section -->
+  <div class="relative mx-4 mb-4">
+    <div class="w-full bg-gray-50 dark:bg-gray-900 rounded-xl overflow-hidden shadow-inner">
+      <!-- Carousel container with improved aspect ratio and loading -->
     <div *ngIf="post.media && post.media.length > 1" class="w-full relative" style="height: 0; padding-bottom: 75%;">
       <!-- Image Counter Badge -->
       <div class="absolute top-3 right-3 bg-black/50 text-white text-xs px-2 py-1 rounded-full z-10">
@@ -76,23 +79,23 @@
         </div>
       </div>
 
-      <!-- Improved Controls -->
+      <!-- Modern Navigation Controls -->
       <button *ngIf="currentImageIndex[post.id] > 0"
-        class="absolute left-3 top-1/2 transform -translate-y-1/2 bg-white/70 hover:bg-white shadow-md p-1.5 rounded-full z-10 flex items-center justify-center cursor-pointer transition-all"
+        class="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/90 backdrop-blur-sm hover:bg-white shadow-lg p-2 rounded-full z-10 flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-110"
         (click)="prevImage(post.id); $event.stopPropagation();">
-        <span class="material-symbols-rounded">chevron_left</span>
+        <span class="material-symbols-rounded text-gray-700">chevron_left</span>
       </button>
       <button *ngIf="currentImageIndex[post.id] < post.media.length - 1"
-        class="absolute right-3 top-1/2 transform -translate-y-1/2 bg-white/70 hover:bg-white shadow-md p-1.5 rounded-full z-10 flex items-center justify-center cursor-pointer transition-all"
+        class="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/90 backdrop-blur-sm hover:bg-white shadow-lg p-2 rounded-full z-10 flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-110"
         (click)="nextImage(post.id, post.media.length); $event.stopPropagation();">
-        <span class="material-symbols-rounded">chevron_right</span>
+        <span class="material-symbols-rounded text-gray-700">chevron_right</span>
       </button>
       
-      <!-- Image indicators/dots -->
-      <div class="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
+      <!-- Modern Image indicators/dots -->
+      <div class="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
         <div *ngFor="let media of post.media; let i = index" 
-             class="w-2 h-2 rounded-full transition-all"
-             [ngClass]="{'bg-blue-500': currentImageIndex[post.id] === i, 'bg-white/60': currentImageIndex[post.id] !== i}"
+             class="w-2 h-2 rounded-full transition-all duration-300 cursor-pointer hover:scale-125"
+             [ngClass]="{'bg-white shadow-lg': currentImageIndex[post.id] === i, 'bg-white/50 backdrop-blur-sm': currentImageIndex[post.id] !== i}"
              (click)="setCurrentImage(post.id, i); $event.stopPropagation();"></div>
       </div>
     </div>
@@ -111,7 +114,7 @@
       <!-- Loading spinner -->
       <div class="absolute inset-0 flex items-center justify-center" 
            *ngIf="!imageLoaded[post.id + '-' + post.media[0].url]">
-        <div class="w-6 h-6 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin"></div>
+        <div class="w-6 h-6 border-2 border-gray-200 dark:border-gray-700 border-t-indigo-600 dark:border-t-indigo-400 rounded-full animate-spin"></div>
       </div>
       
       <!-- Main image with maintain aspect ratio -->
@@ -124,36 +127,56 @@
     </div>
   </div>
 
-  <!-- Like and save controls - fixed event propagation -->
-  <div
-    class="absolute bottom-[-20px] right-5 w-24 h-10 bg-white shadow-lg rounded-full flex items-center justify-center gap-4">
-    <span class="material-symbols-rounded cursor-pointer transition-transform duration-200 ease-in-out select-none"
-      [ngClass]="{'animate-pop': isLiked(post.id)}" [ngStyle]="{
-        'font-variation-settings': '\'FILL\' ' + (isLiked(post.id) ? 1 : 0),
-        'color': isLiked(post.id) ? '#ff3040' : 'black'
-      }" (click)="toggleLike(post.id, post.authorId); $event.stopPropagation()">
-      favorite
-    </span>
+    <!-- Modern Like and save controls -->
+    <div class="absolute -bottom-5 right-6 flex items-center bg-white dark:bg-gray-800 rounded-full shadow-lg border border-gray-100 dark:border-gray-700 p-1">
+      <button class="p-1.5 rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 group flex items-center justify-center"
+        (click)="toggleLike(post.id, post.authorId); $event.stopPropagation()">
+        <span class="material-symbols-rounded text-lg leading-none transition-all duration-200 select-none group-hover:scale-110"
+          [ngClass]="{'animate-pop': isLiked(post.id)}" [ngStyle]="{
+            'font-variation-settings': '\'FILL\' ' + (isLiked(post.id) ? 1 : 0),
+            'color': isLiked(post.id) ? '#ef4444' : '#6b7280'
+          }">
+          favorite
+        </span>
+      </button>
 
-    <span class="material-symbols-rounded cursor-pointer transition-transform duration-200 ease-in-out select-none"
-      [ngClass]="{'animate-pop': isSaved(post.id)}" [ngStyle]="{
-        'font-variation-settings': '\'FILL\' ' + (isSaved(post.id) ? 1 : 0),
-        'color': isSaved(post.id) ? '#007bff' : 'black'
-      }" (click)="toggleSave(post.id); $event.stopPropagation()">
-      bookmark
-    </span>
-  </div>
-</div>
+      <div class="w-px h-6 bg-gray-200 dark:bg-gray-600"></div>
 
-<div class="p-4">
-  <!-- Likes Counter -->
-  <div class="text-sm text-gray-600">{{likesCount(post.id)}} like{{likesCount(post.id) === 1 ? '' : 's'}}</div>
-  <div class="mt-2 text-sm text-gray-800">
-    {{post.title}}
+      <button class="p-1.5 rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 group flex items-center justify-center"
+        (click)="toggleSave(post.id); $event.stopPropagation()">
+        <span class="material-symbols-rounded text-lg leading-none transition-all duration-200 select-none group-hover:scale-110"
+          [ngClass]="{'animate-pop': isSaved(post.id)}" [ngStyle]="{
+            'font-variation-settings': '\'FILL\' ' + (isSaved(post.id) ? 1 : 0),
+            'color': isSaved(post.id) ? '#6366f1' : '#6b7280'
+          }">
+          bookmark
+        </span>
+      </button>
+    </div>
   </div>
-  <div class="mt-1 text-xs text-gray-500">{{ post.createdAt | timeAgo:'short' }}</div>
-  <a (click)="navigateToPost(post.id)" class="mt-2 text-sm text-blue-500 cursor-pointer hover:underline">View all comments</a>
-</div>
+
+  <!-- Content Section -->
+  <div class="px-4 pb-4 pt-6">
+    <!-- Likes Counter -->
+    <div class="flex items-center gap-1 mb-3">
+      <span class="material-symbols-rounded text-red-500 text-sm">favorite</span>
+      <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{likesCount(post.id)}}</span>
+      <span class="text-sm text-gray-500 dark:text-gray-400">like{{likesCount(post.id) === 1 ? '' : 's'}}</span>
+    </div>
+
+    <!-- Post Title -->
+    <div class="mb-2">
+      <p class="text-gray-900 dark:text-white font-medium text-sm leading-relaxed">{{post.title}}</p>
+    </div>
+    
+    <!-- Post Meta -->
+    <div class="flex items-center justify-between">
+      <div class="text-xs text-gray-400 dark:text-gray-500">{{ post.createdAt | timeAgo:'short' }}</div>
+      <button (click)="navigateToPost(post.id)" class="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium transition-colors duration-200">
+        View comments
+      </button>
+    </div>
+  </div>
 </div>
 
 <!-- Improved Image Modal -->
@@ -177,13 +200,13 @@
 
   <!-- Zoom controls -->
   <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/40 rounded-full px-3 py-1 flex items-center gap-3">
-    <button (click)="zoomOut(); $event.stopPropagation()" class="text-white hover:text-blue-300 transition-colors">
+    <button (click)="zoomOut(); $event.stopPropagation()" class="text-white hover:text-indigo-300 dark:hover:text-indigo-400 transition-colors">
       <span class="material-symbols-rounded">zoom_out</span>
     </button>
-    <button (click)="resetZoom(); $event.stopPropagation()" class="text-white hover:text-blue-300 transition-colors">
+    <button (click)="resetZoom(); $event.stopPropagation()" class="text-white hover:text-indigo-300 dark:hover:text-indigo-400 transition-colors">
       <span class="material-symbols-rounded">zoom_out_map</span>
     </button>
-    <button (click)="zoomIn(); $event.stopPropagation()" class="text-white hover:text-blue-300 transition-colors">
+    <button (click)="zoomIn(); $event.stopPropagation()" class="text-white hover:text-indigo-300 dark:hover:text-indigo-400 transition-colors">
       <span class="material-symbols-rounded">zoom_in</span>
     </button>
   </div>
@@ -200,23 +223,23 @@
 <div *ngIf="showReportModal"
   class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 transition-opacity duration-300"
   [ngClass]="{'opacity-0': !showReportModal, 'opacity-100': showReportModal}">
-  <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
     <!-- Modal Header -->
-    <div class="flex items-center justify-between p-6 border-b border-gray-200">
-      <h2 class="text-xl font-semibold text-gray-900">Report Post</h2>
-      <button (click)="closeReportModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+    <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Report Post</h2>
+      <button (click)="closeReportModal()" class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
         <span class="material-symbols-rounded">close</span>
       </button>
     </div>
 
     <!-- Modal Body -->
     <div class="p-6">
-      <p class="text-gray-600 mb-4">Help us understand why you're reporting this post. Your report will be reviewed by our team.</p>
+      <p class="text-gray-600 dark:text-gray-400 mb-4">Help us understand why you're reporting this post. Your report will be reviewed by our team.</p>
       
       <!-- Reason Selection -->
       <div class="mb-4">
-        <label class="block text-sm font-medium text-gray-700 mb-2">Reason for reporting *</label>
-        <select [(ngModel)]="reportReason" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Reason for reporting *</label>
+        <select [(ngModel)]="reportReason" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent">
           <option value="">Select a reason</option>
           <option value="spam">Spam</option>
           <option value="harassment">Harassment or bullying</option>
@@ -231,10 +254,10 @@
 
       <!-- Description -->
       <div class="mb-6">
-        <label class="block text-sm font-medium text-gray-700 mb-2">Additional details (optional)</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Additional details (optional)</label>
         <textarea 
           [(ngModel)]="reportDescription" 
-          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent"
           rows="3"
           placeholder="Provide any additional details that might help our review...">
         </textarea>
@@ -244,7 +267,7 @@
       <div class="flex gap-3">
         <button 
           (click)="closeReportModal()"
-          class="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+          class="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors">
           Cancel
         </button>
         <button 

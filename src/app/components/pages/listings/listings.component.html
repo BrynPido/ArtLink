@@ -2,38 +2,38 @@
   <!-- Header with improved spacing and alignment -->
   <div class="flex items-center justify-between mb-4">
     <div>
-      <h1 class="text-2xl font-bold text-gray-900">Listings</h1>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Listings</h1>
       <div class="flex mt-2">
         <div class="inline-flex rounded-md shadow-sm" role="group">
           <button 
             (click)="setViewMode('all')" 
-            class="px-4 py-1.5 text-sm font-medium rounded-l-lg border border-gray-300 transition-colors focus:z-10 focus:outline-none"
-            [ngClass]="viewMode === 'all' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 hover:bg-gray-100'"
+            class="px-4 py-1.5 text-sm font-medium rounded-l-lg border border-gray-300 dark:border-gray-600 transition-colors focus:z-10 focus:outline-none"
+            [ngClass]="viewMode === 'all' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
           >
             All Listings
           </button>
           <button 
             (click)="setViewMode('my')" 
-            class="px-4 py-1.5 text-sm font-medium rounded-r-lg border border-gray-300 transition-colors focus:z-10 focus:outline-none"
-            [ngClass]="viewMode === 'my' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 hover:bg-gray-100'"
+            class="px-4 py-1.5 text-sm font-medium rounded-r-lg border border-gray-300 dark:border-gray-600 transition-colors focus:z-10 focus:outline-none"
+            [ngClass]="viewMode === 'my' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
           >
             My Listings
           </button>
         </div>
       </div>
     </div>
-    <button (click)="createListing()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center whitespace-nowrap">
+    <button (click)="createListing()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center whitespace-nowrap">
       <span class="material-symbols-rounded mr-1">add</span>
       Create Listing
     </button>
   </div>
 
   <!-- Improved Search and Filter Bar -->
-  <div class="mb-6 bg-white rounded-lg shadow-sm p-3">
+  <div class="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 border border-gray-100 dark:border-gray-700">
     <div class="flex flex-col md:flex-row gap-3">
       <!-- Search Bar -->
       <div class="relative flex-grow">
-        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">
+        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 dark:text-gray-400">
           <span class="material-symbols-rounded">search</span>
         </span>
         <input
@@ -41,7 +41,7 @@
           [(ngModel)]="searchTerm"
           (ngModelChange)="applyFilters()"
           placeholder="Search listings..."
-          class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+          class="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
         >
       </div>
       
@@ -50,7 +50,7 @@
         <select
           [(ngModel)]="sortBy"
           (ngModelChange)="applyFilters()"
-          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
         >
           <option value="newest">Newest First</option>
           <option value="oldest">Oldest First</option>
@@ -62,7 +62,7 @@
       <!-- Filter Button -->
       <button 
         (click)="showFilters = !showFilters" 
-        class="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg flex items-center justify-center transition-colors"
+        class="text-sm bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg flex items-center justify-center transition-colors"
       >
         <span class="material-symbols-rounded mr-1">tune</span>
         Filters
@@ -75,36 +75,36 @@
     <!-- Filter Pills -->
     <div *ngIf="selectedCategory || selectedCondition || priceRange.min > 0 || (priceRange.max > 0 && priceRange.max < 10000)" 
          class="flex flex-wrap gap-2 mt-3">
-      <div *ngIf="selectedCategory" class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full flex items-center">
+      <div *ngIf="selectedCategory" class="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 text-xs px-2 py-1 rounded-full flex items-center">
         {{ selectedCategory | titlecase }}
-        <button (click)="clearCategory()" class="ml-1 text-blue-500 hover:text-blue-700">
+        <button (click)="clearCategory()" class="ml-1 text-indigo-500 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300">
           <span class="material-symbols-rounded text-sm">close</span>
         </button>
       </div>
-      <div *ngIf="selectedCondition" class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full flex items-center">
+      <div *ngIf="selectedCondition" class="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 text-xs px-2 py-1 rounded-full flex items-center">
         {{ selectedCondition | titlecase }}
-        <button (click)="clearCondition()" class="ml-1 text-blue-500 hover:text-blue-700">
+        <button (click)="clearCondition()" class="ml-1 text-indigo-500 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300">
           <span class="material-symbols-rounded text-sm">close</span>
         </button>
       </div>
       <div *ngIf="priceRange.min > 0 || (priceRange.max > 0 && priceRange.max < 10000)" 
-          class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full flex items-center">
+          class="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 text-xs px-2 py-1 rounded-full flex items-center">
         ₱{{ priceRange.min }} - ₱{{ priceRange.max === 10000 ? '∞' : priceRange.max }}
-        <button (click)="clearPriceRange()" class="ml-1 text-blue-500 hover:text-blue-700">
+        <button (click)="clearPriceRange()" class="ml-1 text-indigo-500 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300">
           <span class="material-symbols-rounded text-sm">close</span>
         </button>
       </div>
     </div>
 
     <!-- Expanded Filter Panel -->
-    <div *ngIf="showFilters" class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-3 pt-3 border-t border-gray-200">
+    <div *ngIf="showFilters" class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
       <!-- Categories -->
       <div>
-        <label class="block text-xs font-medium text-gray-700 mb-1">Category</label>
+        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
         <select
           [(ngModel)]="selectedCategory"
           (ngModelChange)="applyFilters()"
-          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
         >
           <option value="">All Categories</option>
           <option *ngFor="let category of categories" [value]="category.value">
@@ -115,11 +115,11 @@
 
       <!-- Condition -->
       <div>
-        <label class="block text-xs font-medium text-gray-700 mb-1">Condition</label>
+        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Condition</label>
         <select
           [(ngModel)]="selectedCondition"
           (ngModelChange)="applyFilters()"
-          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
         >
           <option value="">All Conditions</option>
           <option *ngFor="let condition of conditions" [value]="condition.value">
@@ -130,30 +130,30 @@
 
       <!-- Min Price -->
       <div>
-        <label class="block text-xs font-medium text-gray-700 mb-1">Min Price</label>
+        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Min Price</label>
         <div class="relative">
-          <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">₱</span>
+          <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 dark:text-gray-400">₱</span>
           <input
             type="number"
             [(ngModel)]="priceRange.min"
             (ngModelChange)="applyFilters()"
             min="0"
-            class="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            class="w-full pl-7 pr-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
           >
         </div>
       </div>
       
       <!-- Max Price -->
       <div>
-        <label class="block text-xs font-medium text-gray-700 mb-1">Max Price</label>
+        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Max Price</label>
         <div class="relative">
-          <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">₱</span>
+          <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 dark:text-gray-400">₱</span>
           <input
             type="number"
             [(ngModel)]="priceRange.max"
             (ngModelChange)="applyFilters()"
             min="0"
-            class="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            class="w-full pl-7 pr-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
           >
         </div>
       </div>
@@ -162,31 +162,31 @@
 
   <!-- Loading State -->
   <div *ngIf="loading" class="flex justify-center py-8">
-    <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+    <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 dark:border-indigo-400"></div>
   </div>
 
   <!-- Error State -->
-  <div *ngIf="error" class="text-center py-6 bg-red-50 rounded-lg">
-    <p class="text-red-600">{{ error }}</p>
+  <div *ngIf="error" class="text-center py-6 bg-red-50 dark:bg-red-900/30 rounded-lg border border-red-200 dark:border-red-800">
+    <p class="text-red-600 dark:text-red-400">{{ error }}</p>
   </div>
 
   <!-- Listings Grid with Improved Responsiveness -->
-  <div *ngIf="!loading && !error" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+  <div *ngIf="!loading && !error" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
     <!-- Listing Card with Better Visual Separation -->
     <div 
       *ngFor="let listing of listings"
       (click)="viewListing(listing.id)"
-      class="group bg-white rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-200 hover:translate-y-[-2px] border border-gray-200 flex flex-col h-full relative"
+      class="group bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-200 hover:translate-y-[-2px] border border-gray-200 dark:border-gray-700 hover:border-indigo-200 dark:hover:border-indigo-600 flex flex-col h-full relative"
     >
       <!-- Recent Badge with Hover Effect - Hidden by default, shows on card hover -->
       <div *ngIf="isRecentListing(listing)" 
-          class="absolute top-2 left-2 bg-blue-600 text-white text-xs py-0.5 px-1.5 rounded-full flex items-center z-20 shadow-sm opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-        <span class="material-symbols-rounded text-[10px] mr-0.5">schedule</span>
-        <span class="text-[10px]">New</span>
+          class="absolute top-3 left-3 bg-indigo-600 text-white text-xs py-1 px-2 rounded-full flex items-center z-20 shadow-sm opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+        <span class="material-symbols-rounded text-xs mr-1">schedule</span>
+        <span class="text-xs font-medium">New</span>
       </div>
 
       <!-- Listing Image with Better Aspect Ratio Control -->
-      <div class="relative w-full" style="padding-bottom: 75%;">
+      <div class="relative w-full" style="padding-bottom: 60%;">
         <img 
           [src]="listing.media && listing.media.length > 0 ? listing.media[0].url : 'assets/images/default-avatar.svg'"
           [alt]="listing.title"
@@ -197,37 +197,37 @@
       </div>
 
       <!-- Listing Details with Better Separation -->
-      <div class="p-3 flex-grow flex flex-col">
+      <div class="p-4 flex-grow flex flex-col">
         <!-- Title and Price Section -->
-        <div class="pb-2 border-b border-gray-100">
-          <h3 class="text-sm sm:text-base font-semibold text-gray-900 line-clamp-1">{{ listing.title }}</h3>
-          <p class="text-base font-bold text-blue-600 mt-0.5">₱{{ listing.price | number:'1.0-0' }}</p>
+        <div class="pb-3 border-b border-gray-100 dark:border-gray-700">
+          <h3 class="text-base font-semibold text-gray-900 dark:text-white line-clamp-2 mb-2 leading-tight">{{ listing.title }}</h3>
+          <p class="text-lg font-bold text-indigo-600 dark:text-indigo-400">₱{{ listing.price | number:'1.0-0' }}</p>
         </div>
         
-        <!-- Responsive Metadata Grid with Visual Separation -->
-        <div class="grid grid-cols-2 gap-2 mt-2">
-          <!-- Category -->
-          <div class="flex items-center text-[11px] sm:text-xs text-gray-500 bg-gray-50 rounded p-1">
-            <span class="material-symbols-rounded text-[11px] sm:text-xs mr-1">sell</span>
-            <span class="truncate">{{ listing.category | titlecase }}</span>
+        <!-- Improved Metadata with Better Spacing -->
+        <div class="space-y-2 mt-3">
+          <!-- Category and Condition Row -->
+          <div class="flex items-center justify-between text-sm text-gray-600 dark:text-gray-300">
+            <div class="flex items-center">
+              <span class="material-symbols-rounded text-sm mr-1 text-gray-500 dark:text-gray-400">sell</span>
+              <span class="font-medium">{{ listing.category | titlecase }}</span>
+            </div>
+            <div class="flex items-center">
+              <span class="material-symbols-rounded text-sm mr-1 text-gray-500 dark:text-gray-400">inventory_2</span>
+              <span>{{ listing.condition | titlecase }}</span>
+            </div>
           </div>
           
-          <!-- Condition -->
-          <div class="flex items-center text-[11px] sm:text-xs text-gray-500 bg-gray-50 rounded p-1">
-            <span class="material-symbols-rounded text-[11px] sm:text-xs mr-1">inventory_2</span>
-            <span class="truncate">{{ listing.condition | titlecase }}</span>
+          <!-- Location Row -->
+          <div class="flex items-center text-sm text-gray-600 dark:text-gray-300">
+            <span class="material-symbols-rounded text-sm mr-2 text-gray-500 dark:text-gray-400">location_on</span>
+            <span class="truncate">{{ listing.location || 'Location not specified' }}</span>
           </div>
           
-          <!-- Location -->
-          <div class="flex items-center text-[11px] sm:text-xs text-gray-500 bg-gray-50 rounded p-1">
-            <span class="material-symbols-rounded text-[11px] sm:text-xs mr-1">location_on</span>
-            <span class="truncate">{{ listing.location || 'Unknown' }}</span>
-          </div>
-          
-          <!-- Time -->
-          <div class="flex items-center text-[11px] sm:text-xs text-gray-500 bg-gray-50 rounded p-1">
-            <span class="material-symbols-rounded text-[11px] sm:text-xs mr-1">schedule</span>
-            <span class="truncate">{{ listing.createdAt | timeAgo }}</span>
+          <!-- Time Row -->
+          <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
+            <span class="material-symbols-rounded text-sm mr-2">schedule</span>
+            <span>{{ listing.createdAt | timeAgo }}</span>
           </div>
         </div>
       </div>
@@ -235,12 +235,12 @@
   </div>
 
   <!-- Empty State -->
-  <div *ngIf="!loading && !error && listings.length === 0" class="text-center py-8 bg-gray-50 rounded-lg">
-    <span class="material-symbols-rounded text-gray-400 text-4xl mb-2">inventory_2</span>
-    <p class="text-gray-600" *ngIf="viewMode === 'all'">No listings found matching your criteria.</p>
+  <div *ngIf="!loading && !error && listings.length === 0" class="text-center py-8 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+    <span class="material-symbols-rounded text-gray-400 dark:text-gray-500 text-4xl mb-2">inventory_2</span>
+    <p class="text-gray-600 dark:text-gray-300" *ngIf="viewMode === 'all'">No listings found matching your criteria.</p>
     <div *ngIf="viewMode === 'my'">
-      <p class="text-gray-600">You haven't created any listings yet.</p>
-      <button (click)="createListing()" class="mt-3 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+      <p class="text-gray-600 dark:text-gray-300">You haven't created any listings yet.</p>
+      <button (click)="createListing()" class="mt-3 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
         <span class="material-symbols-rounded mr-1">add</span>
         Create Your First Listing
       </button>
