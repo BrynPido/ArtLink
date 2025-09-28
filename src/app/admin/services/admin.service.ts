@@ -82,8 +82,10 @@ export class AdminService {
     );
   }
 
-  deleteUser(userId: number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}admin/users/${userId}`).pipe(
+  deleteUser(userId: number, reason: string = 'User deleted by admin'): Observable<any> {
+    return this.http.delete(`${this.apiUrl}admin/users/${userId}`, { 
+      body: { reason } 
+    }).pipe(
       catchError(this.handleError)
     );
   }
@@ -177,8 +179,10 @@ export class AdminService {
     );
   }
 
-  deleteMessage(messageId: number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}admin/messages/${messageId}`).pipe(
+  deleteMessage(messageId: number, reason: string = 'Message deleted by admin'): Observable<any> {
+    return this.http.delete(`${this.apiUrl}admin/messages/${messageId}`, { 
+      body: { reason } 
+    }).pipe(
       catchError(this.handleError)
     );
   }
@@ -270,6 +274,58 @@ export class AdminService {
       url += `&type=${type}`;
     }
     return this.http.get(url).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // === SOFT DELETE FUNCTIONALITY ===
+
+  // Restore deleted record
+  restoreRecord(table: string, id: number, reason?: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}admin/${table}/${id}/restore`, { reason }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // Get deleted records for a table
+  getDeletedRecords(table: string, page: number = 1, limit: number = 20): Observable<any> {
+    return this.http.get(`${this.apiUrl}admin/${table}/deleted?page=${page}&limit=${limit}`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // Permanently delete a record (bypass soft delete)
+  permanentlyDeleteRecord(table: string, id: number, reason: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}admin/${table}/${id}/permanent`, { 
+      body: { reason, confirmPermanent: true } 
+    }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // Get admin action logs
+  getAdminActionLogs(page: number = 1, limit: number = 50, table?: string, action?: string): Observable<any> {
+    let url = `${this.apiUrl}admin/actions/logs?page=${page}&limit=${limit}`;
+    if (table) url += `&table=${table}`;
+    if (action) url += `&action=${action}`;
+    
+    return this.http.get(url).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // === ARCHIVE CLEANUP FUNCTIONALITY ===
+
+  // Get archive cleanup statistics
+  getArchiveStats(): Observable<any> {
+    return this.http.get(`${this.apiUrl}admin/archive/stats`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // Trigger manual archive cleanup
+  triggerManualCleanup(reason?: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}admin/archive/cleanup`, { reason }).pipe(
       catchError(this.handleError)
     );
   }

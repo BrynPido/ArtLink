@@ -64,6 +64,12 @@ export class AdminLayoutComponent implements OnInit {
       active: false
     },
     {
+      label: 'Archive Management',
+      icon: 'archive',
+      route: '/admin/archive',
+      active: false
+    },
+    {
       label: 'Settings',
       icon: 'settings',
       route: '/admin/settings',

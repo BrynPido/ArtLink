@@ -1,0 +1,205 @@
+<div class="p-6 space-y-6">
+  <div class="flex justify-between items-center">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Archive Management</h1>
+      <p class="text-gray-600 dark:text-gray-400 mt-2">Manage soft-deleted records and archive cleanup</p>
+    </div>
+    <div class="flex space-x-3">
+      <button
+        (click)="triggerManualCleanup()"
+        [disabled]="isCleanupRunning"
+        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+        </svg>
+        {{ isCleanupRunning ? 'Running...' : 'Manual Cleanup' }}
+      </button>
+      <button
+        (click)="refreshStats()"
+        class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+        </svg>
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- Archive Statistics -->
+  <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6 border border-gray-200 dark:border-gray-700" *ngIf="archiveStats">
+    <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Archive Statistics</h2>
+    
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+        <div class="text-sm font-medium text-blue-600 dark:text-blue-400">Total Deleted Records</div>
+        <div class="text-2xl font-bold text-blue-900 dark:text-blue-100">{{ getTotalDeleted() }}</div>
+      </div>
+      <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+        <div class="text-sm font-medium text-green-600 dark:text-green-400">Within Retention (60d)</div>
+        <div class="text-2xl font-bold text-green-900 dark:text-green-100">{{ getTotalWithinRetention() }}</div>
+      </div>
+      <div class="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
+        <div class="text-sm font-medium text-red-600 dark:text-red-400">Ready for Cleanup</div>
+        <div class="text-2xl font-bold text-red-900 dark:text-red-100">{{ getTotalReadyForCleanup() }}</div>
+      </div>
+      <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
+        <div class="text-sm font-medium text-purple-600 dark:text-purple-400">Cleanup Running</div>
+        <div class="text-2xl font-bold text-purple-900 dark:text-purple-100">{{ archiveStats.isRunning ? 'Yes' : 'No' }}</div>
+      </div>
+    </div>
+
+    <!-- Cleanup Schedule Info -->
+    <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 mb-6">
+      <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-2">Cleanup Schedule</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 dark:text-gray-400">
+        <div>
+          <span class="font-medium">Last Cleanup:</span>
+          {{ archiveStats.lastCleanupTime ? (archiveStats.lastCleanupTime | date:'medium') : 'Never' }}
+        </div>
+        <div>
+          <span class="font-medium">Next Scheduled:</span>
+          {{ archiveStats.nextScheduledCleanup | date:'medium' }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Per-Table Statistics -->
+    <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 dark:ring-gray-700 md:rounded-lg">
+      <table class="min-w-full divide-y divide-gray-300 dark:divide-gray-600">
+        <thead class="bg-gray-50 dark:bg-gray-700">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wide">Table</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wide">Total Deleted</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wide">Within Retention</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wide">Ready for Cleanup</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wide">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
+          <tr *ngFor="let table of getTableStats()">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white capitalize">{{ table.name }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{{ table.stats.totalDeleted }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
+                {{ table.stats.withinRetention }}
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" 
+                    [class]="table.stats.readyForCleanup > 0 ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'">
+                {{ table.stats.readyForCleanup }}
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+              <button
+                (click)="viewDeletedRecords(table.name)"
+                class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 mr-3">
+                View Deleted
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Deleted Records View -->
+  <div class="bg-white dark:bg-gray-800 shadow rounded-lg border border-gray-200 dark:border-gray-700" *ngIf="selectedTable && deletedRecords">
+    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-600">
+      <div class="flex justify-between items-center">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+          Deleted {{ selectedTable | titlecase }} Records
+        </h3>
+        <button
+          (click)="closeDeletedRecordsView()"
+          class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="p-6">
+      <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 dark:ring-gray-700 md:rounded-lg">
+        <table class="min-w-full divide-y divide-gray-300 dark:divide-gray-600">
+          <thead class="bg-gray-50 dark:bg-gray-700">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wide">ID</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wide">Name/Title</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wide">Deleted At</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wide">Days Ago</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wide">Status</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wide">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
+            <tr *ngFor="let record of deletedRecords.records">
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{{ record.id }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                {{ record.name || record.title || record.username || record.content?.substring(0, 50) || 'N/A' }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                {{ record.deletedAt | date:'short' }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                {{ getDaysSinceDeleted(record.daysSinceDeleted) }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                      [class]="!record.cannotRestore ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'">
+                  {{ record.cannotRestore ? 'Expired' : 'Can Restore' }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <button
+                  *ngIf="!record.cannotRestore"
+                  (click)="restoreRecord(record.id)"
+                  class="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300 mr-3">
+                  Restore
+                </button>
+                <button
+                  (click)="permanentlyDeleteRecord(record.id)"
+                  class="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300">
+                  Delete Permanently
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="flex items-center justify-between mt-6" *ngIf="deletedRecords.pagination.pages > 1">
+        <div class="text-sm text-gray-700 dark:text-gray-300">
+          Showing {{ getPaginationStart() }} to 
+          {{ getPaginationEnd() }} 
+          of {{ deletedRecords.pagination.total }} results
+        </div>
+        <div class="flex space-x-1">
+          <button
+            (click)="loadDeletedRecords(deletedRecords.pagination.page - 1)"
+            [disabled]="deletedRecords.pagination.page === 1"
+            class="px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
+            Previous
+          </button>
+          <button
+            (click)="loadDeletedRecords(deletedRecords.pagination.page + 1)"
+            [disabled]="deletedRecords.pagination.page === deletedRecords.pagination.pages"
+            class="px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
+            Next
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Loading overlay -->
+<div *ngIf="isLoading" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-white dark:bg-gray-800 rounded-lg p-6 flex items-center space-x-4">
+    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+    <div class="text-gray-900 dark:text-white">{{ loadingMessage || 'Loading...' }}</div>
+  </div>
+</div>

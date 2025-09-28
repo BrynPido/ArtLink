@@ -85,6 +85,32 @@ async function queryOne(text, params = []) {
   return rows[0] || null;
 }
 
+// Helper function to execute queries and return full result object (including rowCount)
+async function queryWithResult(text, params = [], retries = 3) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const result = await pool.query(text, params);
+      return result; // Return full result object, not just rows
+    } catch (error) {
+      console.error(`Database query error (attempt ${attempt}/${retries}):`, error.message);
+      
+      // Check if it's a connection error and we have retries left
+      if (attempt < retries && (
+        error.message.includes('Connection terminated') ||
+        error.message.includes('Connection closed') ||
+        error.message.includes('ECONNRESET') ||
+        error.code === 'ECONNRESET' ||
+        error.code === '57P01'
+      )) {
+        console.log('Connection error detected, retrying...');
+        continue;
+      }
+      
+      throw error;
+    }
+  }
+}
+
 // Helper function to execute transactions
 async function transaction(callback) {
   const client = await pool.connect();
@@ -106,5 +132,6 @@ module.exports = {
   pool,
   query,
   queryOne,
+  queryWithResult,
   transaction
 };

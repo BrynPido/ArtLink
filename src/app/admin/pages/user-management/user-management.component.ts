@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService, UserManagement } from '../../services/admin.service';
 import { SweetAlertService } from '../../services/sweetalert.service';
+import { getDeletionReasons } from '../../constants/deletion-reasons';
 
 @Component({
   selector: 'app-user-management',
@@ -139,27 +140,35 @@ export class UserManagementComponent implements OnInit {
     });
   }
 
-  deleteUser(userId: number) {
-    this.sweetAlert.confirmDelete('user', 'This action cannot be undone and will permanently remove the user and all their data.')
-      .then((result) => {
-        if (result.isConfirmed) {
-          this.actionLoading = true;
-          this.adminService.deleteUser(userId).subscribe({
-            next: (response: any) => {
-              if (response.status === 'success') {
-                this.sweetAlert.success('Deleted!', 'The user has been deleted successfully.');
-                this.loadUsers();
-              }
-              this.actionLoading = false;
-            },
-            error: (error: any) => {
-              console.error('Error deleting user:', error);
-              this.sweetAlert.error('Error', 'Failed to delete the user. Please try again.');
-              this.actionLoading = false;
+  async deleteUser(userId: number) {
+    const confirmResult = await this.sweetAlert.confirmDelete('user', 'This user will be soft deleted and can be restored within 60 days. After 60 days, the user will be permanently removed.');
+    
+    if (confirmResult.isConfirmed) {
+      // Show dropdown with predefined reasons
+      const reasonResult = await this.sweetAlert.selectWithOther(
+        'Select Deletion Reason',
+        getDeletionReasons('USER'),
+        true
+      );
+      
+      if (reasonResult.isConfirmed && reasonResult.value) {
+        this.actionLoading = true;
+        this.adminService.deleteUser(userId, reasonResult.value).subscribe({
+          next: (response: any) => {
+            if (response.status === 'success') {
+              this.sweetAlert.success('Deleted!', 'The user has been soft deleted successfully.');
+              this.loadUsers();
             }
-          });
-        }
-      });
+            this.actionLoading = false;
+          },
+          error: (error: any) => {
+            console.error('Error deleting user:', error);
+            this.sweetAlert.error('Error', 'Failed to delete the user. Please try again.');
+            this.actionLoading = false;
+          }
+        });
+      }
+    }
   }
 
   bulkSuspend() {

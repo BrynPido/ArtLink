@@ -131,6 +131,50 @@ export class SweetAlertService {
     Swal.close();
   }
 
+  // Dropdown selection with "Other" option
+  async selectWithOther(title: string, options: string[], allowOther: boolean = true): Promise<any> {
+    const selectOptions: { [key: string]: string } = {};
+    
+    // Add predefined options
+    options.forEach((option, index) => {
+      selectOptions[option] = option;
+    });
+    
+    // Add "Other" option if allowed
+    if (allowOther) {
+      selectOptions['other'] = 'Other (specify below)';
+    }
+
+    const result = await Swal.fire({
+      title: title,
+      input: 'select',
+      inputOptions: selectOptions,
+      inputPlaceholder: 'Select a reason',
+      showCancelButton: true,
+      confirmButtonColor: '#3b82f6',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Continue',
+      cancelButtonText: 'Cancel',
+      inputValidator: (value: string) => {
+        if (!value) {
+          return 'Please select a reason!';
+        }
+        return null;
+      }
+    });
+
+    // If user selected "other", show input dialog
+    if (result.isConfirmed && result.value === 'other' && allowOther) {
+      return await this.input(
+        'Custom Reason',
+        'Please specify your reason:',
+        'text'
+      );
+    }
+
+    return result;
+  }
+
   // Toast notification (small popup)
   toast(icon: 'success' | 'error' | 'warning' | 'info' | 'question', title: string, position: 'top' | 'top-start' | 'top-end' | 'center' | 'center-start' | 'center-end' | 'bottom' | 'bottom-start' | 'bottom-end' = 'top-end'): void {
     const Toast = Swal.mixin({

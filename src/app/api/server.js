@@ -177,6 +177,10 @@ server.listen(PORT, () => {
   console.log(`🚀 ArtLink API Server running on port ${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
   console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+  
+  // Initialize Archive Cleanup Service
+  const archiveCleanupService = require('./services/archive-cleanup.service');
+  archiveCleanupService.start();
 });
 
 // WebSocket connection handling

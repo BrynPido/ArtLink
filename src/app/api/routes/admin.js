@@ -1,6 +1,7 @@
 const express = require('express');
 const { query, queryOne } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
+const softDeleteService = require('../services/soft-delete.service');
 
 const router = express.Router();
 
@@ -152,11 +153,11 @@ router.get('/users', async (req, res) => {
     const search = req.query.search || '';
     const offset = (page - 1) * limit;
     
-    let whereClause = '';
+    let whereClause = 'WHERE u."deletedAt" IS NULL'; // Only show non-deleted users
     let params = [];
     
     if (search) {
-      whereClause = 'WHERE u.name ILIKE $1 OR u.username ILIKE $2 OR u.email ILIKE $3';
+      whereClause = 'WHERE u."deletedAt" IS NULL AND (u.name ILIKE $1 OR u.username ILIKE $2 OR u.email ILIKE $3)';
       params = [`%${search}%`, `%${search}%`, `%${search}%`];
     }
     
@@ -227,7 +228,7 @@ router.get('/users/:id', async (req, res) => {
       LEFT JOIN post po ON u.id = po."authorId" AND po.published = true
       LEFT JOIN follow f ON u.id = f."followingId"
       LEFT JOIN follow f2 ON u.id = f2."followerId"
-      WHERE u.id = $1
+      WHERE u.id = $1 AND u."deletedAt" IS NULL
       GROUP BY u.id, u.name, u.username, u.email, u."createdAt", u."updatedAt", p."profilePictureUrl", p.bio
     `, [userId]);
     
@@ -264,7 +265,7 @@ router.get('/posts', async (req, res) => {
     const filter = req.query.filter || 'all';
     const offset = (page - 1) * limit;
     
-    let whereClause = 'WHERE 1=1';
+    let whereClause = 'WHERE p."deletedAt" IS NULL'; // Only show non-deleted posts
     if (filter === 'published') {
       whereClause += ' AND p.published = true';
     } else if (filter === 'hidden') {
@@ -320,40 +321,31 @@ router.get('/posts', async (req, res) => {
   }
 });
 
-// Delete post
+// Delete post (Soft Delete)
 router.delete('/posts/:id', async (req, res) => {
   try {
     const postId = req.params.id;
     const { reason } = req.body;
+    const adminId = req.user.id;
     
-    // Check if post exists
-    const post = await queryOne('SELECT * FROM post WHERE id = $1', [postId]);
+    // Check if post exists and is not already deleted
+    const post = await queryOne('SELECT * FROM post WHERE id = $1 AND "deletedAt" IS NULL', [postId]);
     if (!post) {
       return res.status(404).json({
         status: 'error',
-        message: 'Post not found'
+        message: 'Post not found or already deleted'
       });
     }
     
-    // Delete related data first (due to foreign key constraints)
-    await query('DELETE FROM "like" WHERE "postId" = $1', [postId]);
-    await query('DELETE FROM comment WHERE "postId" = $1', [postId]);
-    await query('DELETE FROM save WHERE "postId" = $1', [postId]);
-    await query('DELETE FROM media WHERE "postId" = $1', [postId]);
-    await query('DELETE FROM notification WHERE "postId" = $1', [postId]);
-    
-    // Delete the post
-    await query('DELETE FROM post WHERE id = $1', [postId]);
-    
-    // Log admin action (you might want to create an admin_actions table)
-    console.log(`Admin deleted post ${postId}. Reason: ${reason}`);
+    // Perform soft delete
+    await softDeleteService.softDelete('post', postId, adminId, reason);
     
     res.json({
       status: 'success',
-      message: 'Post deleted successfully'
+      message: 'Post soft deleted successfully'
     });
   } catch (error) {
-    console.error('Error deleting post:', error);
+    console.error('Error soft deleting post:', error);
     res.status(500).json({
       status: 'error',
       message: 'Error deleting post'
@@ -568,19 +560,27 @@ router.get('/listings', async (req, res) => {
 router.delete('/listings/:id', async (req, res) => {
   try {
     const listingId = req.params.id;
+    const { reason } = req.body;
+    const adminId = req.user.id;
     
-    // Delete listing media first
-    await query('DELETE FROM media WHERE "listingId" = $1', [listingId]);
+    // Check if listing exists and is not already deleted
+    const listing = await queryOne('SELECT * FROM listing WHERE id = $1 AND "deletedAt" IS NULL', [listingId]);
+    if (!listing) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Listing not found or already deleted'
+      });
+    }
     
-    // Delete the listing
-    await query('DELETE FROM listing WHERE id = $1', [listingId]);
+    // Perform soft delete
+    await softDeleteService.softDelete('listing', listingId, adminId, reason);
     
     res.json({
       status: 'success',
-      message: 'Listing deleted successfully'
+      message: 'Listing soft deleted successfully'
     });
   } catch (error) {
-    console.error('Error deleting listing:', error);
+    console.error('Error soft deleting listing:', error);
     res.status(500).json({
       status: 'error',
       message: 'Error deleting listing'
@@ -631,19 +631,31 @@ router.get('/messages', async (req, res) => {
   }
 });
 
-// Delete message
+// Delete message (Soft Delete)
 router.delete('/messages/:id', async (req, res) => {
   try {
     const messageId = req.params.id;
+    const { reason } = req.body;
+    const adminId = req.user.id;
     
-    await query('DELETE FROM message WHERE id = $1', [messageId]);
+    // Check if message exists and is not already deleted
+    const message = await queryOne('SELECT * FROM message WHERE id = $1 AND "deletedAt" IS NULL', [messageId]);
+    if (!message) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Message not found or already deleted'
+      });
+    }
+    
+    // Perform soft delete
+    await softDeleteService.softDelete('message', messageId, adminId, reason);
     
     res.json({
       status: 'success',
-      message: 'Message deleted successfully'
+      message: 'Message soft deleted successfully'
     });
   } catch (error) {
-    console.error('Error deleting message:', error);
+    console.error('Error soft deleting message:', error);
     res.status(500).json({
       status: 'error',
       message: 'Error deleting message'
@@ -986,6 +998,240 @@ router.get('/reports/stats', async (req, res) => {
     res.status(500).json({
       status: 'error',
       message: 'Error fetching report statistics'
+    });
+  }
+});
+
+// === SOFT DELETE MANAGEMENT ENDPOINTS ===
+
+// Delete user (Soft Delete)
+router.delete('/users/:id', async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const { reason } = req.body;
+    const adminId = req.user.id;
+    
+    // Prevent deleting admin user
+    if (userId === '1' || userId === adminId.toString()) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Cannot delete admin user or yourself'
+      });
+    }
+    
+    // Check if user exists and is not already deleted
+    const user = await queryOne('SELECT * FROM "user" WHERE id = $1 AND "deletedAt" IS NULL', [userId]);
+    if (!user) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found or already deleted'
+      });
+    }
+    
+    // Perform soft delete
+    await softDeleteService.softDelete('user', userId, adminId, reason);
+    
+    res.json({
+      status: 'success',
+      message: 'User soft deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error soft deleting user:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Error deleting user'
+    });
+  }
+});
+
+// Restore deleted record
+router.post('/:table/:id/restore', async (req, res) => {
+  try {
+    const { table, id } = req.params;
+    const { reason } = req.body;
+    const adminId = req.user.id;
+    
+    console.log(`Restore request - Table: ${table}, ID: ${id}, Admin: ${adminId}, Reason: ${reason}`);
+    
+    // Validate table name for security
+    const allowedTables = ['user', 'post', 'listing', 'comment', 'message', 'media', 'profile'];
+    if (!allowedTables.includes(table)) {
+      console.log(`Invalid table name: ${table}`);
+      return res.status(400).json({
+        status: 'error',
+        message: 'Invalid table name'
+      });
+    }
+    
+    // Perform restore
+    const success = await softDeleteService.restore(table, id, adminId, reason);
+    console.log(`Restore operation result: ${success}`);
+    
+    if (success) {
+      const response = {
+        status: 'success',
+        message: `${table} record restored successfully`
+      };
+      console.log('Sending success response:', response);
+      res.json(response);
+    } else {
+      const errorResponse = {
+        status: 'error',
+        message: 'Failed to restore record'
+      };
+      console.log('Sending error response:', errorResponse);
+      res.status(400).json(errorResponse);
+    }
+  } catch (error) {
+    console.error('Error restoring record:', error);
+    const errorResponse = {
+      status: 'error',
+      message: error.message || 'Error restoring record'
+    };
+    console.log('Sending catch error response:', errorResponse);
+    res.status(500).json(errorResponse);
+  }
+});
+
+// Get deleted records for a table
+router.get('/:table/deleted', async (req, res) => {
+  try {
+    const { table } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    
+    // Validate table name for security
+    const allowedTables = ['user', 'post', 'listing', 'comment', 'message', 'media', 'profile'];
+    if (!allowedTables.includes(table)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Invalid table name'
+      });
+    }
+    
+    const result = await softDeleteService.getDeletedRecords(table, page, limit);
+    
+    res.json({
+      status: 'success',
+      payload: result
+    });
+  } catch (error) {
+    console.error('Error fetching deleted records:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Error fetching deleted records'
+    });
+  }
+});
+
+// Permanently delete a record (bypass soft delete)
+router.delete('/:table/:id/permanent', async (req, res) => {
+  try {
+    const { table, id } = req.params;
+    const { reason, confirmPermanent } = req.body;
+    const adminId = req.user.id;
+    
+    // Require explicit confirmation for permanent deletion
+    if (!confirmPermanent) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Permanent deletion requires explicit confirmation'
+      });
+    }
+    
+    // Validate table name for security
+    const allowedTables = ['user', 'post', 'listing', 'comment', 'message', 'media', 'profile'];
+    if (!allowedTables.includes(table)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Invalid table name'
+      });
+    }
+    
+    // Perform permanent delete
+    const success = await softDeleteService.permanentDelete(table, id, adminId, reason);
+    
+    if (success) {
+      res.json({
+        status: 'success',
+        message: `${table} record permanently deleted`
+      });
+    } else {
+      res.status(400).json({
+        status: 'error',
+        message: 'Failed to permanently delete record'
+      });
+    }
+  } catch (error) {
+    console.error('Error permanently deleting record:', error);
+    res.status(500).json({
+      status: 'error',
+      message: error.message || 'Error permanently deleting record'
+    });
+  }
+});
+
+// Get admin action logs
+router.get('/actions/logs', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const tableFilter = req.query.table;
+    const actionFilter = req.query.action;
+    
+    const logs = await softDeleteService.getAdminActionLogs(page, limit, tableFilter, actionFilter);
+    
+    res.json({
+      status: 'success',
+      payload: logs
+    });
+  } catch (error) {
+    console.error('Error fetching admin action logs:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Error fetching admin action logs'
+    });
+  }
+});
+
+// Archive cleanup endpoints
+const archiveCleanupService = require('../services/archive-cleanup.service');
+
+// Get cleanup statistics
+router.get('/archive/stats', async (req, res) => {
+  try {
+    const stats = await archiveCleanupService.getCleanupStats();
+    res.json({
+      status: 'success',
+      payload: stats
+    });
+  } catch (error) {
+    console.error('Error fetching cleanup stats:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Error fetching cleanup statistics'
+    });
+  }
+});
+
+// Trigger manual cleanup
+router.post('/archive/cleanup', async (req, res) => {
+  try {
+    const adminId = req.user.id;
+    const { reason } = req.body;
+    
+    // Start manual cleanup (async)
+    archiveCleanupService.manualCleanup(adminId, reason || 'Manual cleanup triggered by admin');
+    
+    res.json({
+      status: 'success',
+      message: 'Manual cleanup process started'
+    });
+  } catch (error) {
+    console.error('Error starting manual cleanup:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Error starting cleanup process'
     });
   }
 });

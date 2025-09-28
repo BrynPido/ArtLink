@@ -42,6 +42,10 @@ export const adminRoutes: Routes = [
         loadComponent: () => import('./pages/report-management/report-management.component').then(m => m.ReportManagementComponent) 
       },
       { 
+        path: 'archive', 
+        loadComponent: () => import('./pages/archive-management/archive-management.component').then(m => m.ArchiveManagementComponent) 
+      },
+      { 
         path: 'settings', 
         loadComponent: () => import('./pages/settings/settings.component').then(m => m.SettingsComponent) 
       }

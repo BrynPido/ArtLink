@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AdminService } from '../../services/admin.service';
 import { SweetAlertService } from '../../services/sweetalert.service';
+import { getDeletionReasons } from '../../constants/deletion-reasons';
 
 interface Post {
   id: number;
@@ -183,63 +184,69 @@ export class PostManagementComponent implements OnInit, OnDestroy {
     });
   }
 
-  deletePost(postId: number) {
-    this.sweetAlert.input('Delete Post', 'Please provide a reason for deletion:', 'textarea')
-      .then((reasonResult) => {
-        if (reasonResult.isConfirmed && reasonResult.value) {
-          this.sweetAlert.confirmDelete('post', 'This action cannot be undone and will permanently remove the post and all its data.')
-            .then((deleteResult) => {
-              if (deleteResult.isConfirmed) {
-                this.actionLoading = true;
-                this.adminService.deletePost(postId, reasonResult.value).subscribe({
-                  next: (response: any) => {
-                    if (response.status === 'success') {
-                      this.sweetAlert.success('Deleted!', 'The post has been deleted successfully.');
-                      this.loadPosts();
-                    }
-                    this.actionLoading = false;
-                  },
-                  error: (error: any) => {
-                    console.error('Error deleting post:', error);
-                    this.sweetAlert.error('Error', 'Failed to delete the post. Please try again.');
-                    this.actionLoading = false;
-                  }
-                });
-              }
-            });
-        }
-      });
+  async deletePost(postId: number) {
+    const confirmResult = await this.sweetAlert.confirmDelete('post', 'This post will be soft deleted and can be restored within 60 days. After 60 days, it will be permanently removed.');
+    
+    if (confirmResult.isConfirmed) {
+      // Show dropdown with predefined reasons
+      const reasonResult = await this.sweetAlert.selectWithOther(
+        'Select Deletion Reason',
+        getDeletionReasons('POST'),
+        true
+      );
+      
+      if (reasonResult.isConfirmed && reasonResult.value) {
+        this.actionLoading = true;
+        this.adminService.deletePost(postId, reasonResult.value).subscribe({
+          next: (response: any) => {
+            if (response.status === 'success') {
+              this.sweetAlert.success('Deleted!', 'The post has been soft deleted successfully.');
+              this.loadPosts();
+            }
+            this.actionLoading = false;
+          },
+          error: (error: any) => {
+            console.error('Error deleting post:', error);
+            this.sweetAlert.error('Error', 'Failed to delete the post. Please try again.');
+            this.actionLoading = false;
+          }
+        });
+      }
+    }
   }
 
-  bulkDelete() {
+  async bulkDelete() {
     if (this.selectedPosts.length === 0) return;
     
-    this.sweetAlert.input('Bulk Delete Posts', 'Please provide a reason for bulk deletion:', 'textarea')
-      .then((reasonResult) => {
-        if (reasonResult.isConfirmed && reasonResult.value) {
-          this.sweetAlert.confirmBulkDelete(this.selectedPosts.length, 'posts')
-            .then((deleteResult) => {
-              if (deleteResult.isConfirmed) {
-                this.actionLoading = true;
-                this.adminService.bulkDeletePosts(this.selectedPosts, reasonResult.value).subscribe({
-                  next: (response: any) => {
-                    if (response.status === 'success') {
-                      this.sweetAlert.success('Deleted!', `${this.selectedPosts.length} posts have been deleted successfully.`);
-                      this.selectedPosts = [];
-                      this.loadPosts();
-                    }
-                    this.actionLoading = false;
-                  },
-                  error: (error: any) => {
-                    console.error('Error bulk deleting posts:', error);
-                    this.sweetAlert.error('Error', 'Failed to delete the posts. Please try again.');
-                    this.actionLoading = false;
-                  }
-                });
-              }
-            });
-        }
-      });
+    const confirmResult = await this.sweetAlert.confirmBulkDelete(this.selectedPosts.length, 'posts');
+    
+    if (confirmResult.isConfirmed) {
+      // Show dropdown with predefined reasons
+      const reasonResult = await this.sweetAlert.selectWithOther(
+        'Select Bulk Deletion Reason',
+        getDeletionReasons('POST'),
+        true
+      );
+      
+      if (reasonResult.isConfirmed && reasonResult.value) {
+        this.actionLoading = true;
+        this.adminService.bulkDeletePosts(this.selectedPosts, reasonResult.value).subscribe({
+          next: (response: any) => {
+            if (response.status === 'success') {
+              this.sweetAlert.success('Deleted!', `${this.selectedPosts.length} posts have been soft deleted successfully.`);
+              this.selectedPosts = [];
+              this.loadPosts();
+            }
+            this.actionLoading = false;
+          },
+          error: (error: any) => {
+            console.error('Error bulk deleting posts:', error);
+            this.sweetAlert.error('Error', 'Failed to delete the posts. Please try again.');
+            this.actionLoading = false;
+          }
+        });
+      }
+    }
   }
 
   exportPosts() {

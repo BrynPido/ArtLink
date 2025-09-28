@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../services/admin.service';
 import { SweetAlertService } from '../../services/sweetalert.service';
+import { DELETION_REASONS } from '../../constants/deletion-reasons';
 
 @Component({
   selector: 'app-listing-management',
@@ -153,7 +154,10 @@ export class ListingManagementComponent implements OnInit {
   }
 
   bulkDeleteListings() {
-    this.sweetAlert.input('Bulk Delete', 'Please provide a reason for deleting these listings:', 'textarea').then((reasonResult) => {
+    this.sweetAlert.selectWithOther(
+      'Bulk Delete Listings - Select Reason',
+      this.getDeletionReasons().LISTING
+    ).then((reasonResult) => {
       if (reasonResult.isConfirmed && reasonResult.value) {
         const deletePromises = this.selectedListings.map(id => 
           this.adminService.deleteListing(id, reasonResult.value).toPromise()
@@ -348,11 +352,14 @@ export class ListingManagementComponent implements OnInit {
   }
 
   deleteListing(listingId: number) {
-    this.sweetAlert.input('Delete Listing', 'Please provide a reason for deletion:', 'textarea').then((reasonResult) => {
+    this.sweetAlert.selectWithOther(
+      'Delete Listing - Select Reason',
+      this.getDeletionReasons().LISTING
+    ).then((reasonResult) => {
       if (reasonResult.isConfirmed && reasonResult.value) {
         this.sweetAlert.confirmDelete(
           'Delete Listing',
-          'This action cannot be undone. Please provide a reason for deletion:'
+          'This action cannot be undone.'
         ).then((result) => {
           if (result.isConfirmed) {
             this.adminService.deleteListing(listingId, reasonResult.value).subscribe({
@@ -433,5 +440,9 @@ export class ListingManagementComponent implements OnInit {
       pages.push(i);
     }
     return pages;
+  }
+
+  getDeletionReasons() {
+    return DELETION_REASONS;
   }
 }
