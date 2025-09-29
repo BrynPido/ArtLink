@@ -1,20 +1,20 @@
-<div class="relative flex flex-col w-full min-h-screen md:flex-row bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 overflow-hidden">
+<div class="auth-container relative flex flex-col w-full min-h-screen md:flex-row bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 overflow-hidden">
     <!-- Background decorative elements -->
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
         <!-- Gradient orbs -->
-        <div class="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-r from-blue-400 to-purple-600 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
-        <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-r from-pink-400 to-red-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-2000"></div>
-        <div class="absolute top-40 left-1/2 w-80 h-80 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-4000"></div>
+        <div class="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-r from-blue-400 to-purple-600 dark:from-blue-600 dark:to-purple-800 rounded-full mix-blend-multiply filter blur-xl opacity-20 dark:opacity-30 animate-pulse"></div>
+        <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-r from-pink-400 to-red-500 dark:from-pink-600 dark:to-red-700 rounded-full mix-blend-multiply filter blur-xl opacity-20 dark:opacity-30 animate-pulse animation-delay-2000"></div>
+        <div class="absolute top-40 left-1/2 w-80 h-80 bg-gradient-to-r from-yellow-400 to-orange-500 dark:from-yellow-600 dark:to-orange-700 rounded-full mix-blend-multiply filter blur-xl opacity-20 dark:opacity-30 animate-pulse animation-delay-4000"></div>
         
         <!-- Grid pattern -->
-        <div class="absolute inset-0 opacity-40" style="background-image: url('data:image/svg+xml,%3Csvg width=&quot;60&quot; height=&quot;60&quot; viewBox=&quot;0 0 60 60&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;%3E%3Cg fill=&quot;none&quot; fill-rule=&quot;evenodd&quot;%3E%3Cg fill=&quot;%239333ea&quot; fill-opacity=&quot;0.03&quot;%3E%3Ccircle cx=&quot;30&quot; cy=&quot;30&quot; r=&quot;1&quot;/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')"></div>
+        <div class="absolute inset-0 opacity-40 dark:opacity-20" style="background-image: url('data:image/svg+xml,%3Csvg width=&quot;60&quot; height=&quot;60&quot; viewBox=&quot;0 0 60 60&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;%3E%3Cg fill=&quot;none&quot; fill-rule=&quot;evenodd&quot;%3E%3Cg fill=&quot;%239333ea&quot; fill-opacity=&quot;0.03&quot;%3E%3Ccircle cx=&quot;30&quot; cy=&quot;30&quot; r=&quot;1&quot;/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')"></div>
     </div>
 
     <!-- Form Container -->
-    <div class="relative z-10 w-full md:w-1/2 flex justify-center items-center py-12 px-6 lg:px-12">
+    <div class="form-container relative z-10 w-full md:w-1/2 flex justify-center items-center py-12 px-6 lg:px-12">
         <div class="w-full max-w-md">
             <!-- Glass morphism card -->
-            <div class="backdrop-blur-md bg-white/30 border border-white/20 rounded-3xl p-8 shadow-2xl shadow-indigo-500/10">
+            <div class="glass-card backdrop-blur-md bg-white/30 dark:bg-gray-800/30 border border-white/20 dark:border-gray-700/30 rounded-3xl p-8 shadow-2xl shadow-indigo-500/10 dark:shadow-purple-500/20">
                 <router-outlet />
             </div>
         </div>
@@ -24,20 +24,20 @@
     <div class="relative w-full md:w-1/2 hidden md:flex items-center justify-center p-8">
         <div class="relative w-full h-full max-w-lg">
             <!-- Glass morphism frame for image -->
-            <div class="relative h-full rounded-3xl overflow-hidden backdrop-blur-md bg-white/10 border border-white/20 shadow-2xl">
+            <div class="relative h-full rounded-3xl overflow-hidden backdrop-blur-md bg-white/10 dark:bg-gray-800/20 border border-white/20 dark:border-gray-700/30 shadow-2xl">
                 <img 
                     src="/assets/images/landingPageImg.jpg" 
                     alt="ArtLink - Connect with Artists" 
                     class="w-full h-full object-cover"
                 />
                 <!-- Overlay gradient -->
-                <div class="absolute inset-0 bg-gradient-to-t from-indigo-900/30 via-transparent to-transparent"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-indigo-900/30 dark:from-gray-900/50 via-transparent to-transparent"></div>
                 
                 <!-- Floating text overlay -->
                 <div class="absolute bottom-8 left-8 right-8">
-                    <div class="backdrop-blur-md bg-white/10 border border-white/20 rounded-2xl p-6">
+                    <div class="backdrop-blur-md bg-white/10 dark:bg-gray-800/30 border border-white/20 dark:border-gray-700/30 rounded-2xl p-6">
                         <h3 class="text-white text-xl font-bold mb-2">Connect with Creative Minds</h3>
-                        <p class="text-white/80 text-sm">Join a vibrant community of artists, designers, and creators sharing their passion and work.</p>
+                        <p class="text-white/80 dark:text-gray-200/80 text-sm">Join a vibrant community of artists, designers, and creators sharing their passion and work.</p>
                     </div>
                 </div>
             </div>

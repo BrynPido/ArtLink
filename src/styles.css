@@ -232,4 +232,34 @@ body {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* Auth Layout Specific Enhancements */
+.auth-layout {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.auth-layout .glass-card {
+  max-height: calc(100vh - 6rem);
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+.auth-layout .glass-card::-webkit-scrollbar {
+  width: 0; /* Chrome, Safari, Opera */
+  background: transparent;
+}
+
+/* Prevent unwanted scrollbars on auth components */
+.verify-email-component {
+  max-height: 100%;
+  overflow: visible;
+}
+
+/* Smooth scroll behavior for modal content */
+.modal-content {
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+}
   

@@ -174,10 +174,23 @@ export class RegisterComponent {
 
     this.dataService.register(formData).subscribe({
       next: (response) => {
-        console.log('Registration Successful', response);
-        this.registerForm.reset();
-        this.router.navigate(['/login']);
-        this.toastService.showToast('Registration successful! Please sign in.', 'success');
+        console.log('Registration Initiated', response);
+        this.isSubmitting = false;
+        
+        if (response.status === 'success' && response.payload.requiresVerification) {
+          // Registration successful, redirect to OTP verification
+          this.toastService.showToast('Registration initiated! Please check your email for verification code.', 'success');
+          this.router.navigate(['/verify-email'], { 
+            queryParams: { 
+              email: response.payload.email 
+            } 
+          });
+        } else {
+          // Old flow fallback (shouldn't happen with OTP enabled)
+          this.registerForm.reset();
+          this.router.navigate(['/login']);
+          this.toastService.showToast('Registration successful! Please sign in.', 'success');
+        }
         this.isSubmitting = false;
       },
       error: (error) => {

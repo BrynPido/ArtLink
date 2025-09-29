@@ -13,6 +13,25 @@
   -webkit-backdrop-filter: blur(12px);
 }
 
+/* Ensure proper container sizing */
+.auth-container {
+  max-height: 100vh;
+  overflow: hidden;
+}
+
+.form-container {
+  max-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+.form-container::-webkit-scrollbar {
+  width: 0; /* Chrome, Safari, Opera */
+  background: transparent;
+}
+
 /* Smooth transitions for all elements */
 * {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -21,6 +40,8 @@
 /* Glass morphism hover effects */
 .glass-card {
   transition: all 0.3s ease;
+  max-height: calc(100vh - 4rem);
+  overflow: hidden;
 }
 
 .glass-card:hover {

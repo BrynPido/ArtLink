@@ -11,6 +11,7 @@ export const routes: Routes = [
       { path: '', redirectTo: 'login', pathMatch: 'full' },
       { path: 'login', loadComponent: () => import('./_auth/login/login.component').then(m => m.LoginComponent) },
       { path: 'register', loadComponent: () => import('./_auth/register/register.component').then(m => m.RegisterComponent) },
+      { path: 'verify-email', loadComponent: () => import('./_auth/verify-email/verify-email.component').then(m => m.VerifyEmailComponent) },
     ],
   },
   {

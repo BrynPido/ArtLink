@@ -68,6 +68,35 @@ export class DataService {
     );
   }
 
+  // OTP verification methods
+  verifyOTP(email: string, otpCode: string, purpose: string = 'registration'): Observable<any> {
+    const data = { email, otpCode, purpose };
+    return this.http.post(`${this.apiUrl}auth/verify-otp`, data).pipe(
+      tap((response: any) => {
+        // If verification successful and includes token, store it
+        if (response && response.payload && response.payload.token) {
+          const { token, user } = response.payload;
+          localStorage.setItem('token', token);
+          if (user) {
+            const normalizedUser = {
+              ...user,
+              profileImage: user.profilePictureUrl || user.profileImage
+            };
+            this.updateCurrentUser(normalizedUser);
+          }
+        }
+      }),
+      catchError(this.handleError)
+    );
+  }
+
+  resendOTP(email: string, purpose: string = 'registration'): Observable<any> {
+    const data = { email, purpose };
+    return this.http.post(`${this.apiUrl}auth/resend-otp`, data).pipe(
+      catchError(this.handleError)
+    );
+  }
+
   getCurrentUser(): any {
     return this.currentUserSubject.value;
   }
