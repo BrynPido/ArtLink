@@ -338,4 +338,108 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
   setActiveTab(tab: 'listings' | 'direct'): void {
     this.activeTab = tab;
   }
+
+  // Seller control methods
+  isSellerOfListing(): boolean {
+    return this.listingDetails && 
+           this.currentUser && 
+           this.listingDetails.authorId === this.currentUser.id;
+  }
+
+  getStatusClass(status: string): string {
+    switch (status) {
+      case 'available':
+        return 'text-green-600 dark:text-green-400 font-medium';
+      case 'sold':
+        return 'text-red-600 dark:text-red-400 font-medium';
+      case 'reserved':
+        return 'text-yellow-600 dark:text-yellow-400 font-medium';
+      default:
+        return 'text-gray-600 dark:text-gray-400';
+    }
+  }
+
+  markAsSold(): void {
+    if (!this.activeConversation || !this.listingDetails) return;
+    
+    const otherUserId = this.activeConversation.user1Id === this.currentUser.id 
+      ? this.activeConversation.user2Id 
+      : this.activeConversation.user1Id;
+
+    this.dataService.markListingAsSold(
+      this.listingDetails.id, 
+      otherUserId, 
+      this.activeConversation.id
+    ).subscribe({
+      next: (response: any) => {
+        console.log('Listing marked as sold:', response);
+        // Update local listing details
+        this.listingDetails = { ...this.listingDetails, status: 'sold' };
+        // Send system message to conversation
+        this.sendSystemMessage(`🎉 This item has been marked as sold!`);
+        this.cdr.markForCheck();
+      },
+      error: (error: any) => {
+        console.error('Error marking as sold:', error);
+      }
+    });
+  }
+
+  reserveListing(): void {
+    if (!this.listingDetails) return;
+
+    this.dataService.reserveListing(this.listingDetails.id).subscribe({
+      next: (response: any) => {
+        console.log('Listing reserved:', response);
+        this.listingDetails = { ...this.listingDetails, status: 'reserved' };
+        this.sendSystemMessage(`🔒 This item has been reserved for you!`);
+        this.cdr.markForCheck();
+      },
+      error: (error: any) => {
+        console.error('Error reserving listing:', error);
+      }
+    });
+  }
+
+  markAsAvailable(): void {
+    if (!this.listingDetails) return;
+
+    this.dataService.markListingAsAvailable(this.listingDetails.id).subscribe({
+      next: (response: any) => {
+        console.log('Listing marked as available:', response);
+        this.listingDetails = { ...this.listingDetails, status: 'available' };
+        this.sendSystemMessage(`✅ This item is now available again!`);
+        this.cdr.markForCheck();
+      },
+      error: (error: any) => {
+        console.error('Error marking as available:', error);
+      }
+    });
+  }
+
+  private sendSystemMessage(content: string): void {
+    if (!this.activeConversation) return;
+    
+    // Add a system message to the conversation
+    const systemMessage: Message = {
+      id: Date.now(),
+      content,
+      authorId: -1, // System message
+      receiverId: this.activeConversation.user1Id === this.currentUser.id 
+        ? this.activeConversation.user2Id 
+        : this.activeConversation.user1Id,
+      conversationId: this.activeConversation.id,
+      createdAt: new Date().toISOString()
+    };
+    
+    this.messages.push(systemMessage);
+    this.scrollToBottom();
+  }
+
+  private getOtherUser(conversation: Conversation): any {
+    // This method is no longer needed since we use IDs directly
+    return conversation.user1Id === this.currentUser.id 
+      ? conversation.user2Id 
+      : conversation.user1Id;
+  }
 }

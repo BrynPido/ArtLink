@@ -244,16 +244,52 @@
         </div>
         
         <!-- Add listing info banner -->
-        <div *ngIf="listingDetails" class="listing-info-banner mt-2 p-2 bg-blue-50 rounded-lg flex items-center">
-          <span class="material-symbols-outlined text-blue-600 mr-2">storefront</span>
+        <div *ngIf="listingDetails" class="listing-info-banner mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex items-center">
+          <span class="material-symbols-outlined text-blue-600 dark:text-blue-400 mr-2">storefront</span>
           <div class="flex-1">
-            <p class="text-sm text-blue-800 font-medium">Discussion about:</p>
+            <p class="text-sm text-blue-800 dark:text-blue-200 font-medium">Discussion about:</p>
             <p class="text-sm truncate">{{ listingDetails.title }}</p>
+            <p *ngIf="listingDetails.status" class="text-xs mt-1">
+              Status: 
+              <span [class]="getStatusClass(listingDetails.status)">
+                {{ listingDetails.status | titlecase }}
+              </span>
+            </p>
           </div>
           <a [routerLink]="['/listing', listingDetails.id]" 
-             class="text-blue-600 ml-2 px-2 py-1 rounded-lg hover:bg-blue-100 text-sm">
+             class="text-blue-600 dark:text-blue-400 ml-2 px-2 py-1 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800 text-sm">
             View
           </a>
+        </div>
+
+        <!-- Seller Controls -->
+        <div *ngIf="isSellerOfListing()" class="seller-controls mt-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+          <h4 class="font-medium text-green-900 dark:text-green-100 mb-2 flex items-center">
+            <span class="material-symbols-outlined mr-1 text-sm">store</span>
+            Seller Controls
+          </h4>
+          <div class="flex gap-2 flex-wrap">
+            <button *ngIf="listingDetails.status === 'available'" 
+                    (click)="markAsSold()" 
+                    class="px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm flex items-center gap-1">
+              <span class="material-symbols-outlined text-sm">check_circle</span>
+              Mark as Sold
+            </button>
+            
+            <button *ngIf="listingDetails.status === 'available'" 
+                    (click)="reserveListing()" 
+                    class="px-3 py-1 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-sm flex items-center gap-1">
+              <span class="material-symbols-outlined text-sm">lock</span>
+              Reserve
+            </button>
+            
+            <button *ngIf="listingDetails.status === 'sold' || listingDetails.status === 'reserved'" 
+                    (click)="markAsAvailable()" 
+                    class="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm flex items-center gap-1">
+              <span class="material-symbols-outlined text-sm">refresh</span>
+              Mark Available
+            </button>
+          </div>
         </div>
       </div>
       

@@ -5,6 +5,8 @@ import { Router } from '@angular/router';
 import { DataService } from '../../../services/data.service';
 import { TimeAgoPipe } from '../../../utils/time-ago.pipe';
 import { environment } from '../../../../environments/environment';
+import { ToastService } from '../../../services/toast.service';
+import Swal from 'sweetalert2';
 
 interface Listing {
   id: number;
@@ -19,6 +21,7 @@ interface Listing {
   category?: string;
   condition?: string;
   location?: string;
+  status?: string; // Add status field
   mediaUrls?: string[];
   media?: Array<{
     url: string;
@@ -36,6 +39,7 @@ interface Listing {
 export class ListingsComponent implements OnInit {
   // Add viewMode property
   viewMode: 'all' | 'my' = 'all';
+  displayMode: 'grid' | 'table' = 'grid'; // New property for display mode
   
   originalListings: Listing[] = []; // Store original unfiltered listings
   listings: Listing[] = []; // Filtered listings to display
@@ -72,7 +76,8 @@ export class ListingsComponent implements OnInit {
 
   constructor(
     private dataService: DataService,
-    private router: Router
+    private router: Router,
+    private toastService: ToastService
   ) {
     this.selectedCategory = '';
     this.selectedCondition = '';
@@ -109,80 +114,40 @@ export class ListingsComponent implements OnInit {
     this.loading = true;
     this.error = null;
     
-    if (this.viewMode === 'all') {
-      this.dataService.getListings().subscribe({
-        next: (response) => {
-          console.log('Listings API Response:', response); // Log the API response
-          
-          // Handle response structure - check if it has payload.listings or just payload
-          if (response && response.payload) {
-            if (Array.isArray(response.payload)) {
-              this.originalListings = response.payload;
-            } else if (response.payload.listings && Array.isArray(response.payload.listings)) {
-              this.originalListings = response.payload.listings;
-            } else {
-              this.originalListings = [];
-            }
+    const listingsObservable = this.viewMode === 'my' 
+      ? this.dataService.getMyListings() 
+      : this.dataService.getListings();
+    
+    listingsObservable.subscribe({
+      next: (response) => {
+        console.log('Listings API Response:', response); // Log the API response
+        
+        // Handle response structure - check if it has payload.listings or just payload
+        if (response && response.payload) {
+          if (Array.isArray(response.payload)) {
+            this.originalListings = response.payload;
+          } else if (response.payload.listings && Array.isArray(response.payload.listings)) {
+            this.originalListings = response.payload.listings;
           } else {
             this.originalListings = [];
           }
-          
-          // Process listings data
-          this.processListingsData();
-          
-          // Process listings data
-          this.processListingsData();
-          
-          console.log('Original Listings:', this.originalListings); // Log the processed listings
-          this.applyFilters();
-          this.loading = false;
-        },
-        error: (error) => {
-          console.error('Error loading listings:', error);
-          this.error = 'Failed to load listings. Please try again later.';
-          this.loading = false;
+        } else {
+          this.originalListings = [];
         }
-      });
-    } else {
-      // Get current user
-      const currentUser = this.dataService.getCurrentUser();
-      if (!currentUser) {
-        this.error = 'You must be logged in to view your listings';
+        
+        // Process listings data
+        this.processListingsData();
+        
+        console.log('Original Listings:', this.originalListings); // Log the processed listings
+        this.applyFilters();
         this.loading = false;
-        return;
+      },
+      error: (error) => {
+        console.error('Error loading listings:', error);
+        this.error = 'Failed to load listings. Please try again later.';
+        this.loading = false;
       }
-      
-      this.dataService.getUserListings(currentUser.id).subscribe({
-        next: (response) => {
-          console.log('User Listings API Response:', response); // Log the API response
-          
-          // Handle response structure - check if it has payload.listings or just payload
-          if (response && response.payload) {
-            if (Array.isArray(response.payload)) {
-              this.originalListings = response.payload;
-            } else if (response.payload.listings && Array.isArray(response.payload.listings)) {
-              this.originalListings = response.payload.listings;
-            } else {
-              this.originalListings = [];
-            }
-          } else {
-            this.originalListings = [];
-          }
-          
-          // Process listings data
-          this.processListingsData();
-          
-          console.log('Original User Listings:', this.originalListings); // Log the processed listings
-          this.applyFilters();
-          this.loading = false;
-        },
-        error: (error) => {
-          console.error('Error loading your listings:', error);
-          this.error = 'Failed to load your listings. Please try again later.';
-          this.loading = false;
-        }
-      });
-    }
+    });
   }
 
   // Process listings data to convert mediaUrls to media objects and handle profile pictures
@@ -310,8 +275,16 @@ export class ListingsComponent implements OnInit {
   setViewMode(mode: 'all' | 'my'): void {
     if (this.viewMode !== mode) {
       this.viewMode = mode;
+      // Force grid view for "All Listings", keep current display mode for "My Listings"
+      if (mode === 'all') {
+        this.displayMode = 'grid';
+      }
       this.loadListings();
     }
+  }
+
+  setDisplayMode(mode: 'grid' | 'table'): void {
+    this.displayMode = mode;
   }
 
   viewListing(listingId: number): void {
@@ -347,5 +320,136 @@ export class ListingsComponent implements OnInit {
     
     // Consider listings less than 3 days old as "recent"
     return diffDays <= 3;
+  }
+
+  // Status management methods
+  getStatusBadgeClass(status: string): string {
+    switch (status) {
+      case 'sold':
+        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
+      case 'reserved':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
+      case 'available':
+        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300';
+    }
+  }
+
+  getStatusIcon(status: string): string {
+    switch (status) {
+      case 'sold':
+        return 'check_circle';
+      case 'reserved':
+        return 'lock';
+      case 'available':
+        return 'check_circle_outline';
+      default:
+        return 'help_outline';
+    }
+  }
+
+  isMyListing(listing: Listing): boolean {
+    const currentUser = this.dataService.getCurrentUser();
+    return currentUser && listing.authorId === currentUser.id;
+  }
+
+  // Quick action methods
+  quickMarkAsSold(listing: Listing, event: Event): void {
+    event.stopPropagation(); // Prevent card click
+    
+    // Show confirmation dialog
+    Swal.fire({
+      title: 'Mark as Sold?',
+      text: `Are you sure you want to mark "${listing.title}" as sold?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#16a34a',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, mark as sold',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Proceed with marking as sold
+        this.dataService.markListingAsSold(listing.id, 0, 0).subscribe({
+          next: (response: any) => {
+            console.log('Listing marked as sold:', response);
+            listing.status = 'sold';
+            this.toastService.showToast('Listing marked as sold successfully!', 'success');
+          },
+          error: (error: any) => {
+            console.error('Error marking as sold:', error);
+            this.toastService.showToast('Failed to mark listing as sold', 'error');
+          }
+        });
+      }
+    });
+  }
+
+  quickReserve(listing: Listing, event: Event): void {
+    event.stopPropagation();
+    
+    // Show confirmation dialog
+    Swal.fire({
+      title: 'Reserve Listing?',
+      text: `Are you sure you want to reserve "${listing.title}"?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#eab308',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, reserve it',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Proceed with reserving
+        this.dataService.reserveListing(listing.id).subscribe({
+          next: (response: any) => {
+            console.log('Listing reserved:', response);
+            listing.status = 'reserved';
+            this.toastService.showToast('Listing reserved successfully!', 'success');
+          },
+          error: (error: any) => {
+            console.error('Error reserving listing:', error);
+            this.toastService.showToast('Failed to reserve listing', 'error');
+          }
+        });
+      }
+    });
+  }
+
+  quickMarkAvailable(listing: Listing, event: Event): void {
+    event.stopPropagation();
+    
+    // Show confirmation dialog
+    Swal.fire({
+      title: 'Mark as Available?',
+      text: `Are you sure you want to mark "${listing.title}" as available again?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#2563eb',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, make available',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Proceed with marking as available
+        this.dataService.markListingAsAvailable(listing.id).subscribe({
+          next: (response: any) => {
+            console.log('Listing marked as available:', response);
+            listing.status = 'available';
+            this.toastService.showToast('Listing is now available!', 'success');
+          },
+          error: (error: any) => {
+            console.error('Error marking as available:', error);
+            this.toastService.showToast('Failed to update listing status', 'error');
+          }
+        });
+      }
+    });
+  }
+
+  editListing(listing: Listing, event: Event): void {
+    event.stopPropagation();
+    this.router.navigate(['/edit-listing', listing.id]);
   }
 }

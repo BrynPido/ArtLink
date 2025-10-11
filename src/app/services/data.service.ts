@@ -489,6 +489,13 @@ export class DataService {
     );
   }
 
+  // Get current user's listings
+  getMyListings(): Observable<any> {
+    return this.http.get(`${this.apiUrl}listings?myListings=true`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
   // Get a specific listing by ID
   getListingById(listingId: string): Observable<any> {
     return this.http.get(`${this.apiUrl}listings/${listingId}`).pipe(
@@ -721,6 +728,50 @@ export class DataService {
   // Admin: Get report statistics
   getReportStats(): Observable<any> {
     return this.http.get(`${this.apiUrl}admin/reports/stats`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // Listing Transaction Management
+  markListingAsSold(listingId: number, buyerId: number, conversationId: number, finalPrice?: number): Observable<any> {
+    const data = { 
+      listingId, 
+      buyerId, 
+      conversationId, 
+      finalPrice,
+      status: 'sold' 
+    };
+    return this.http.post(`${this.apiUrl}listings/${listingId}/mark-sold`, data).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  reserveListing(listingId: number): Observable<any> {
+    const data = { status: 'reserved' };
+    return this.http.patch(`${this.apiUrl}listings/${listingId}/status`, data).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  markListingAsAvailable(listingId: number): Observable<any> {
+    const data = { status: 'available' };
+    return this.http.patch(`${this.apiUrl}listings/${listingId}/status`, data).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // Get seller transactions
+  getSellerTransactions(sellerId?: number): Observable<any> {
+    const params = sellerId ? `?sellerId=${sellerId}` : '';
+    return this.http.get(`${this.apiUrl}transactions${params}`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // Get buyer transactions  
+  getBuyerTransactions(buyerId?: number): Observable<any> {
+    const params = buyerId ? `?buyerId=${buyerId}` : '';
+    return this.http.get(`${this.apiUrl}transactions${params}`).pipe(
       catchError(this.handleError)
     );
   }

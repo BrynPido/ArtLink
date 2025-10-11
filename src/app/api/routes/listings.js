@@ -102,13 +102,20 @@ router.get('/', optionalAuth, async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const offset = (page - 1) * limit;
-    const { category, minPrice, maxPrice, condition, location } = req.query;
+    const { category, minPrice, maxPrice, condition, location, myListings } = req.query;
 
     let whereClause = 'WHERE l.published = true';
     let params = [];
     let paramCounter = 1;
 
-    // Add filters
+    // Filter for current user's listings
+    if (myListings === 'true' && req.user) {
+      whereClause += ` AND l."authorId" = $${paramCounter}`;
+      params.push(req.user.id);
+      paramCounter++;
+    }
+
+    // Add other filters
     if (category) {
       whereClause += ` AND ld.category = $${paramCounter}`;
       params.push(category);
@@ -137,7 +144,7 @@ router.get('/', optionalAuth, async (req, res) => {
 
     const listings = await query(`
       SELECT 
-        l.id, l.title, l.content, l."createdAt", l."updatedAt",
+        l.id, l.title, l.content, l."createdAt", l."updatedAt", l.status,
         u.id as "authorId", u.name as "authorName", u.username as "authorUsername",
         pr."profilePictureUrl" as "authorProfilePicture",
         ld.price, ld.category, ld."condition", ld.location,
@@ -187,7 +194,7 @@ router.get('/:id', optionalAuth, async (req, res) => {
 
     const listing = await queryOne(`
       SELECT 
-        l.id, l.title, l.content, l."createdAt", l."updatedAt",
+        l.id, l.title, l.content, l."createdAt", l."updatedAt", l.status,
         u.id as "authorId", u.name as "authorName", u.username as "authorUsername",
         pr."profilePictureUrl" as "authorProfilePicture",
         ld.price, ld.category, ld."condition", ld.location,
@@ -461,6 +468,161 @@ router.get('/categories', async (req, res) => {
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch categories'
+    });
+  }
+});
+
+// Mark listing as sold and create transaction record
+router.post('/:id/mark-sold', authenticateToken, async (req, res) => {
+  try {
+    const listingId = parseInt(req.params.id);
+    const { buyerId, conversationId, finalPrice } = req.body;
+    const sellerId = req.user.id;
+
+    // Verify the user owns this listing
+    const listing = await queryOne('SELECT * FROM listing WHERE id = $1 AND "authorId" = $2', [listingId, sellerId]);
+    if (!listing) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Listing not found or you are not the owner'
+      });
+    }
+
+    const result = await transaction(async (connection) => {
+      // Update listing status
+      await connection.query(
+        'UPDATE listing SET status = $1, "updatedAt" = CURRENT_TIMESTAMP WHERE id = $2',
+        ['sold', listingId]
+      );
+
+      // Create transaction record only if we have a valid buyer
+      let transactionId = null;
+      if (buyerId && buyerId > 0) {
+        const transactionResult = await connection.query(
+          'INSERT INTO listing_transaction (listingid, buyerid, sellerid, conversationid, finalprice, status, createdat) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP) RETURNING id',
+          [listingId, buyerId, sellerId, conversationId || null, finalPrice, 'completed']
+        );
+        transactionId = transactionResult.rows[0].id;
+
+        // Create notification for buyer
+        await connection.query(
+          'INSERT INTO notification (content, type, "recipientId", "senderId", "createdAt") VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)',
+          [`Your offer for "${listing.title}" has been accepted! The seller has marked it as sold.`, 'listing_sold', buyerId, sellerId]
+        );
+      }
+
+      return transactionId;
+    });
+
+    res.json({
+      status: 'success',
+      message: 'Listing marked as sold successfully',
+      payload: { 
+        transactionId: result,
+        hasTransaction: result !== null 
+      }
+    });
+
+  } catch (error) {
+    console.error('Mark as sold error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to mark listing as sold'
+    });
+  }
+});
+
+// Update listing status (reserve, available, etc.)
+router.patch('/:id/status', authenticateToken, async (req, res) => {
+  try {
+    const listingId = parseInt(req.params.id);
+    const { status } = req.body;
+    const userId = req.user.id;
+
+    // Validate status
+    const validStatuses = ['available', 'reserved', 'sold', 'archived'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Invalid status. Must be one of: ' + validStatuses.join(', ')
+      });
+    }
+
+    // Verify the user owns this listing
+    const listing = await queryOne('SELECT * FROM listing WHERE id = $1 AND "authorId" = $2', [listingId, userId]);
+    if (!listing) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Listing not found or you are not the owner'
+      });
+    }
+
+    // Update listing status
+    await query(
+      'UPDATE listing SET status = $1, "updatedAt" = CURRENT_TIMESTAMP WHERE id = $2',
+      [status, listingId]
+    );
+
+    res.json({
+      status: 'success',
+      message: `Listing status updated to ${status} successfully`
+    });
+
+  } catch (error) {
+    console.error('Update status error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to update listing status'
+    });
+  }
+});
+
+// Get transactions for a user (seller or buyer)
+router.get('/transactions', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { type } = req.query; // 'seller' or 'buyer' or both
+
+    let whereClause = '';
+    let params = [userId];
+
+    if (type === 'seller') {
+      whereClause = 'WHERE lt.sellerid = $1';
+    } else if (type === 'buyer') {
+      whereClause = 'WHERE lt.buyerid = $1';
+    } else {
+      whereClause = 'WHERE (lt.sellerid = $1 OR lt.buyerid = $1)';
+    }
+
+    const transactions = await query(`
+      SELECT 
+        lt.*,
+        l.title as listing_title,
+        l.content as listing_content,
+        seller.name as seller_name,
+        seller.username as seller_username,
+        buyer.name as buyer_name,
+        buyer.username as buyer_username,
+        m."mediaUrl" as listing_image
+      FROM listing_transaction lt
+      JOIN listing l ON lt.listingid = l.id
+      JOIN "user" seller ON lt.sellerid = seller.id
+      JOIN "user" buyer ON lt.buyerid = buyer.id
+      LEFT JOIN media m ON l.id = m."listingId"
+      ${whereClause}
+      ORDER BY lt.createdat DESC
+    `, params);
+
+    res.json({
+      status: 'success',
+      payload: transactions
+    });
+
+  } catch (error) {
+    console.error('Get transactions error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch transactions'
     });
   }
 });
