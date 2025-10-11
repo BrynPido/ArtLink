@@ -1,17 +1,227 @@
-.image-gallery {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1rem;
+/* Custom scrollbar for webkit browsers */
+:host ::ng-deep .scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
 }
 
-.primary-image {
-    grid-column: span 2;
-    grid-row: span 2;
+:host ::ng-deep .scrollbar-thin::-webkit-scrollbar {
+  height: 6px;
+}
+
+:host ::ng-deep .scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+:host ::ng-deep .scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: #d1d5db;
+  border-radius: 3px;
+}
+
+:host ::ng-deep .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: #9ca3af;
+}
+
+/* Dark mode scrollbar */
+:host-context(.dark) ::ng-deep .scrollbar-thin {
+  scrollbar-color: #6b7280 transparent;
+}
+
+:host-context(.dark) ::ng-deep .scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: #6b7280;
+}
+
+:host-context(.dark) ::ng-deep .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: #9ca3af;
+}
+
+/* Image gallery enhancements */
+.listing-image {
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.listing-image:hover {
+  transform: scale(1.02);
+}
+
+/* Thumbnail gallery */
+.thumbnail-container {
+  transition: all 0.2s ease;
+}
+
+.thumbnail-container:hover {
+  transform: translateY(-2px);
+}
+
+/* Action menu animations */
+.action-menu {
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Enhanced card shadows and interactions */
+.listing-card {
+  transition: all 0.3s ease;
+}
+
+.listing-card:hover {
+  transform: translateY(-2px);
+}
+
+/* Sticky sidebar */
+.sticky {
+  position: sticky;
+  top: 2rem;
+}
+
+/* Product details grid animation */
+.product-detail-card {
+  transition: all 0.2s ease;
+}
+
+.product-detail-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Enhanced gradient backgrounds */
+.gradient-bg-indigo {
+  background: linear-gradient(135deg, #eef2ff 0%, #dbeafe 100%);
+}
+
+.gradient-bg-green {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+}
+
+.gradient-bg-purple {
+  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+}
+
+/* Dark mode gradient backgrounds */
+:host-context(.dark) .gradient-bg-indigo {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+}
+
+:host-context(.dark) .gradient-bg-green {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%);
+}
+
+:host-context(.dark) .gradient-bg-purple {
+  background: linear-gradient(135deg, rgba(147, 51, 234, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%);
+}
+
+/* Responsive improvements */
+@media (max-width: 1024px) {
+  .lg\:grid-cols-3 {
+    grid-template-columns: 1fr;
+  }
+  
+  .lg\:col-span-2,
+  .lg\:col-span-1 {
+    grid-column: span 1;
+  }
+  
+  .sticky {
+    position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .grid {
+    gap: 1.5rem;
+  }
+  
+  /* Stack product details on mobile */
+  .md\:grid-cols-3 {
+    grid-template-columns: 1fr;
+  }
+  
+  /* Smaller padding on mobile */
+  .mobile-padding {
+    padding: 1rem;
+  }
 }
 
 @media (max-width: 640px) {
-    .primary-image {
-        grid-column: span 1;
-        grid-row: span 1;
-    }
+  /* Smaller text on mobile */
+  h1 {
+    font-size: 1.5rem !important;
+    line-height: 2rem !important;
+  }
+  
+  h2 {
+    font-size: 1.25rem !important;
+    line-height: 1.75rem !important;
+  }
+  
+  h3 {
+    font-size: 1.125rem !important;
+    line-height: 1.5rem !important;
+  }
+  
+  /* Adjust price display */
+  .price-display {
+    font-size: 2.5rem !important;
+  }
+  
+  /* Better mobile spacing */
+  .mobile-space {
+    margin-bottom: 1rem;
+  }
+}
+
+/* Focus states for accessibility */
+button:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+/* Loading animation enhancement */
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Text truncation utilities */
+.truncate-text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Enhanced hover effects */
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Smooth color transitions */
+.color-transition {
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
 }

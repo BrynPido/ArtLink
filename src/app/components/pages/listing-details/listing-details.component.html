@@ -1,250 +1,271 @@
-<div class="container mx-auto px-4 py-8 max-w-7xl">
-  <!-- Loading State -->
-  <div *ngIf="loading" class="flex flex-col items-center justify-center py-16">
-    <div class="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 border-t-blue-600"></div>
-    <p class="mt-6 text-gray-600 font-medium">Loading listing details...</p>
-  </div>
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+  <div class="container mx-auto px-4 py-8 max-w-7xl">
+    <!-- Loading State -->
+    <div *ngIf="loading" class="flex flex-col items-center justify-center py-20">
+      <div class="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 dark:border-gray-700 border-t-indigo-600 dark:border-t-indigo-400"></div>
+      <p class="mt-6 text-gray-600 dark:text-gray-300 font-medium">Loading listing details...</p>
+    </div>
 
-  <!-- Error State -->
-  <div *ngIf="error" class="text-center py-12 bg-red-50 rounded-xl border border-red-100 max-w-2xl mx-auto">
-    <span class="material-symbols-outlined text-red-500 text-4xl mb-4">error_outline</span>
-    <p class="text-red-600 font-medium mb-4">{{ error }}</p>
-    <button 
-      (click)="goBack()" 
-      class="mt-2 px-6 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center mx-auto"
-    >
-      <span class="material-symbols-outlined mr-2">arrow_back</span>
-      Go Back
-    </button>
-  </div>
+    <!-- Error State -->
+    <div *ngIf="error" class="text-center py-12 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800 max-w-2xl mx-auto">
+      <span class="material-symbols-outlined text-red-500 dark:text-red-400 text-4xl mb-4">error_outline</span>
+      <p class="text-red-600 dark:text-red-400 font-medium mb-4">{{ error }}</p>
+      <button 
+        (click)="goBack()" 
+        class="mt-2 px-6 py-2.5 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg flex items-center mx-auto"
+      >
+        <span class="material-symbols-outlined mr-2">arrow_back</span>
+        Go Back
+      </button>
+    </div>
 
-  <!-- Listing Details -->
-  <div *ngIf="!loading && !error && listing" class="max-w-7xl mx-auto">
-    <!-- Back Button -->
-    <button 
-      (click)="goBack()"
-      class="mb-6 flex items-center text-gray-600 hover:text-gray-800 transition-all duration-200 px-4 py-2 rounded-lg hover:bg-gray-100"
-    >
-      <span class="material-symbols-outlined mr-1">arrow_back</span>
-      Back to Listings
-    </button>
+    <!-- Listing Details -->
+    <div *ngIf="!loading && !error && listing" class="max-w-7xl mx-auto">
+      <!-- Back Button -->
+      <button 
+        (click)="goBack()"
+        class="mb-8 flex items-center text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all duration-200 px-4 py-3 rounded-xl hover:bg-white dark:hover:bg-gray-800 shadow-sm"
+      >
+        <span class="material-symbols-outlined mr-2">arrow_back</span>
+        Back to Listings
+      </button>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      <!-- Media Gallery - Enhanced -->
-      <div class="space-y-4 relative">
-        <!-- Main Image Container with Aspect Ratio -->
-        <div class="relative w-full overflow-hidden rounded-xl shadow-md hover:shadow-lg transition-all duration-300 bg-gray-100">
-          <div class="pb-[75%] relative">  <!-- 4:3 Aspect Ratio -->
-            <!-- Main Image -->
-            <img
-              *ngIf="listing.media && listing.media.length > 0"
-              [src]="listing.media[currentMediaIndex].url"
-              [alt]="listing.title"
-              class="absolute inset-0 w-full h-full object-contain transition-opacity duration-300"
-            >
-            
-            <!-- Fallback for no images -->
-            <div
-              *ngIf="!listing.media || listing.media.length === 0"
-              class="absolute inset-0 flex items-center justify-center bg-gray-200"
-            >
-              <div class="text-center text-gray-500">
-                <span class="material-symbols-outlined text-6xl mb-2">image</span>
-                <p class="text-sm">No image available</p>
-              </div>
-            </div>
-            
-            <!-- Navigation Controls -->
-            <div *ngIf="listing.media && listing.media.length > 1" class="absolute inset-0 flex justify-between items-center px-4">
-              <!-- Previous Button - ALWAYS on left -->
-              <button
-                *ngIf="currentMediaIndex > 0"
-                (click)="previousMedia()"
-                class="bg-black/50 text-white rounded-full p-2.5 hover:bg-black/70 transition-all duration-200 backdrop-blur-sm"
-                aria-label="Previous image"
-              >
-                <span class="material-symbols-outlined">chevron_left</span>
-              </button>
-              
-              <!-- Empty div to maintain flex spacing when previous button is hidden -->
-              <div *ngIf="currentMediaIndex === 0"></div>
-              
-              <!-- Next Button - ALWAYS on right -->
-              <button
-                *ngIf="listing.media && currentMediaIndex < listing.media.length - 1"
-                (click)="nextMedia()"
-                class="bg-black/50 text-white rounded-full p-2.5 hover:bg-black/70 transition-all duration-200 backdrop-blur-sm"
-                aria-label="Next image"
-              >
-                <span class="material-symbols-outlined">chevron_right</span>
-              </button>
-              
-              <!-- Empty div to maintain flex spacing when next button is hidden -->
-              <div *ngIf="!listing.media || currentMediaIndex >= listing.media.length - 1"></div>
-            </div>
-            
-            <!-- Image Counter Badge -->
-            <div *ngIf="listing.media && listing.media.length > 0" class="absolute bottom-4 right-4">
-              <div class="bg-black/60 text-white text-xs px-2.5 py-1.5 rounded-full backdrop-blur-sm">
-                {{ currentMediaIndex + 1 }} / {{ listing.media?.length }}
-              </div>
-            </div>
-          </div>
-        </div>
-      
-        <!-- Thumbnail Strip -->
-        <div *ngIf="listing.media && listing.media.length > 1" class="flex space-x-2 overflow-x-auto pb-2 snap-x scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
-          <div
-            *ngFor="let media of listing.media; let i = index"
-            (click)="currentMediaIndex = i"
-            class="flex-shrink-0 w-20 h-20 cursor-pointer rounded-lg overflow-hidden snap-start transition-all duration-200"
-            [ngClass]="{
-              'ring-2 ring-blue-500 opacity-100': currentMediaIndex === i,
-              'opacity-60 hover:opacity-80': currentMediaIndex !== i
-            }"
-          >
-            <img
-              [src]="media.url"
-              [alt]="listing.title"
-              class="object-cover w-full h-full"
-            >
-          </div>
-        </div>
-      </div>
-
-      <!-- Listing Info -->
-      <div class="space-y-6">
-        <div class="flex justify-between items-start">
-          <h1 class="text-3xl font-bold text-gray-900 leading-tight">{{ listing.title }}</h1>
-          <div *ngIf="currentUser?.id === listing.author?.id" class="relative">
-            <button 
-              (click)="toggleActionMenu()"
-              class="text-gray-600 hover:text-gray-800 p-2.5 rounded-full hover:bg-gray-100 transition-all duration-200"
-              aria-label="Actions menu"
-            >
-              <span class="material-symbols-outlined">settings</span>
-            </button>
-            
-            <!-- Dropdown Menu -->
-            <div *ngIf="showActionMenu" 
-                 class="absolute z-20 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-100 w-52 overflow-hidden origin-top-right transition-all duration-200 transform opacity-100 scale-100">
-              <button
-                (click)="editListing()"
-                class="w-full text-left px-4 py-3 text-gray-700 hover:bg-blue-50 flex items-center transition-all duration-150"
-              >
-                <span class="material-symbols-outlined mr-3 text-blue-600">edit</span>
-                Edit Listing
-              </button>
-              <button
-                (click)="deleteListing()"
-                class="w-full text-left px-4 py-3 text-red-600 hover:bg-red-50 flex items-center border-t border-gray-100 transition-all duration-150"
-              >
-                <span class="material-symbols-outlined mr-3">delete</span>
-                Delete Listing
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Price and Date -->
-        <div class="flex items-center space-x-4 bg-gray-50 p-4 rounded-xl">
-          <p class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-blue-400">
-            ₱{{ listing.listingDetails.price }}
-          </p>
-          <span class="text-gray-400">•</span>
-          <p class="text-gray-600 flex items-center">
-            <span class="material-symbols-outlined text-sm mr-1">schedule</span>
-            {{ listing.createdAt | timeAgo }}
-          </p>
-        </div>
-
-        <!-- Seller Info Card -->
-        <div *ngIf="listing.author" class="flex items-center space-x-4 p-4 rounded-xl bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200">
-          <img
-            [src]="listing.author.profileImage || 'assets/images/default-avatar.svg'"
-            [alt]="listing.author.name"
-            class="w-14 h-14 rounded-full object-cover cursor-pointer border-2 border-white shadow-sm"
-            (click)="goToAuthorProfile()"
-          >
-          <div class="flex-1">
-            <p class="font-medium text-gray-900 cursor-pointer hover:text-blue-600 transition-all" (click)="goToAuthorProfile()">
-              {{ listing.author.name }}
-            </p>
-            <p class="text-sm text-gray-500">{{ listing.author.username }}</p>
-          </div>
-          <button 
-            *ngIf="currentUser?.id !== listing.author?.id"
-            (click)="messageUser()" 
-            class="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 text-sm font-medium flex items-center"
-          >
-            <span class="material-symbols-outlined text-sm mr-1.5">mail</span>
-            Message
-          </button>
-        </div>
-
-        <!-- Listing Details -->
-        <div class="space-y-5 bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-          <div>
-            <h2 class="text-lg font-semibold text-gray-900 flex items-center mb-3">
-              <span class="material-symbols-outlined mr-2 text-blue-600">info</span>
-              Details
-            </h2>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div class="bg-gray-50 p-3 rounded-lg">
-                <p class="text-sm text-gray-500 mb-1">Category</p>
-                <p class="font-medium">{{ listing.listingDetails.category | titlecase }}</p>
-              </div>
-              <div class="bg-gray-50 p-3 rounded-lg">
-                <p class="text-sm text-gray-500 mb-1">Condition</p>
-                <p class="font-medium">{{ listing.listingDetails.condition | titlecase }}</p>
-              </div>
-              <div class="bg-gray-50 p-3 rounded-lg">
-                <p class="text-sm text-gray-500 mb-1">Location</p>
-                <p class="font-medium">{{ listing.listingDetails.location }}</p>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <h2 class="text-lg font-semibold text-gray-900 flex items-center mb-3">
-              <span class="material-symbols-outlined mr-2 text-blue-600">description</span>
-              Description
-            </h2>
-            <p class="text-gray-700 whitespace-pre-line bg-gray-50 p-4 rounded-lg border border-gray-100">
-              {{ listing.content }}
-            </p>
-          </div>
-        </div>
-
-        <!-- Contact and Action Section -->
-        <div class="space-y-4 mt-6" *ngIf="currentUser?.id !== listing.author?.id">
-          <!-- Contact Card -->
-          <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-            <h3 class="text-lg font-medium text-gray-900 mb-2">Contact Options</h3>
-            
-            <!-- Existing conversation section -->
-            <div *ngIf="existingConversation" class="mb-3">
-              <div class="flex items-center text-sm text-gray-600 mb-2">
-                <span class="material-symbols-outlined text-blue-600 mr-1">chat</span>
-                You already have a conversation about this listing
-              </div>
-              <button
-                (click)="viewConversation()"
-                class="w-full py-2.5 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              >
-                <div class="flex items-center justify-center">
-                  <span class="material-symbols-outlined mr-2">forum</span>
-                  View Messages
-                </div>
-              </button>
-            </div>
+      <!-- Main Content Layout -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-            <!-- New conversation section -->
-            <div *ngIf="!existingConversation">
-              <div class="flex items-center justify-between mb-3">
+        <!-- Left Column: Image Gallery + Product Details -->
+        <div class="lg:col-span-2 space-y-8">
+          
+          <!-- Image Gallery -->
+          <div class="space-y-6">
+            <!-- Main Image Container -->
+            <div class="relative w-full overflow-hidden rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 bg-white dark:bg-gray-800">
+              <div class="pb-[60%] relative">
+                <!-- Main Image -->
+                <img
+                  *ngIf="listing.media && listing.media.length > 0"
+                  [src]="listing.media[currentMediaIndex].url"
+                  [alt]="listing.title"
+                  class="absolute inset-0 w-full h-full object-contain bg-gray-50 dark:bg-gray-800 transition-opacity duration-300"
+                >
+                
+                <!-- Fallback for no images -->
+                <div
+                  *ngIf="!listing.media || listing.media.length === 0"
+                  class="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-700"
+                >
+                  <div class="text-center text-gray-400 dark:text-gray-500">
+                    <span class="material-symbols-outlined text-8xl mb-4">image</span>
+                    <p class="text-lg">No image available</p>
+                  </div>
+                </div>
+                
+                <!-- Navigation Controls -->
+                <div *ngIf="listing.media && listing.media.length > 1" class="absolute inset-0 flex justify-between items-center px-6">
+                  <button
+                    *ngIf="currentMediaIndex > 0"
+                    (click)="previousMedia()"
+                    class="bg-black/60 hover:bg-black/80 text-white rounded-full p-3 transition-all duration-200 backdrop-blur-sm shadow-lg"
+                  >
+                    <span class="material-symbols-outlined text-xl">chevron_left</span>
+                  </button>
+                  
+                  <div *ngIf="currentMediaIndex === 0"></div>
+                  
+                  <button
+                    *ngIf="listing.media && currentMediaIndex < listing.media.length - 1"
+                    (click)="nextMedia()"
+                    class="bg-black/60 hover:bg-black/80 text-white rounded-full p-3 transition-all duration-200 backdrop-blur-sm shadow-lg"
+                  >
+                    <span class="material-symbols-outlined text-xl">chevron_right</span>
+                  </button>
+                  
+                  <div *ngIf="!listing.media || currentMediaIndex >= listing.media.length - 1"></div>
+                </div>
+                
+                <!-- Image Counter Badge -->
+                <div *ngIf="listing.media && listing.media.length > 0" class="absolute bottom-6 right-6">
+                  <div class="bg-black/70 text-white text-sm px-3 py-2 rounded-full backdrop-blur-sm font-medium">
+                    {{ currentMediaIndex + 1 }} / {{ listing.media?.length }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          
+            <!-- Thumbnail Strip -->
+            <div *ngIf="listing.media && listing.media.length > 1" class="flex space-x-3 overflow-x-auto pb-3 snap-x scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+              <div
+                *ngFor="let media of listing.media; let i = index"
+                (click)="currentMediaIndex = i"
+                class="flex-shrink-0 w-24 h-24 cursor-pointer rounded-xl overflow-hidden snap-start transition-all duration-200 shadow-sm hover:shadow-md"
+                [ngClass]="{
+                  'ring-3 ring-indigo-500 opacity-100 shadow-lg': currentMediaIndex === i,
+                  'opacity-70 hover:opacity-90': currentMediaIndex !== i
+                }"
+              >
+                <img
+                  [src]="media.url"
+                  [alt]="listing.title"
+                  class="object-cover w-full h-full bg-gray-100 dark:bg-gray-700"
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Product Details Section -->
+          <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg border border-gray-200 dark:border-gray-700">
+            <h2 class="text-2xl font-semibold text-gray-900 dark:text-white flex items-center mb-8">
+              <span class="material-symbols-outlined mr-3 text-indigo-600 dark:text-indigo-400 text-2xl">info</span>
+              Product Details
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div class="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-900/30 dark:to-blue-900/30 p-6 rounded-xl border border-indigo-100 dark:border-indigo-800">
+                <div class="flex items-center mb-3">
+                  <span class="material-symbols-outlined text-indigo-600 dark:text-indigo-400 mr-3 text-xl">category</span>
+                  <p class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Category</p>
+                </div>
+                <p class="font-bold text-gray-900 dark:text-white text-xl">{{ listing.listingDetails.category | titlecase }}</p>
+              </div>
+              
+              <div class="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30 p-6 rounded-xl border border-green-100 dark:border-green-800">
+                <div class="flex items-center mb-3">
+                  <span class="material-symbols-outlined text-green-600 dark:text-green-400 mr-3 text-xl">grade</span>
+                  <p class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Condition</p>
+                </div>
+                <p class="font-bold text-gray-900 dark:text-white text-xl">{{ listing.listingDetails.condition | titlecase }}</p>
+              </div>
+              
+              <div class="bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-900/30 dark:to-violet-900/30 p-6 rounded-xl border border-purple-100 dark:border-purple-800">
+                <div class="flex items-center mb-3">
+                  <span class="material-symbols-outlined text-purple-600 dark:text-purple-400 mr-3 text-xl">location_on</span>
+                  <p class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Location</p>
+                </div>
+                <p class="font-bold text-gray-900 dark:text-white text-xl">{{ listing.listingDetails.location }}</p>
+              </div>
+            </div>
+
+            <!-- Description Section -->
+            <div>
+              <h3 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center mb-6">
+                <span class="material-symbols-outlined mr-3 text-indigo-600 dark:text-indigo-400 text-xl">description</span>
+                Description
+              </h3>
+              <div class="bg-gray-50 dark:bg-gray-700/50 p-8 rounded-xl border border-gray-200 dark:border-gray-600">
+                <p class="text-gray-700 dark:text-gray-300 whitespace-pre-line leading-relaxed text-lg">
+                  {{ listing.content }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Title, Price, Seller Info, Actions -->
+        <div class="lg:col-span-1 space-y-6">
+          
+          <!-- Title & Actions Card -->
+          <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 sticky top-8">
+            <div class="flex justify-between items-start mb-6">
+              <h1 class="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white leading-tight pr-4">{{ listing.title }}</h1>
+              <div *ngIf="currentUser?.id === listing.author?.id" class="relative flex-shrink-0">
+                <button 
+                  (click)="toggleActionMenu()"
+                  class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
+                >
+                  <span class="material-symbols-outlined">more_vert</span>
+                </button>
+                
+                <div *ngIf="showActionMenu" 
+                     class="absolute z-20 right-0 mt-2 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 w-52 overflow-hidden">
+                  <button
+                    (click)="editListing()"
+                    class="w-full text-left px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 flex items-center"
+                  >
+                    <span class="material-symbols-outlined mr-3 text-indigo-600 dark:text-indigo-400">edit</span>
+                    Edit Listing
+                  </button>
+                  <button
+                    (click)="deleteListing()"
+                    class="w-full text-left px-4 py-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center border-t border-gray-200 dark:border-gray-700"
+                  >
+                    <span class="material-symbols-outlined mr-3">delete</span>
+                    Delete Listing
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Price Section -->
+            <div class="bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/30 dark:to-blue-900/30 p-6 rounded-xl border border-indigo-100 dark:border-indigo-800 mb-6">
+              <div class="text-center">
+                <p class="text-4xl lg:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-blue-600 dark:from-indigo-400 dark:to-blue-400 mb-3">
+                  ₱{{ listing.listingDetails.price }}
+                </p>
+                <div class="flex items-center justify-center text-gray-600 dark:text-gray-300 mb-3">
+                  <span class="material-symbols-outlined text-sm mr-2">schedule</span>
+                  <span class="text-sm">Posted {{ listing.createdAt | timeAgo }}</span>
+                </div>
+                <div class="inline-flex items-center px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-full text-sm font-medium">
+                  <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                  Available
+                </div>
+              </div>
+            </div>
+
+            <!-- Seller Info -->
+            <div *ngIf="listing.author" class="mb-6">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                <span class="material-symbols-outlined mr-2 text-indigo-600 dark:text-indigo-400">person</span>
+                Seller
+              </h3>
+              <div class="flex items-center space-x-4 mb-4">
+                <img
+                  [src]="listing.author.profileImage || 'assets/images/default-avatar.svg'"
+                  [alt]="listing.author.name"
+                  class="w-16 h-16 rounded-full object-cover cursor-pointer border-2 border-indigo-200 dark:border-indigo-800 shadow-md"
+                  (click)="goToAuthorProfile()"
+                >
+                <div class="flex-1 min-w-0">
+                  <p class="font-semibold text-gray-900 dark:text-white cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-all truncate text-lg" (click)="goToAuthorProfile()">
+                    {{ listing.author.name }}
+                  </p>
+                  <p class="text-gray-500 dark:text-gray-400 text-sm truncate">{{ listing.author.username }}</p>
+                  <div class="flex items-center mt-2">
+                    <div class="flex text-yellow-400 mr-2">
+                      <span class="material-symbols-outlined text-sm">star</span>
+                      <span class="material-symbols-outlined text-sm">star</span>
+                      <span class="material-symbols-outlined text-sm">star</span>
+                      <span class="material-symbols-outlined text-sm">star</span>
+                      <span class="material-symbols-outlined text-sm">star_outline</span>
+                    </div>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">4.5 (24 reviews)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Contact Actions -->
+            <div *ngIf="currentUser?.id !== listing.author?.id" class="space-y-4">
+              <div *ngIf="existingConversation">
+                <div class="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                  <span class="material-symbols-outlined text-blue-600 dark:text-blue-400 mr-2">chat</span>
+                  You have an active conversation
+                </div>
+                <button
+                  (click)="viewConversation()"
+                  class="w-full py-4 px-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition-all duration-200 font-medium shadow-md hover:shadow-lg"
+                >
+                  <div class="flex items-center justify-center">
+                    <span class="material-symbols-outlined mr-2">forum</span>
+                    View Messages
+                  </div>
+                </button>
+              </div>
+          
+              <div *ngIf="!existingConversation">
                 <button
                   (click)="messageUser()"
-                  class="flex-1 py-2.5 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 mr-2"
+                  class="w-full py-4 px-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition-all duration-200 font-medium shadow-md hover:shadow-lg mb-3"
                 >
                   <div class="flex items-center justify-center">
                     <span class="material-symbols-outlined mr-2">mail</span>
@@ -254,36 +275,39 @@
                 
                 <button
                   (click)="toggleContactForm()"
-                  class="py-2.5 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
+                  class="w-full py-3 px-4 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200 text-sm"
                 >
-                  <span class="material-symbols-outlined">{{ showContactForm ? 'expand_less' : 'expand_more' }}</span>
+                  <div class="flex items-center justify-center">
+                    <span class="material-symbols-outlined mr-2">{{ showContactForm ? 'expand_less' : 'expand_more' }}</span>
+                    {{ showContactForm ? 'Hide' : 'Quick Message' }}
+                  </div>
                 </button>
-              </div>
-              
-              <!-- Quick Message Form -->
-              <div *ngIf="showContactForm" class="mt-3 p-3 bg-white rounded-lg border border-gray-200">
-                <p class="text-sm text-gray-600 mb-2">Send a message about this listing:</p>
-                <div class="flex flex-col space-y-2">
-                  <textarea
-                    [(ngModel)]="messageText"
-                    rows="3"
-                    placeholder="I'm interested in this listing..."
-                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  ></textarea>
-                  <button
-                    [disabled]="sendingMessage || !messageText.trim()"
-                    (click)="sendMessage()"
-                    class="py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <div class="flex items-center justify-center">
-                      <span class="material-symbols-outlined mr-2" *ngIf="!sendingMessage">send</span>
-                      <div *ngIf="sendingMessage" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                      {{ sendingMessage ? 'Sending...' : 'Send' }}
-                    </div>
-                  </button>
+                
+                <div *ngIf="showContactForm" class="mt-4 p-6 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-600">
+                  <p class="text-sm text-gray-600 dark:text-gray-400 mb-4 font-medium">Send a quick message:</p>
+                  <div class="space-y-4">
+                    <textarea
+                      [(ngModel)]="messageText"
+                      rows="4"
+                      placeholder="Hi! I'm interested in this listing. Is it still available?"
+                      class="w-full px-4 py-3 text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+                    ></textarea>
+                    <button
+                      [disabled]="sendingMessage || !messageText.trim()"
+                      (click)="sendMessage()"
+                      class="w-full py-3 px-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition-all duration-200 font-medium shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <div class="flex items-center justify-center">
+                        <span class="material-symbols-outlined mr-2" *ngIf="!sendingMessage">send</span>
+                        <div *ngIf="sendingMessage" class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                        {{ sendingMessage ? 'Sending...' : 'Send Message' }}
+                      </div>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
+
           </div>
         </div>
       </div>

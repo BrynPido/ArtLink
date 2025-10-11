@@ -187,6 +187,141 @@ router.get('/', optionalAuth, async (req, res) => {
   }
 });
 
+// Get transactions for a user (seller or buyer)
+router.get('/transactions', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { type } = req.query; // 'seller' or 'buyer' or both
+
+    let results = [];
+
+    if (type === 'seller' || !type) {
+      // Get actual transactions where user is seller
+      const transactions = await query(`
+        SELECT 
+          lt.*,
+          l.title as listing_title,
+          l.content as listing_content,
+          seller.name as seller_name,
+          seller.username as seller_username,
+          buyer.name as buyer_name,
+          buyer.username as buyer_username,
+          m."mediaUrl" as listing_image,
+          'transaction' as source_type
+        FROM listing_transaction lt
+        JOIN listing l ON lt.listingid = l.id
+        JOIN "user" seller ON lt.sellerid = seller.id
+        JOIN "user" buyer ON lt.buyerid = buyer.id
+        LEFT JOIN media m ON l.id = m."listingId"
+        WHERE lt.sellerid = $1
+        ORDER BY lt.createdat DESC
+      `, [userId]);
+
+      results = [...results, ...transactions];
+
+      // Also get sold listings without transactions (direct sales)
+      const soldListings = await query(`
+        SELECT 
+          l.id,
+          l.id as listingid,
+          NULL as buyerid,
+          l."authorId" as sellerid,
+          NULL as conversationid,
+          ld.price as finalprice,
+          'completed' as status,
+          NULL as notes,
+          l."updatedAt" as createdat,
+          NULL as completedat,
+          l.title as listing_title,
+          l.content as listing_content,
+          seller.name as seller_name,
+          seller.username as seller_username,
+          'Unknown Buyer' as buyer_name,
+          'unknown' as buyer_username,
+          m."mediaUrl" as listing_image,
+          'sold_listing' as source_type
+        FROM listing l
+        JOIN "user" seller ON l."authorId" = seller.id
+        LEFT JOIN listing_details ld ON l.id = ld."listingId"
+        LEFT JOIN media m ON l.id = m."listingId"
+        WHERE l."authorId" = $1 
+        AND l.status = 'sold'
+        AND l.id NOT IN (
+          SELECT DISTINCT listingid FROM listing_transaction WHERE sellerid = $1
+        )
+        ORDER BY l."updatedAt" DESC
+      `, [userId]);
+
+      results = [...results, ...soldListings];
+    }
+
+    if (type === 'buyer') {
+      // Get transactions where user is buyer
+      const buyerTransactions = await query(`
+        SELECT 
+          lt.*,
+          l.title as listing_title,
+          l.content as listing_content,
+          seller.name as seller_name,
+          seller.username as seller_username,
+          buyer.name as buyer_name,
+          buyer.username as buyer_username,
+          m."mediaUrl" as listing_image,
+          'transaction' as source_type
+        FROM listing_transaction lt
+        JOIN listing l ON lt.listingid = l.id
+        JOIN "user" seller ON lt.sellerid = seller.id
+        JOIN "user" buyer ON lt.buyerid = buyer.id
+        LEFT JOIN media m ON l.id = m."listingId"
+        WHERE lt.buyerid = $1
+        ORDER BY lt.createdat DESC
+      `, [userId]);
+
+      results = buyerTransactions;
+    }
+
+    if (!type) {
+      // Get all transactions for user (both as seller and buyer)
+      const allTransactions = await query(`
+        SELECT 
+          lt.*,
+          l.title as listing_title,
+          l.content as listing_content,
+          seller.name as seller_name,
+          seller.username as seller_username,
+          buyer.name as buyer_name,
+          buyer.username as buyer_username,
+          m."mediaUrl" as listing_image,
+          'transaction' as source_type
+        FROM listing_transaction lt
+        JOIN listing l ON lt.listingid = l.id
+        JOIN "user" seller ON lt.sellerid = seller.id
+        JOIN "user" buyer ON lt.buyerid = buyer.id
+        LEFT JOIN media m ON l.id = m."listingId"
+        WHERE (lt.sellerid = $1 OR lt.buyerid = $1)
+        ORDER BY lt.createdat DESC
+      `, [userId]);
+
+      results = [...results, ...allTransactions];
+    }
+
+    // Sort all results by date
+    results.sort((a, b) => new Date(b.createdat) - new Date(a.createdat));
+
+    res.json({
+      status: 'success',
+      payload: results
+    });
+
+  } catch (error) {
+    console.error('Get transactions error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch transactions'
+    });
+  }
+});
+
 // Get single listing by ID
 router.get('/:id', optionalAuth, async (req, res) => {
   try {
@@ -573,56 +708,6 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
     res.status(500).json({
       status: 'error',
       message: 'Failed to update listing status'
-    });
-  }
-});
-
-// Get transactions for a user (seller or buyer)
-router.get('/transactions', authenticateToken, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { type } = req.query; // 'seller' or 'buyer' or both
-
-    let whereClause = '';
-    let params = [userId];
-
-    if (type === 'seller') {
-      whereClause = 'WHERE lt.sellerid = $1';
-    } else if (type === 'buyer') {
-      whereClause = 'WHERE lt.buyerid = $1';
-    } else {
-      whereClause = 'WHERE (lt.sellerid = $1 OR lt.buyerid = $1)';
-    }
-
-    const transactions = await query(`
-      SELECT 
-        lt.*,
-        l.title as listing_title,
-        l.content as listing_content,
-        seller.name as seller_name,
-        seller.username as seller_username,
-        buyer.name as buyer_name,
-        buyer.username as buyer_username,
-        m."mediaUrl" as listing_image
-      FROM listing_transaction lt
-      JOIN listing l ON lt.listingid = l.id
-      JOIN "user" seller ON lt.sellerid = seller.id
-      JOIN "user" buyer ON lt.buyerid = buyer.id
-      LEFT JOIN media m ON l.id = m."listingId"
-      ${whereClause}
-      ORDER BY lt.createdat DESC
-    `, params);
-
-    res.json({
-      status: 'success',
-      payload: transactions
-    });
-
-  } catch (error) {
-    console.error('Get transactions error:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to fetch transactions'
     });
   }
 });

@@ -42,10 +42,20 @@
         </div>
       </div>
     </div>
-    <button (click)="createListing()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center whitespace-nowrap">
-      <span class="material-symbols-rounded mr-1">add</span>
-      Create Listing
-    </button>
+    <div class="flex space-x-3">
+      <button 
+        *ngIf="viewMode === 'my'" 
+        (click)="goToSales()" 
+        class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center whitespace-nowrap"
+      >
+        <span class="material-symbols-rounded mr-1">trending_up</span>
+        View Sales
+      </button>
+      <button (click)="createListing()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center whitespace-nowrap">
+        <span class="material-symbols-rounded mr-1">add</span>
+        Create Listing
+      </button>
+    </div>
   </div>
 
   <!-- Improved Search and Filter Bar -->

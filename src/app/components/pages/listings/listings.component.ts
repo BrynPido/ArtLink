@@ -295,6 +295,10 @@ export class ListingsComponent implements OnInit {
     this.router.navigate(['/create'], { state: { isListing: true } });
   }
 
+  goToSales(): void {
+    this.router.navigate(['/sales']);
+  }
+
   clearCategory() {
   this.selectedCategory = '';
   this.applyFilters();

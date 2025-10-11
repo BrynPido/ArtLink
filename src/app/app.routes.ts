@@ -36,6 +36,7 @@ export const routes: Routes = [
       { path: 'listings', loadComponent: () => import('./components/pages/listings/listings.component').then(c => c.ListingsComponent), canActivate: [AuthGuard] },
       { path: 'listing/:id', loadComponent: () => import('./components/pages/listing-details/listing-details.component').then(c => c.ListingDetailsComponent), canActivate: [AuthGuard] },
       { path: 'edit-listing/:id', loadComponent: () => import('./components/pages/listing-edit/listing-edit.component').then(c => c.ListingEditComponent), canActivate: [AuthGuard] },
+      { path: 'sales', loadComponent: () => import('./components/pages/sales/sales.component').then(c => c.SalesComponent), canActivate: [AuthGuard] },
     ],
   },
   { path: '**', redirectTo: 'login' },

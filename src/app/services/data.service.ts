@@ -763,7 +763,7 @@ export class DataService {
   // Get seller transactions
   getSellerTransactions(sellerId?: number): Observable<any> {
     const params = sellerId ? `?sellerId=${sellerId}` : '';
-    return this.http.get(`${this.apiUrl}transactions${params}`).pipe(
+    return this.http.get(`${this.apiUrl}listings/transactions${params}`).pipe(
       catchError(this.handleError)
     );
   }
@@ -771,7 +771,15 @@ export class DataService {
   // Get buyer transactions  
   getBuyerTransactions(buyerId?: number): Observable<any> {
     const params = buyerId ? `?buyerId=${buyerId}` : '';
-    return this.http.get(`${this.apiUrl}transactions${params}`).pipe(
+    return this.http.get(`${this.apiUrl}listings/transactions${params}`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // Get transactions by type (seller, buyer, or both)
+  getTransactions(type?: 'seller' | 'buyer'): Observable<any> {
+    const params = type ? `?type=${type}` : '';
+    return this.http.get(`${this.apiUrl}listings/transactions${params}`).pipe(
       catchError(this.handleError)
     );
   }

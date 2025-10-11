@@ -1,0 +1,530 @@
+<div class="container mx-auto px-4 py-6">
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Sales & Purchases</h1>
+      <p class="text-gray-600 dark:text-gray-400 mt-1">Manage your transaction history</p>
+    </div>
+    <div class="flex space-x-3">
+      <!-- Filter Toggle Button -->
+      <button 
+        (click)="toggleFilters()" 
+        class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 flex items-center"
+        title="Toggle Filters"
+      >
+        <span class="material-symbols-rounded mr-1">filter_list</span>
+        Filters
+        <span class="material-symbols-rounded ml-1 text-sm" [class.rotate-180]="showFilters">expand_more</span>
+      </button>
+
+      <!-- Export Dropdown -->
+      <div *ngIf="filteredTransactions.length > 0" class="relative export-dropdown">
+        <button 
+          (click)="showExportMenu = !showExportMenu"
+          class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center"
+          title="Export Options"
+        >
+          <span class="material-symbols-rounded mr-1">download</span>
+          Export
+          <span class="material-symbols-rounded ml-1 text-sm">expand_more</span>
+        </button>
+        
+        <!-- Dropdown Menu -->
+        <div 
+          *ngIf="showExportMenu"
+          class="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border dark:border-gray-700 z-10 dropdown-menu"
+          [class.show]="showExportMenu"
+        >
+          <div class="p-4">
+            <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Export Options</h4>
+            
+            <!-- Date Preset Filter -->
+            <div class="mb-4">
+              <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Time Period</label>
+              <select
+                [(ngModel)]="exportFilters.datePreset"
+                class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+              >
+                <option *ngFor="let preset of datePresets" [value]="preset.value">{{ preset.label }}</option>
+              </select>
+            </div>
+
+            <!-- Custom Date Range (shown when Custom is selected) -->
+            <div *ngIf="exportFilters.datePreset === 'custom'" class="mb-4 grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">From</label>
+                <input
+                  type="date"
+                  [(ngModel)]="exportFilters.customFromDate"
+                  class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">To</label>
+                <input
+                  type="date"
+                  [(ngModel)]="exportFilters.customToDate"
+                  class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+            </div>
+
+            <!-- Additional Filters -->
+            <div class="grid grid-cols-2 gap-2 mb-4">
+              <!-- Status Filter -->
+              <div>
+                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+                <select
+                  [(ngModel)]="exportFilters.status"
+                  class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
+                >
+                  <option *ngFor="let option of statusOptions" [value]="option.value">{{ option.label }}</option>
+                </select>
+              </div>
+
+              <!-- Source Filter -->
+              <div>
+                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Source</label>
+                <select
+                  [(ngModel)]="exportFilters.source"
+                  class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
+                >
+                  <option *ngFor="let option of sourceOptions" [value]="option.value">{{ option.label }}</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Price Range -->
+            <div class="grid grid-cols-2 gap-2 mb-4">
+              <div>
+                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Min Price (₱)</label>
+                <input
+                  type="number"
+                  [(ngModel)]="exportFilters.priceMin"
+                  min="0"
+                  placeholder="0"
+                  class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Max Price (₱)</label>
+                <input
+                  type="number"
+                  [(ngModel)]="exportFilters.priceMax"
+                  min="0"
+                  placeholder="999999"
+                  class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+            </div>
+
+            <!-- Export Preview -->
+            <div class="mb-4 p-2 bg-gray-50 dark:bg-gray-700 rounded text-xs text-gray-600 dark:text-gray-400">
+              {{ getExportFilteredData().length }} {{ activeTab === 'sales' ? 'sales' : 'purchases' }} will be exported
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex space-x-2">
+              <button
+                (click)="exportData()"
+                class="flex-1 bg-indigo-600 text-white px-3 py-2 rounded-lg hover:bg-indigo-700 text-sm font-medium flex items-center justify-center"
+                [disabled]="getExportFilteredData().length === 0"
+                [class.opacity-50]="getExportFilteredData().length === 0"
+              >
+                <span class="material-symbols-rounded mr-1 text-sm">download</span>
+                Export Data
+              </button>
+              <button
+                (click)="exportSummary(); showExportMenu = false"
+                class="flex-1 bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 text-sm font-medium flex items-center justify-center"
+              >
+                <span class="material-symbols-rounded mr-1 text-sm">summarize</span>
+                Summary
+              </button>
+            </div>
+
+            <!-- Reset Filters -->
+            <button
+              (click)="resetExportFilters()"
+              class="w-full mt-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 text-xs flex items-center justify-center"
+            >
+              <span class="material-symbols-rounded mr-1 text-xs">refresh</span>
+              Reset Filters
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <button 
+        (click)="goToListings()" 
+        class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center"
+      >
+        <span class="material-symbols-rounded mr-1">storefront</span>
+        View Listings
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters Section -->
+  <div *ngIf="showFilters" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700 mb-6 p-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <!-- Search -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Search</label>
+        <input
+          type="text"
+          [(ngModel)]="filters.search"
+          (input)="applyFilters()"
+          placeholder="Search by title, buyer, seller..."
+          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white text-sm"
+        />
+      </div>
+
+      <!-- Status Filter -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+        <select
+          [(ngModel)]="filters.status"
+          (change)="applyFilters()"
+          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white text-sm"
+        >
+          <option *ngFor="let option of statusOptions" [value]="option.value">{{ option.label }}</option>
+        </select>
+      </div>
+
+      <!-- Source Filter -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Source</label>
+        <select
+          [(ngModel)]="filters.source"
+          (change)="applyFilters()"
+          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white text-sm"
+        >
+          <option *ngFor="let option of sourceOptions" [value]="option.value">{{ option.label }}</option>
+        </select>
+      </div>
+
+      <!-- Date From -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">From Date</label>
+        <input
+          type="date"
+          [(ngModel)]="filters.dateFrom"
+          (change)="applyFilters()"
+          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white text-sm"
+        />
+      </div>
+
+      <!-- Date To -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">To Date</label>
+        <input
+          type="date"
+          [(ngModel)]="filters.dateTo"
+          (change)="applyFilters()"
+          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white text-sm"
+        />
+      </div>
+
+      <!-- Price Min -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Min Price (₱)</label>
+        <input
+          type="number"
+          [(ngModel)]="filters.priceMin"
+          (input)="applyFilters()"
+          min="0"
+          placeholder="0"
+          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white text-sm"
+        />
+      </div>
+
+      <!-- Price Max -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Max Price (₱)</label>
+        <input
+          type="number"
+          [(ngModel)]="filters.priceMax"
+          (input)="applyFilters()"
+          min="0"
+          placeholder="10000"
+          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white text-sm"
+        />
+      </div>
+
+      <!-- Clear Filters Button -->
+      <div class="flex items-end">
+        <button
+          (click)="clearFilters()"
+          class="w-full bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 flex items-center justify-center text-sm"
+        >
+          <span class="material-symbols-rounded mr-1 text-sm">clear</span>
+          Clear Filters
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter Summary -->
+    <div *ngIf="filteredTransactions.length !== transactions.length" class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+      <p class="text-sm text-blue-700 dark:text-blue-300">
+        <span class="material-symbols-rounded mr-1 text-sm">info</span>
+        Showing {{ filteredTransactions.length }} of {{ transactions.length }} transactions
+      </p>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border dark:border-gray-700">
+      <div class="flex items-center">
+        <div class="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+          <span class="material-symbols-rounded text-green-600 dark:text-green-400">sell</span>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Sales</p>
+          <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ totalSales }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border dark:border-gray-700">
+      <div class="flex items-center">
+        <div class="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+          <span class="material-symbols-rounded text-blue-600 dark:text-blue-400">payments</span>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Revenue</p>
+          <p class="text-lg font-semibold text-gray-900 dark:text-white">₱{{ totalRevenue | number:'1.2-2' }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border dark:border-gray-700">
+      <div class="flex items-center">
+        <div class="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
+          <span class="material-symbols-rounded text-purple-600 dark:text-purple-400">shopping_cart</span>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Purchases</p>
+          <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ totalPurchases }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border dark:border-gray-700">
+      <div class="flex items-center">
+        <div class="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
+          <span class="material-symbols-rounded text-orange-600 dark:text-orange-400">account_balance_wallet</span>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Spent</p>
+          <p class="text-lg font-semibold text-gray-900 dark:text-white">₱{{ totalSpent | number:'1.2-2' }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="border-b border-gray-200 dark:border-gray-700 mb-6">
+    <nav class="flex space-x-8">
+      <button
+        (click)="setActiveTab('sales')"
+        class="py-2 px-1 border-b-2 font-medium text-sm transition-colors"
+        [ngClass]="activeTab === 'sales' 
+          ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' 
+          : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300'"
+      >
+        <span class="material-symbols-rounded mr-1 text-sm">sell</span>
+        My Sales
+      </button>
+      <button
+        (click)="setActiveTab('purchases')"
+        class="py-2 px-1 border-b-2 font-medium text-sm transition-colors"
+        [ngClass]="activeTab === 'purchases' 
+          ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' 
+          : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300'"
+      >
+        <span class="material-symbols-rounded mr-1 text-sm">shopping_cart</span>
+        My Purchases
+      </button>
+    </nav>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="flex justify-center items-center py-12">
+    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+    <span class="ml-2 text-gray-600 dark:text-gray-400">Loading transactions...</span>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !loading" class="text-center py-12">
+    <div class="text-red-500 mb-2">
+      <span class="material-symbols-rounded text-4xl">error</span>
+    </div>
+    <p class="text-gray-600 dark:text-gray-400">{{ error }}</p>
+    <button 
+      (click)="loadTransactions()" 
+      class="mt-4 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
+    >
+      Try Again
+    </button>
+  </div>
+
+  <!-- Transactions List -->
+  <div *ngIf="!loading && !error">
+    <!-- Empty State -->
+    <div *ngIf="filteredTransactions.length === 0 && !loading && !error" class="text-center py-12">
+      <div class="text-gray-400 mb-4">
+        <span class="material-symbols-rounded text-6xl">
+          {{ activeTab === 'sales' ? 'storefront' : 'shopping_cart' }}
+        </span>
+      </div>
+      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+        {{ transactions.length === 0 ? 'No ' + activeTab + ' yet' : 'No results found' }}
+      </h3>
+      <p class="text-gray-600 dark:text-gray-400 mb-4">
+        {{ transactions.length === 0 
+          ? (activeTab === 'sales' 
+            ? 'When you sell items, they will appear here.' 
+            : 'When you purchase items, they will appear here.') 
+          : 'Try adjusting your filters to see more results.' }}
+      </p>
+      <button 
+        *ngIf="transactions.length === 0"
+        (click)="goToListings()" 
+        class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
+      >
+        {{ activeTab === 'sales' ? 'Create Listing' : 'Browse Listings' }}
+      </button>
+      <button 
+        *ngIf="transactions.length > 0"
+        (click)="clearFilters()" 
+        class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
+      >
+        Clear Filters
+      </button>
+    </div>
+
+    <!-- Transactions Table -->
+    <div *ngIf="filteredTransactions.length > 0" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700">
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+          {{ activeTab === 'sales' ? 'Sales History' : 'Purchase History' }}
+        </h3>
+        <button
+          (click)="exportData()"
+          class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300 flex items-center text-sm"
+          title="Export to CSV"
+        >
+          <span class="material-symbols-rounded mr-1 text-sm">download</span>
+          Export CSV
+        </button>
+      </div>
+      
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead class="bg-gray-50 dark:bg-gray-700">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Item
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                {{ activeTab === 'sales' ? 'Buyer' : 'Seller' }}
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Price
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Status
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Date
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            <tr *ngFor="let transaction of filteredTransactions" class="hover:bg-gray-50 dark:hover:bg-gray-700">
+              <!-- Item -->
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div class="flex-shrink-0 h-12 w-12">
+                    <img 
+                      [src]="getFullMediaUrl(transaction.listing_image || '')" 
+                      [alt]="transaction.listing_title"
+                      class="h-12 w-12 rounded-lg object-cover cursor-pointer"
+                      (click)="viewListing(transaction.listingid)"
+                    />
+                  </div>
+                  <div class="ml-4">
+                    <div 
+                      class="text-sm font-medium text-gray-900 dark:text-white cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400"
+                      (click)="viewListing(transaction.listingid)"
+                    >
+                      {{ transaction.listing_title }}
+                    </div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate">
+                      {{ transaction.listing_content }}
+                    </div>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Buyer/Seller -->
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900 dark:text-white">
+                  {{ activeTab === 'sales' ? (transaction.buyer_name || 'Direct Sale') : transaction.seller_name }}
+                </div>
+                <div class="text-sm text-gray-500 dark:text-gray-400">
+                  &#64;{{ activeTab === 'sales' ? (transaction.buyer_username || 'N/A') : transaction.seller_username }}
+                </div>
+              </td>
+
+              <!-- Price -->
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900 dark:text-white">
+                  ₱{{ transaction.finalprice | number:'1.2-2' }}
+                </div>
+              </td>
+
+              <!-- Status -->
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span [ngClass]="getStatusColor(transaction.status)" class="inline-flex px-2 py-1 text-xs font-semibold rounded-full">
+                  {{ transaction.status | titlecase }}
+                </span>
+              </td>
+
+              <!-- Date -->
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                {{ transaction.createdat | timeAgo }}
+              </td>
+
+              <!-- Actions -->
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <div class="flex space-x-2">
+                  <button
+                    (click)="viewListing(transaction.listingid)"
+                    class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300"
+                    title="View Listing"
+                  >
+                    <span class="material-symbols-rounded text-sm">visibility</span>
+                  </button>
+                  <button
+                    *ngIf="(activeTab === 'sales' && transaction.buyerid) || activeTab === 'purchases'"
+                    (click)="contactUser(transaction)"
+                    class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300"
+                    title="Contact {{ activeTab === 'sales' ? 'Buyer' : 'Seller' }}"
+                  >
+                    <span class="material-symbols-rounded text-sm">message</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

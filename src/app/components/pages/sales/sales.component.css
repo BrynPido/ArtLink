@@ -1,0 +1,144 @@
+/* Sales Component Styles */
+.container {
+  max-width: 1200px;
+}
+
+/* Custom scrollbar for tables */
+.overflow-x-auto::-webkit-scrollbar {
+  height: 6px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Dark mode scrollbar */
+.dark .overflow-x-auto::-webkit-scrollbar-track {
+  background: #374151;
+}
+
+.dark .overflow-x-auto::-webkit-scrollbar-thumb {
+  background: #6b7280;
+}
+
+.dark .overflow-x-auto::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Animation for loading spinner */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Hover effects */
+.transaction-row {
+  transition: background-color 0.2s ease-in-out;
+}
+
+/* Status badge styles */
+.status-badge {
+  display: inline-flex;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 9999px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .summary-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .summary-cards.md-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Export dropdown animations */
+.export-dropdown {
+  position: relative;
+}
+
+.export-dropdown .dropdown-menu {
+  transform: translateY(-10px);
+  opacity: 0;
+  transition: all 0.2s ease-in-out;
+  min-width: 320px;
+}
+
+.export-dropdown .dropdown-menu.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* Export filter styling */
+.export-filters {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.export-preview {
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+
+.dark .export-preview {
+  background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+}
+
+/* Hover effects for dropdown items */
+.dropdown-item {
+  transition: background-color 0.15s ease-in-out;
+}
+
+/* Filter animations */
+.rotate-180 {
+  transform: rotate(180deg);
+}
+
+/* Filter form styling */
+.filter-section {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Input focus effects */
+input:focus, select:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+/* Filter summary styling */
+.filter-summary {
+  border-left: 4px solid #3b82f6;
+}
+
+/* Responsive filter grid */
+@media (max-width: 768px) {
+  .filter-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+  .filter-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
