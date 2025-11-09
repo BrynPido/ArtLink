@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../services/admin.service';
 import { SweetAlertService } from '../../services/sweetalert.service';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-message-moderation',
@@ -31,6 +32,26 @@ export class MessageModerationComponent implements OnInit {
 
   ngOnInit() {
     this.loadModerationData();
+    // Prefetch reported messages in the background so the tab is instant
+    this.adminService.getMessageReports('all', this.currentPage, this.itemsPerPage).subscribe({
+      next: (response) => {
+        const payload = response?.payload;
+        this.reportedMessages = (payload?.reports || []).map((r: any) => ({
+          id: r.id,
+          messageId: r.messageId,
+          messageAuthorId: r.messageAuthorId,
+          messageAuthorUsername: r.authorUsername,
+          reporter_username: r.reporterUsername,
+          reporter_name: r.reporterName,
+          reason: r.reason,
+          status: r.status,
+          reported_at: r.createdAt,
+          content_snippet: (r.messageContent || '').slice(0, 120)
+        }));
+        // don't toggle loading here; this is a background warm-up
+      },
+      error: () => {}
+    });
   }
 
   loadModerationData() {
@@ -47,52 +68,88 @@ export class MessageModerationComponent implements OnInit {
   }
 
   loadMessageStats() {
-    // Load general statistics about messaging activity (no private content)
-    // For now, we'll create mock stats since this respects privacy
-    this.messageStats = {
-      totalMessages: 'Protected', // Don't show actual count to protect privacy
-      todayMessages: 'Protected',
-      activeConversations: 'Protected',
-      reportedCount: 0, // Only show reports
-      spamDetected: 0, // Only show spam detection
-      systemHealth: 'Good'
-    };
-    
-    // You could implement this to call a privacy-safe stats endpoint
-    // this.adminService.getMessageStatistics().subscribe({...});
+    // Privacy-safe stats: only aggregate counts for reports/spam; no private content exposure
+    this.adminService.getMessageReportStats().subscribe({
+      next: (res) => {
+        const stats = res?.payload || {};
+        // Backend returns: { totalReports, statusBreakdown: [{status,count}], topReasons }
+        const totalReports = Number(stats.totalReports ?? 0);
+        const spamDetected = 0; // placeholder until spam detection implemented
+        this.messageStats = {
+          totalMessages: 'Protected',
+          todayMessages: 'Protected',
+          activeConversations: 'Protected',
+          reportedCount: totalReports,
+          spamDetected: spamDetected,
+          systemHealth: 'Good'
+        };
+      },
+      error: () => {
+        // Fallback to protected placeholders if endpoint not available
+        this.messageStats = {
+          totalMessages: 'Protected',
+          todayMessages: 'Protected',
+          activeConversations: 'Protected',
+          reportedCount: 0,
+          spamDetected: 0,
+          systemHealth: 'Good'
+        };
+      }
+    });
   }
 
   loadReportedMessages() {
-    // Only load messages that have been explicitly reported by users
-    // This is the only case where admins should see message content
-    this.reportedMessages = [
-      // Mock data - replace with actual reported messages from API
-      // {
-      //   id: 1,
-      //   reporter_username: 'user123',
-      //   reported_reason: 'Harassment',
-      //   reported_at: new Date().toISOString(),
-      //   status: 'pending',
-      //   content_snippet: 'First 50 chars only for context...'
-      // }
-    ];
-    this.loading = false;
+    this.loading = true;
+    // Fetch reported messages via AdminService
+    this.adminService.getMessageReports('all', this.currentPage, this.itemsPerPage).subscribe({
+      next: (response) => {
+        const payload = response?.payload;
+        this.reportedMessages = (payload?.reports || []).map((r: any) => ({
+          id: r.id,
+          messageId: r.messageId,
+          messageAuthorId: r.messageAuthorId,
+          messageAuthorUsername: r.authorUsername,
+          reporter_username: r.reporterUsername,
+          reporter_name: r.reporterName,
+          reason: r.reason,
+          status: r.status,
+          reported_at: r.createdAt,
+          content_snippet: (r.messageContent || '').slice(0, 120)
+        }));
+        // Pagination metadata
+        if (payload?.pagination) {
+          this.totalPages = payload.pagination.totalPages || 1;
+          this.currentPage = payload.pagination.page || 1;
+        }
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('Failed to load message reports', err);
+        this.loading = false;
+      }
+    });
   }
 
   detectSpamPatterns() {
-    // Load messages flagged by automated spam detection
-    this.spamDetected = [
-      // Mock data - replace with actual spam detection from API
-      // {
-      //   id: 1,
-      //   sender_username: 'spammer123',
-      //   spam_score: 95,
-      //   detection_reason: 'Repeated identical messages',
-      //   detected_at: new Date().toISOString(),
-      //   status: 'pending'
-      // }
-    ];
-    this.loading = false;
+    this.loading = true;
+    this.adminService.getSpamDetectedMessages(this.currentPage, this.itemsPerPage).subscribe({
+      next: (res) => {
+        const items = res?.payload?.items || [];
+        this.spamDetected = items.map((i: any) => ({
+          id: i.id,
+          messageId: i.messageId,
+          sender_id: i.senderId,
+          sender_username: i.senderUsername,
+          spam_score: i.score,
+          detection_reason: i.reason,
+          content_snippet: (i.messageContent || '').slice(0, 120),
+          detected_at: i.detectedAt,
+          status: i.status || 'pending'
+        }));
+        this.loading = false;
+      },
+      error: () => { this.spamDetected = []; this.loading = false; }
+    });
   }
 
   setActiveTab(tab: string) {
@@ -101,7 +158,7 @@ export class MessageModerationComponent implements OnInit {
     this.loadModerationData();
   }
 
-  resolveReport(messageId: number, action: 'dismiss' | 'delete') {
+  resolveReport(reportId: number, action: 'dismiss' | 'delete') {
     const actionText = action === 'delete' ? 'delete this reported message' : 'dismiss this report';
     
     this.sweetAlert.confirm(
@@ -111,23 +168,204 @@ export class MessageModerationComponent implements OnInit {
     ).then((result) => {
       if (result.isConfirmed) {
         if (action === 'delete') {
-          this.deleteReportedMessage(messageId);
+          this.deleteReportedMessage(reportId);
         } else {
-          this.dismissReport(messageId);
+          this.dismissReport(reportId);
         }
       }
     });
   }
 
-  deleteReportedMessage(messageId: number) {
-    // Only delete messages that were reported - never browse private messages
-    this.sweetAlert.success('Success!', 'Reported message has been deleted.');
-    this.loadReportedMessages();
+  // Open sender actions (fetch moderation summary + actions)
+  async openSenderActions(report: any) {
+    if (!report || !report.messageAuthorId) {
+      this.sweetAlert.error?.('Missing Data', 'Author information unavailable for this report.');
+      return;
+    }
+    this.loading = true;
+    this.adminService.getUserModerationSummary(report.messageAuthorId).subscribe({
+      next: async (res) => {
+        this.loading = false;
+        const summary = res?.payload;
+        if (!summary) {
+          this.sweetAlert.error?.('Error', 'Failed to load moderation summary');
+          return;
+        }
+        const restriction = summary.activeRestriction;
+        const vol = summary.volumes;
+        const totals = summary.totals;
+        const recent = summary.recentReports || [];
+        const isDarkMode = document.documentElement.classList.contains('dark') || window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const html = `
+          <div style='text-align:left;font-size:13px'>
+            <strong>User:</strong> ${summary.user.username} (${summary.user.name || ''})<br>
+            <strong>Reports:</strong> Total ${totals.total}, Pending ${totals.pending}<br>
+            <strong>Message Volume:</strong> 24h ${vol.last24h}, 7d ${vol.last7d}<br>
+            <strong>Restriction:</strong> ${restriction ? 'Active until ' + (restriction.expiresAt || '(indef)') : 'None'}<br>
+            <hr style='margin:8px 0'>
+            <strong>Recent Report Reasons:</strong><br>
+            ${recent.map((r: any) => `• ${r.reason} (${r.status})`).join('<br>') || 'None'}
+          </div>
+        `;
+        // Add custom HTML for suspend button
+        const footer = `
+          <button id="suspendBtn" class="swal2-styled" style="background-color: #dc2626; margin-right: 8px;">
+            ${restriction?.type === 'account' ? 'Unsuspend Account' : 'Suspend Account'}
+          </button>
+        `;
+
+        const result = await Swal.fire({
+          title: 'Sender Moderation',
+            html,
+            footer,
+            width: 600,
+            showCancelButton: true,
+            cancelButtonText: 'Close',
+            showDenyButton: true,
+            denyButtonText: restriction?.type === 'messaging' ? 'Lift Messaging Restriction' : 'Restrict Messaging',
+            showConfirmButton: true,
+            confirmButtonText: 'Warn User',
+            showLoaderOnConfirm: false,
+            background: isDarkMode ? '#1f2937' : '#ffffff',
+            color: isDarkMode ? '#f3f4f6' : '#111827',
+            customClass: {
+              popup: isDarkMode ? 'border border-gray-700' : 'border border-gray-200',
+              title: 'text-indigo-600 dark:text-indigo-400',
+              confirmButton: 'bg-green-600 hover:bg-green-700',
+              denyButton: 'bg-yellow-600 hover:bg-yellow-700',
+              cancelButton: 'bg-gray-500 hover:bg-gray-600',
+              footer: 'border-t border-gray-200 dark:border-gray-700 pt-3'
+            },
+            didOpen: () => {
+              const suspendBtn = document.getElementById('suspendBtn');
+              suspendBtn?.addEventListener('click', async () => {
+                Swal.close();
+                // Call suspend handler
+                await this.handleSuspendAction(report, restriction?.type === 'account');
+              });
+            }
+        });
+        if (result.isConfirmed) {
+          const warnReason = await this.sweetAlert.input('Warn User', 'Enter warning reason', 'text');
+          if (warnReason.isConfirmed && warnReason.value) {
+            this.adminService.warnUser(report.messageAuthorId, warnReason.value).subscribe({
+              next: () => this.sweetAlert.success('Warning Sent', 'User has been warned.'),
+              error: () => this.sweetAlert.error('Error', 'Failed to send warning')
+            });
+          }
+        } else if (result.isDenied) {
+          if (restriction?.type === 'messaging') {
+            // Lift messaging restriction
+            this.adminService.unrestrictMessaging(report.messageAuthorId).subscribe({
+              next: () => this.sweetAlert.success('Restriction Lifted', 'User can send messages again.'),
+              error: () => this.sweetAlert.error('Error', 'Failed to lift restriction')
+            });
+          } else {
+            // Apply new messaging restriction
+            const durResult = await this.sweetAlert.selectWithOther('Restriction Duration', ['15','60','360','1440','10080'], false);
+            if (durResult.isConfirmed) {
+              const minutes = parseInt(durResult.value, 10);
+              const reasonResult = await this.sweetAlert.selectWithOther('Restriction Reason', ['spam','harassment','hate','other']);
+              if (reasonResult.isConfirmed) {
+                const finalReason = reasonResult.value || reasonResult?.value;
+                this.adminService.restrictMessaging(report.messageAuthorId, minutes, finalReason).subscribe({
+                  next: () => this.sweetAlert.success('Restriction Applied', `Messaging blocked for ${minutes} min.`),
+                  error: () => this.sweetAlert.error('Error', 'Failed to apply restriction')
+                });
+              }
+            }
+          }
+        }
+      },
+      error: () => {
+        this.loading = false;
+        this.sweetAlert.error?.('Error', 'Failed to load moderation summary');
+      }
+    });
   }
 
-  dismissReport(messageId: number) {
-    this.sweetAlert.success('Success!', 'Report has been dismissed.');
-    this.loadReportedMessages();
+  async handleSuspendAction(report: any, isCurrentlySuspended: boolean) {
+    if (isCurrentlySuspended) {
+      // Unsuspend
+      const confirm = await this.sweetAlert.confirm(
+        'Unsuspend Account',
+        'Remove the account suspension and allow this user to access the platform again?',
+        'Yes, unsuspend'
+      );
+      if (confirm.isConfirmed) {
+        this.adminService.unsuspendUser(report.messageAuthorId).subscribe({
+          next: () => {
+            this.sweetAlert.success('Account Unsuspended', 'User can now access the platform.');
+            this.loadModerationData(); // Refresh
+          },
+          error: () => this.sweetAlert.error('Error', 'Failed to unsuspend account')
+        });
+      }
+    } else {
+      // Suspend
+      const confirm = await this.sweetAlert.confirm(
+        'Suspend Account',
+        'This will completely suspend the user\'s account. They will not be able to log in or access the platform. This action can be reversed later.',
+        'Yes, suspend account'
+      );
+      if (confirm.isConfirmed) {
+        const reasonResult = await this.sweetAlert.input('Suspension Reason', 'Enter reason for suspension', 'text');
+        if (reasonResult.isConfirmed && reasonResult.value) {
+          this.adminService.suspendUser(report.messageAuthorId, reasonResult.value).subscribe({
+            next: () => {
+              this.sweetAlert.success('Account Suspended', 'User account has been suspended.');
+              this.loadModerationData(); // Refresh
+            },
+            error: () => this.sweetAlert.error('Error', 'Failed to suspend account')
+          });
+        }
+      }
+    }
+  }
+
+  deleteReportedMessage(reportId: number) {
+    const report = this.reportedMessages.find(r => r.id === reportId);
+    if (!report) {
+      this.sweetAlert.error?.('Error', 'Report not found');
+      return;
+    }
+    // Delete the underlying message, then mark report as actioned
+    this.adminService.deleteMessage(report.messageId, 'Reported message removed').subscribe({
+      next: () => {
+        this.adminService.updateMessageReportStatus(reportId, 'actioned').subscribe({
+          next: () => {
+            this.sweetAlert.success('Success!', 'Reported message has been deleted.');
+            this.loadReportedMessages();
+          },
+          error: () => {
+            this.sweetAlert.success('Success!', 'Message deleted, but failed to update report status.');
+            this.loadReportedMessages();
+          }
+        });
+      },
+      error: (err) => {
+        console.error('Failed to delete reported message', err);
+        this.sweetAlert.error?.('Error', 'Failed to delete message');
+      }
+    });
+  }
+
+  dismissReport(reportId: number) {
+    const report = this.reportedMessages.find(r => r.id === reportId);
+    if (!report) {
+      this.sweetAlert.error?.('Error', 'Report not found in current view');
+      return;
+    }
+    this.adminService.updateMessageReportStatus(report.id, 'dismissed').subscribe({
+      next: () => {
+        this.sweetAlert.success('Success!', 'Report has been dismissed.');
+        this.loadReportedMessages();
+      },
+      error: (err) => {
+        console.error('Failed to dismiss report', err);
+        this.sweetAlert.error?.('Error', 'Failed to dismiss report');
+      }
+    });
   }
 
   markAsSpam(messageId: number) {

@@ -154,9 +154,11 @@
         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead class="bg-gray-50 dark:bg-gray-900">
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Report Details</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Reason</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Report ID</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Reported By</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Violation Type</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Reported User</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Submitted</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
             </tr>
@@ -164,13 +166,18 @@
           <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             <tr *ngFor="let report of reportedMessages" class="hover:bg-gray-50 dark:hover:bg-gray-700">
               <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900 dark:text-white">Report #{{ report.id }}</div>
-                <div class="text-sm text-gray-500 dark:text-gray-400">By: {{ report.reporter_username }}</div>
+                <div class="text-sm font-medium text-gray-900 dark:text-white">#{{ report.id }}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900 dark:text-white">{{ report.reporter_username }}</div>
               </td>
               <td class="px-6 py-4">
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-500/10 text-red-800 dark:text-red-400">
-                  {{ report.reported_reason }}
+                  {{ report.reason }}
                 </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900 dark:text-white">{{ report.messageAuthorUsername }}</div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                 {{ formatMessageTime(report.reported_at) }}
@@ -180,19 +187,30 @@
                   {{ report.status }}
                 </span>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                <button
-                  (click)="resolveReport(report.id, 'delete')"
-                  class="bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
-                >
-                  Delete
-                </button>
-                <button
-                  (click)="resolveReport(report.id, 'dismiss')"
-                  class="bg-green-50 hover:bg-green-100 dark:bg-green-500/10 dark:hover:bg-green-500/20 text-green-600 dark:text-green-400 px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
-                >
-                  Dismiss
-                </button>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <div class="flex items-center gap-2">
+                  <button
+                    (click)="openSenderActions(report)"
+                    class="bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                    title="View reported user's history and take moderation action"
+                  >
+                    Review User
+                  </button>
+                  <button
+                    (click)="resolveReport(report.id, 'delete')"
+                    class="bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                    title="Delete the reported message"
+                  >
+                    Delete
+                  </button>
+                  <button
+                    (click)="resolveReport(report.id, 'dismiss')"
+                    class="bg-gray-50 hover:bg-gray-100 dark:bg-gray-500/10 dark:hover:bg-gray-500/20 text-gray-600 dark:text-gray-400 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                    title="Dismiss this report"
+                  >
+                    Dismiss
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -221,24 +239,33 @@
         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead class="bg-gray-50 dark:bg-gray-900">
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Detection Info</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Message ID</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Author</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Spam Score</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Reason</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Detection Reason</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Detected</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             <tr *ngFor="let spam of spamDetected" class="hover:bg-gray-50 dark:hover:bg-gray-700">
               <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900 dark:text-white">ID: {{ spam.id }}</div>
-                <div class="text-sm text-gray-500 dark:text-gray-400">From: {{ spam.sender_username }}</div>
+                <div class="text-sm font-medium text-gray-900 dark:text-white">#{{ spam.id }}</div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
-                <div class="flex items-center">
-                  <div class="text-sm font-medium text-gray-900 dark:text-white">{{ spam.spam_score }}%</div>
-                  <div class="ml-2 w-16 bg-gray-200 dark:bg-gray-600 rounded-full h-2">
-                    <div class="bg-red-600 dark:bg-red-400 h-2 rounded-full" [style.width.%]="spam.spam_score"></div>
+                <div class="text-sm text-gray-900 dark:text-white">{{ spam.sender_username }}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center gap-2">
+                  <span class="text-sm font-medium text-gray-900 dark:text-white">{{ spam.spam_score }}%</span>
+                  <div class="w-20 bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                    <div 
+                      class="h-2 rounded-full transition-all"
+                      [class.bg-yellow-500]="spam.spam_score < 50"
+                      [class.bg-orange-500]="spam.spam_score >= 50 && spam.spam_score < 75"
+                      [class.bg-red-500]="spam.spam_score >= 75"
+                      [style.width.%]="spam.spam_score"
+                    ></div>
                   </div>
                 </div>
               </td>
@@ -251,12 +278,22 @@
                 {{ formatMessageTime(spam.detected_at) }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <button
-                  (click)="markAsSpam(spam.id)"
-                  class="bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
-                >
-                  Confirm Spam
-                </button>
+                <div class="flex items-center gap-2">
+                  <button
+                    (click)="openSenderActions({ messageAuthorId: spam.sender_id, messageAuthorUsername: spam.sender_username })"
+                    class="bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                    title="View user's history and take moderation action"
+                  >
+                    Review User
+                  </button>
+                  <button
+                    (click)="markAsSpam(spam.id)"
+                    class="bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                    title="Confirm as spam and take action"
+                  >
+                    Confirm Spam
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>

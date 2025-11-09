@@ -78,6 +78,20 @@ export class SweetAlertService {
     });
   }
 
+  // Archive confirmation (soft delete semantics)
+  confirmArchive(itemName: string = 'item', customText?: string): Promise<any> {
+    return Swal.fire({
+      icon: 'warning',
+      title: 'Archive this record?',
+      text: customText || `This ${itemName} will be archived and hidden. It can be restored within the retention window before permanent cleanup.`,
+      showCancelButton: true,
+      confirmButtonColor: '#f59e0b', // amber for archive (less destructive than red)
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, archive',
+      cancelButtonText: 'Cancel'
+    });
+  }
+
   // Bulk delete confirmation
   confirmBulkDelete(count: number, itemType: string = 'items'): Promise<any> {
     return Swal.fire({

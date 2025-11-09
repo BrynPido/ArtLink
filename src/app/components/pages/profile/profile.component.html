@@ -21,7 +21,8 @@
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-4 mb-3">
           <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white truncate">{{ user?.name }}</h1>
           <div class="flex gap-2 justify-center md:justify-start">
-            <button *ngIf="currentUser?.id !== user?.id"
+            <!-- Hide action buttons until ownership is resolved to prevent flash -->
+            <button *ngIf="isOwnProfile === false"
                     (click)="toggleFollow()"
                     class="px-3 py-1 sm:px-4 sm:py-1.5 rounded-lg transition-colors text-xs sm:text-sm"
                     [ngClass]="{
@@ -30,7 +31,7 @@
                     }">
               {{ isFollowing ? 'Following' : 'Follow' }}
             </button>
-            <button *ngIf="currentUser?.id !== user?.id"
+            <button *ngIf="isOwnProfile === false"
                     (click)="goToChat(user.id)"
                     class="px-3 py-1 sm:px-4 sm:py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-xs sm:text-sm text-gray-700 dark:text-gray-300">
               Message
@@ -165,7 +166,7 @@
             Listings
           </button>
           <button 
-            *ngIf="isOwnProfile"
+            *ngIf="isOwnProfile === true"
             (click)="switchTab('liked')"
             class="pb-2 font-medium hover:text-gray-700 dark:hover:text-gray-300 flex items-center text-xs sm:text-sm flex-shrink-0 transition-colors"
             [ngClass]="{
@@ -176,7 +177,7 @@
             Liked
           </button>
           <button 
-            *ngIf="isOwnProfile"
+            *ngIf="isOwnProfile === true"
             (click)="switchTab('saved')"
             class="pb-2 font-medium hover:text-gray-700 dark:hover:text-gray-300 flex items-center text-xs sm:text-sm flex-shrink-0 transition-colors"
             [ngClass]="{

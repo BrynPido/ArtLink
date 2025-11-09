@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { AdminService } from '../../services/admin.service';
 import { SweetAlertService } from '../../services/sweetalert.service';
 import { getDeletionReasons } from '../../constants/deletion-reasons';
+import { Workbook } from 'exceljs';
 
 interface Post {
   id: number;
@@ -40,6 +41,7 @@ export class PostManagementComponent implements OnInit, OnDestroy {
   showPostModal = false;
   selectedPost: Post | null = null;
   actionLoading = false;
+  showPostExportMenu = false;
 
   // Image viewer properties
   showImageViewer = false;
@@ -255,7 +257,7 @@ export class PostManagementComponent implements OnInit, OnDestroy {
       Title: post.title,
       Author: post.authorName,
       Username: `@${post.authorUsername}`,
-      'Created At': post.createdAt,
+      'Created At': this.formatDateHuman(post.createdAt),
       Status: post.published ? 'Published' : 'Hidden',
       Likes: post.likesCount,
       Comments: post.commentsCount,
@@ -263,6 +265,134 @@ export class PostManagementComponent implements OnInit, OnDestroy {
     }));
 
     this.downloadCSV(csvData, 'posts-export.csv');
+  }
+
+  // New: Excel export with branded header
+  async exportPostsExcel() {
+    const wb = new Workbook();
+    const ws = wb.addWorksheet('Posts', {
+      pageSetup: {
+        orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 1,
+        margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 },
+        horizontalCentered: true
+      },
+      views: [{ showGridLines: false }]
+    });
+
+    await this.applyBrandingHeader(ws, wb, {
+      title: 'Posts Export',
+      subtitle: `Exported ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} • ${this.posts.length} posts`,
+      mergeTo: 'I3'
+    });
+
+    ws.addRow(['ID', 'Title', 'Author', 'Username', 'Status', 'Likes', 'Comments', 'Created At', 'Content']);
+    const header = ws.getRow(ws.lastRow!.number);
+    header.font = { bold: true, color: { argb: 'FFFFFFFF' } } as any;
+    header.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F2937' } } as any;
+
+    this.posts.forEach(p => {
+      ws.addRow([
+        p.id,
+        p.title || '',
+        p.authorName || '',
+        `@${p.authorUsername || ''}`,
+        p.published ? 'Published' : 'Hidden',
+        p.likesCount || 0,
+        p.commentsCount || 0,
+        this.formatDateHuman(p.createdAt),
+        this.truncateText(p.content, 100)
+      ]);
+    });
+
+    ws.columns = [
+      { width: 8 }, { width: 32 }, { width: 22 }, { width: 18 }, { width: 14 }, { width: 10 }, { width: 12 }, { width: 18 }, { width: 40 }
+    ] as any;
+
+    const headerRowNum = header.number;
+    const lastRowNum = ws.lastRow?.number || headerRowNum;
+    for (let r = headerRowNum; r <= lastRowNum; r++) {
+      for (let c = 1; c <= 9; c++) {
+        ws.getCell(r, c).border = {
+          top: { style: r === headerRowNum ? 'thin' : undefined },
+          bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' }
+        } as any;
+      }
+    }
+
+    ws.views = [{ state: 'frozen', ySplit: 3, showGridLines: false }];
+    (ws as any).autoFilter = { from: { row: headerRowNum, column: 1 }, to: { row: headerRowNum, column: 9 } };
+    ws.pageSetup.printArea = `A1:I${lastRowNum}`;
+    ws.headerFooter.oddFooter = `&LArtLink Admin&CGenerated ${new Date().toLocaleDateString()}&RPage &P of &N`;
+
+    const buf = await wb.xlsx.writeBuffer();
+    this.downloadBlob(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), 'artlink-posts.xlsx');
+  }
+
+  private async loadLogoMeta(): Promise<{ base64: string; width: number; height: number } | null> {
+    try {
+      const res = await fetch('/assets/images/Artlink_Logo.png');
+      const blob = await res.blob();
+      const [base64, dims] = await Promise.all([
+        new Promise<string>((resolve, reject) => {
+          const fr = new FileReader();
+          fr.onloadend = () => resolve((fr.result as string).split(',')[1]);
+          fr.onerror = reject;
+          fr.readAsDataURL(blob);
+        }),
+        new Promise<{ width: number; height: number }>((resolve, reject) => {
+          const url = URL.createObjectURL(blob);
+          const img = new Image();
+          img.onload = () => { const meta = { width: img.naturalWidth || 240, height: img.naturalHeight || 60 }; URL.revokeObjectURL(url); resolve(meta); };
+          img.onerror = (err) => { URL.revokeObjectURL(url); reject(err); };
+          img.src = url;
+        })
+      ]);
+      return { base64, width: (dims as any).width, height: (dims as any).height };
+    } catch (e) {
+      console.warn('Failed to load logo for Excel export:', e);
+      return null;
+    }
+  }
+
+  private async applyBrandingHeader(ws: any, wb: Workbook, opts: { title: string; subtitle: string; mergeTo?: string }) {
+    // Reserve columns A/B for logo and gutter so title never overlaps
+    ws.getColumn(1).width = 24;
+    ws.getColumn(2).width = 4;
+    const r1 = ws.getRow(1); const r2 = ws.getRow(2); const r3 = ws.getRow(3);
+    let headerRowHeight = 35;
+    const logoMeta = await this.loadLogoMeta();
+    if (logoMeta) {
+      const imageId = wb.addImage({ base64: logoMeta.base64, extension: 'png' });
+      const targetWidth = 150; const scale = targetWidth / (logoMeta.width || targetWidth);
+      const height = Math.round((logoMeta.height || 60) * scale);
+      ws.addImage(imageId, { tl: { col: 0, row: 0 }, ext: { width: targetWidth, height } } as any);
+      headerRowHeight = Math.max(38, Math.ceil(height / 3));
+    }
+    r1.height = headerRowHeight; r2.height = headerRowHeight; r3.height = headerRowHeight;
+    const mergeTo = opts.mergeTo || 'F3';
+    ws.mergeCells(`C1:${mergeTo}`);
+    const cell = ws.getCell('C1');
+    cell.value = { richText: [
+      { text: opts.title + '\n', font: { size: 16, bold: true, color: { argb: 'FF111827' } } },
+      { text: opts.subtitle, font: { size: 11, color: { argb: 'FF6B7280' } } }
+    ] } as any;
+    cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true } as any;
+    ws.pageSetup.printTitlesRow = '1:3';
+    while ((ws.lastRow?.number ?? 0) < 3) { ws.addRow([]); }
+    ws.views = [{ state: 'frozen', ySplit: 3, showGridLines: false }];
+  }
+
+  private formatDateHuman(raw: string | undefined | null): string {
+    if (!raw) return '';
+    const d = new Date(raw.length === 10 ? raw + 'T00:00:00' : raw);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  }
+
+  private downloadBlob(blob: Blob, filename: string) {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+    window.URL.revokeObjectURL(url);
   }
 
   private downloadCSV(data: any[], filename: string) {

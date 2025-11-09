@@ -25,7 +25,8 @@ export class ProfileComponent implements OnInit {
   activeTab: 'posts' | 'saved' | 'liked' | 'listings' = 'posts';
   isLoading: boolean = true;
   error: string | null = null;
-  isOwnProfile: boolean = false;
+  // Tri-state: null (unknown/initial), true (own profile), false (someone else's)
+  isOwnProfile: boolean | null = null;
   listings: Listing[] = [];
   showProfilePicModal = false;
   imageChangedEvent: any = '';
@@ -59,6 +60,7 @@ export class ProfileComponent implements OnInit {
     this.route.paramMap.subscribe((params) => {
       const userId = params.get('id');
       if (userId) {
+        // Immediately determine ownership from route param and current user to avoid UI flash
         this.isOwnProfile = this.currentUser?.id === parseInt(userId, 10);
         this.loadUserProfile(userId);
       }

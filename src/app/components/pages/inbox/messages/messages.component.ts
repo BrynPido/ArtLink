@@ -6,6 +6,7 @@ import { DataService } from '../../../../services/data.service';
 import { Router, RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { TimeAgoPipe } from '../../../../utils/time-ago.pipe';
+import { ToastService } from '../../../../services/toast.service';
 
 
 @Component({
@@ -40,11 +41,19 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   activeTab: 'listings' | 'direct' = 'direct'; // Default to direct messages tab
 
+  // Report modal state
+  showReportModal: boolean = false;
+  reportReason: string = '';
+  reportDescription: string = '';
+  reportTargetMessageId: number | null = null;
+  submittingReport: boolean = false;
+
   constructor(
     private messagingService: MessagingService,
     private dataService: DataService,
     private router: Router,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private toast: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -441,5 +450,49 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
     return conversation.user1Id === this.currentUser.id 
       ? conversation.user2Id 
       : conversation.user1Id;
+  }
+
+  // === Reporting ===
+  canReport(message: Message): boolean {
+    // Users cannot report their own messages
+    return this.currentUser && message.authorId !== this.currentUser.id;
+  }
+
+  openReportModal(message: Message): void {
+    if (!this.canReport(message)) return;
+    this.reportTargetMessageId = Number(message.id);
+    this.reportReason = '';
+    this.reportDescription = '';
+    this.showReportModal = true;
+    this.cdr.markForCheck();
+  }
+
+  closeReportModal(): void {
+    this.showReportModal = false;
+    this.reportTargetMessageId = null;
+    this.reportReason = '';
+    this.reportDescription = '';
+    this.submittingReport = false;
+    this.cdr.markForCheck();
+  }
+
+  submitReport(): void {
+    if (!this.reportTargetMessageId || !this.reportReason.trim()) {
+      this.toast.showToast('Please select a reason', 'warning');
+      return;
+    }
+    this.submittingReport = true;
+    this.dataService.reportMessage(this.reportTargetMessageId, this.reportReason, this.reportDescription).subscribe({
+      next: () => {
+        this.toast.showToast('Report submitted. Thank you for keeping ArtLink safe.', 'success');
+        this.closeReportModal();
+      },
+      error: (err) => {
+        const msg = err?.message || 'Failed to submit report';
+        this.toast.showToast(msg, 'error');
+        this.submittingReport = false;
+        this.cdr.markForCheck();
+      }
+    });
   }
 }

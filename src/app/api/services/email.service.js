@@ -3,7 +3,8 @@ const nodemailer = require('nodemailer');
 class EmailService {
   constructor() {
     this.transporter = null;
-    this.initializeTransporter();
+    // Keep a promise reference so we can await initialization later if needed
+    this.initializationPromise = this.initializeTransporter();
   }
 
   /**
@@ -15,11 +16,14 @@ class EmailService {
       const emailProvider = process.env.EMAIL_PROVIDER || 'smtp';
       
       if (emailProvider === 'gmail') {
+        // Support both EMAIL_* and SMTP_* variable names for convenience
+        const gmailUser = process.env.EMAIL_USER || process.env.SMTP_USER;
+        const gmailPass = process.env.EMAIL_APP_PASSWORD || process.env.SMTP_PASS;
         this.transporter = nodemailer.createTransport({
           service: 'gmail',
           auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_APP_PASSWORD // Use App Password for Gmail
+            user: gmailUser,
+            pass: gmailPass // Gmail App Password recommended
           }
         });
       } else if (emailProvider === 'sendgrid') {
@@ -101,6 +105,18 @@ class EmailService {
   }
 
   /**
+   * Notify user account archived (soft delete)
+   * @param {string} email - Recipient email
+   * @param {string} userName - User name
+   * @param {string} reason - Archival reason
+   */
+  async sendAccountArchivedEmail(email, userName = '', reason = '') {
+    const subject = 'Your ArtLink Account Has Been Archived';
+    const html = this.generateAccountArchivedTemplate(userName, reason);
+    return await this.sendEmail(email, subject, html);
+  }
+
+  /**
    * Send generic email
    * @param {string} to - Recipient email
    * @param {string} subject - Email subject
@@ -108,8 +124,20 @@ class EmailService {
    */
   async sendEmail(to, subject, html) {
     try {
+      // Ensure transporter initialized (handles race condition if first email fires before async init completes)
       if (!this.transporter) {
-        console.log('📧 Email service not configured, logging OTP instead:', { to, subject });
+        if (this.initializationPromise) {
+          await this.initializationPromise.catch(() => {});
+        }
+      }
+
+      // Retry initialization once if still not set
+      if (!this.transporter) {
+        await this.initializeTransporter();
+      }
+
+      if (!this.transporter) {
+        console.log('📧 Email service not configured (after retry), cannot send email:', { to, subject });
         return {
           success: false,
           error: 'Email service not configured'
@@ -141,6 +169,21 @@ class EmailService {
         error: error.message
       };
     }
+  }
+
+  /**
+   * Explicit transporter guard that routes could optionally call
+   */
+  async ensureTransporter() {
+    if (!this.transporter) {
+      if (this.initializationPromise) {
+        await this.initializationPromise.catch(() => {});
+      }
+      if (!this.transporter) {
+        await this.initializeTransporter();
+      }
+    }
+    return !!this.transporter;
   }
 
   /**
@@ -274,6 +317,15 @@ class EmailService {
       </div>
     </body>
     </html>`;
+  }
+
+  /**
+   * Generate HTML template for account archived notification
+   */
+  generateAccountArchivedTemplate(userName, reason) {
+    const greeting = userName ? `Hi ${userName},` : 'Hello,';
+    const reasonHtml = reason ? `<p style="margin:0 0 12px 0"><strong>Reason provided:</strong> ${reason}</p>` : '';
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Account Archived - ArtLink</title><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.6;color:#374151;margin:0;padding:0;background:#f3f4f6}.container{max-width:620px;margin:0 auto;background:#ffffff;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.08);overflow:hidden}.header{background:linear-gradient(135deg,#F59E0B,#D97706);color:#fff;padding:28px;text-align:center}.header h1{margin:0;font-size:22px;font-weight:600}.content{padding:32px}.badge{display:inline-block;background:#FEF3C7;color:#92400E;font-size:12px;font-weight:600;padding:6px 12px;border-radius:999px;letter-spacing:.5px;margin-bottom:20px;text-transform:uppercase}.panel{background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;padding:18px;margin:22px 0}.footer{background:#f9fafb;padding:24px;text-align:center;color:#6b7280;font-size:13px}.button{display:inline-block;background:#D97706;color:#fff;padding:12px 20px;text-decoration:none;border-radius:6px;font-weight:600;margin-top:12px}</style></head><body><div class="container"><div class="header"><h1>Account Archived</h1><p style="margin-top:6px;font-size:14px;opacity:.9">Your presence on ArtLink is temporarily inactive</p></div><div class="content"><span class="badge">STATUS: ARCHIVED</span><p>${greeting}</p><p>Your ArtLink account has been <strong>archived</strong> by an administrator. While archived, your profile and associated content will not be publicly visible. Most data is retained internally for a period of up to <strong>60 days</strong>.</p>${reasonHtml}<div class="panel"><p style="margin:0 0 10px 0;font-weight:600;color:#92400E">What does this mean?</p><ul style="margin:0 0 0 18px;padding:0;color:#6b7280;font-size:14px"><li>Your profile is hidden from public view.</li><li>Posts and listings are retained but may be inaccessible.</li><li>You may request restoration within 60 days.</li><li>After 60 days the account may be permanently purged.</li></ul></div><p>If you believe this action was a mistake or want to restore your account, please reply to this email or contact support through the help center.</p><p>Regards,<br>The ArtLink Team</p></div><div class="footer"><p>This is an automated message – please do not reply directly.</p><p>© ${new Date().getFullYear()} ArtLink. All rights reserved.</p></div></div></body></html>`;
   }
 
   /**

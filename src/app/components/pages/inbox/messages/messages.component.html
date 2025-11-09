@@ -309,6 +309,9 @@
             <div class="message-content">
               <p>{{ message.content }}</p>
               <span class="message-time">{{ message.createdAt | timeAgo }}</span>
+              <button *ngIf="canReport(message)" (click)="openReportModal(message)" class="report-btn" title="Report message" aria-label="Report message">
+                <span class="material-symbols-outlined text-xs">flag</span>
+              </button>
             </div>
           </div>
         </div>
@@ -336,5 +339,40 @@
         </div>
       </div>
     </ng-container>
+  </div>
+</div>
+
+<!-- Report Modal -->
+<div class="report-modal-backdrop" *ngIf="showReportModal">
+  <div class="report-modal" role="dialog" aria-modal="true" aria-labelledby="reportMessageTitle">
+    <div class="modal-header">
+      <h3 id="reportMessageTitle">Report Message</h3>
+      <button (click)="closeReportModal()" class="close-btn" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="privacy-note">Only this specific message will be sent to moderators. Your identity is not shared with the other user.</p>
+      <label class="block mb-2 text-sm font-medium">Reason <span class="text-red-500">*</span></label>
+      <select [(ngModel)]="reportReason" class="w-full mb-4">
+        <option value="" disabled>Select reason</option>
+        <option value="harassment">Harassment / Bullying</option>
+        <option value="spam">Spam / Scam</option>
+        <option value="hate">Hate / Discrimination</option>
+        <option value="nudity">Nudity / Sexual content</option>
+        <option value="violence">Violence / Threats</option>
+        <option value="other">Other</option>
+      </select>
+      <label class="block mb-2 text-sm font-medium">Additional details (optional)</label>
+      <textarea [(ngModel)]="reportDescription" maxlength="500" rows="4" placeholder="Provide context to help moderators (max 500 chars)" class="w-full"></textarea>
+      <div class="text-xs text-right mt-1 opacity-70">{{ reportDescription.length }}/500</div>
+    </div>
+    <div class="modal-footer">
+      <button (click)="closeReportModal()" class="cancel-btn" [disabled]="submittingReport">Cancel</button>
+      <button (click)="submitReport()" class="submit-btn" [disabled]="submittingReport || !reportReason">
+        <span *ngIf="!submittingReport">Submit Report</span>
+        <span *ngIf="submittingReport" class="flex items-center gap-1">
+          <span class="loader"></span> Sending...
+        </span>
+      </button>
+    </div>
   </div>
 </div>

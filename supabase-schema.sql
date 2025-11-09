@@ -248,3 +248,42 @@ SELECT setval(pg_get_serial_sequence('follow', 'id'), (SELECT MAX(id) FROM follo
 SELECT setval(pg_get_serial_sequence('conversation', 'id'), (SELECT MAX(id) FROM conversation));
 SELECT setval(pg_get_serial_sequence('message', 'id'), (SELECT MAX(id) FROM message));
 SELECT setval(pg_get_serial_sequence('notification', 'id'), (SELECT MAX(id) FROM notification));
+
+-- === Message Reporting Extension (New Table) ===
+-- Stores reports for individual messages without duplicating message content.
+-- Privacy principles: only reported messages are surfaced to admins.
+-- Apply separately via migration in production.
+CREATE TABLE IF NOT EXISTS message_report (
+  id SERIAL PRIMARY KEY,
+  "messageId" INTEGER NOT NULL REFERENCES message(id) ON DELETE CASCADE,
+  "conversationId" INTEGER NOT NULL REFERENCES conversation(id) ON DELETE CASCADE,
+  "reporterId" INTEGER NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+  reason VARCHAR(100) NOT NULL,
+  description TEXT,
+  status VARCHAR(30) NOT NULL DEFAULT 'pending',
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE("messageId", "reporterId")
+);
+
+CREATE INDEX IF NOT EXISTS idx_message_report_status ON message_report(status);
+CREATE INDEX IF NOT EXISTS idx_message_report_message ON message_report("messageId");
+CREATE INDEX IF NOT EXISTS idx_message_report_reporter ON message_report("reporterId");
+
+-- === User Messaging Restriction Table (Moderation) ===
+-- Stores temporary restrictions (e.g., messaging mute) applied by admins.
+-- A restriction with future expiresAt is considered active. Type allows future extension.
+CREATE TABLE IF NOT EXISTS user_restriction (
+  id SERIAL PRIMARY KEY,
+  "userId" INTEGER NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+  type VARCHAR(50) NOT NULL, -- e.g. 'messaging'
+  reason VARCHAR(255) NOT NULL,
+  "adminId" INTEGER REFERENCES "user"(id) ON DELETE SET NULL,
+  metadata JSONB,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "expiresAt" TIMESTAMP(3)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_restriction_user ON user_restriction("userId");
+CREATE INDEX IF NOT EXISTS idx_user_restriction_active ON user_restriction(type, "expiresAt");
+CREATE INDEX IF NOT EXISTS idx_user_restriction_expires ON user_restriction("expiresAt");

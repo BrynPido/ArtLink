@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AdminService, AdminStats } from '../../services/admin.service';
-import { Chart, registerables } from 'chart.js';
+import { Chart, registerables, Decimation } from 'chart.js';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -17,9 +17,15 @@ export class AdminDashboardComponent implements OnInit {
   loading = true;
   userGrowthChart: Chart | null = null;
   contentChart: Chart | null = null;
+  selectedGrowthPeriod: string = '30days';
+  showCumulative: boolean = false;
+  growthLoading: boolean = false;
+  growthError: string | null = null;
 
   constructor(private adminService: AdminService) {
     Chart.register(...registerables);
+    // Explicitly register decimation plugin for large datasets
+    Chart.register(Decimation);
   }
 
   ngOnInit() {
@@ -56,17 +62,7 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   loadCharts() {
-    // User Growth Chart
-    this.adminService.getUserGrowthStats('30days').subscribe({
-      next: (response: any) => {
-        if (response.status === 'success') {
-          this.createUserGrowthChart(response.payload);
-        }
-      },
-      error: (error: any) => {
-        console.error('Error loading user growth stats:', error);
-      }
-    });
+    this.loadUserGrowthChart();
 
     // Content Stats Chart
     this.adminService.getContentStats('30days').subscribe({
@@ -81,6 +77,59 @@ export class AdminDashboardComponent implements OnInit {
     });
   }
 
+  loadUserGrowthChart() {
+    this.growthLoading = true;
+    this.growthError = null;
+    if (this.userGrowthChart) {
+      this.userGrowthChart.destroy();
+      this.userGrowthChart = null;
+    }
+    this.adminService.getUserGrowthStats(this.selectedGrowthPeriod).subscribe({
+      next: (response: any) => {
+        if (response.status === 'success') {
+          const payload = response.payload || {};
+          // Normalize labels (convert ISO/date strings to readable)
+          const rawLabels: any[] = payload.labels || [];
+          const formattedLabels = rawLabels.map(d => this.formatGrowthLabel(d));
+          const normalized = {
+            labels: formattedLabels,
+            newUsers: (payload.newUsers || payload.values || []).map((v: any) => parseInt(v, 10) || 0),
+            totalUsers: (payload.totalUsers || []).map((v: any) => parseInt(v, 10) || 0)
+          };
+          this.createUserGrowthChart(normalized);
+          console.debug('[Dashboard] User growth chart built:', {
+            period: this.selectedGrowthPeriod,
+            points: normalized.labels.length,
+            showCumulative: this.showCumulative
+          });
+        }
+        this.growthLoading = false;
+      },
+      error: (error: any) => {
+        console.error('Error loading user growth stats:', error);
+        this.growthError = 'Failed to load user growth data.';
+        this.growthLoading = false;
+      }
+    });
+  }
+
+  onGrowthPeriodChange(period: string) {
+    this.selectedGrowthPeriod = period;
+    this.loadUserGrowthChart();
+  }
+
+  toggleCumulative() {
+    this.showCumulative = !this.showCumulative;
+    // Rebuild chart with new dataset visibility
+    if (this.userGrowthChart) {
+      const cumulativeDataset = this.userGrowthChart.data.datasets.find(ds => ds.label === 'Total Users');
+      if (cumulativeDataset) {
+        cumulativeDataset.hidden = !this.showCumulative;
+        this.userGrowthChart.update();
+      }
+    }
+  }
+
   createUserGrowthChart(data: any) {
     const ctx = document.getElementById('userGrowthChart') as HTMLCanvasElement;
     if (ctx) {
@@ -90,11 +139,20 @@ export class AdminDashboardComponent implements OnInit {
           labels: data.labels,
           datasets: [{
             label: 'New Users',
-            data: data.values,
+            data: data.newUsers || data.values,
             borderColor: 'rgb(99, 102, 241)',
             backgroundColor: 'rgba(99, 102, 241, 0.1)',
             tension: 0.1,
             fill: true
+          }, {
+            label: 'Total Users',
+            data: data.totalUsers || [],
+            borderColor: 'rgba(16,185,129,0.9)',
+            backgroundColor: 'rgba(16,185,129,0.05)',
+            tension: 0.15,
+            fill: false,
+            hidden: !this.showCumulative,
+            yAxisID: 'y'
           }]
         },
         options: {
@@ -103,16 +161,65 @@ export class AdminDashboardComponent implements OnInit {
           plugins: {
             title: {
               display: true,
-              text: 'User Growth (Last 30 Days)'
-            }
+              text: this.getGrowthTitle()
+            },
+            legend: { position: 'bottom' },
+            tooltip: { intersect: false, mode: 'index' },
+            decimation: { enabled: true, algorithm: 'lttb' }
           },
           scales: {
+                    // Choose step based on total points
             y: {
               beginAtZero: true
+            },
+            x: {
+              ticks: {
+                maxRotation: 0,
+                autoSkip: true,
+                callback: (val: any, idx: number) => {
+                  // Show fewer labels for large ranges
+                  const total = data.labels.length;
+                  const step = total > 120 ? 15 : total > 60 ? 10 : total > 30 ? 5 : 1;
+                  return idx % step === 0 ? data.labels[idx] : '';
+                }
+              }
             }
           }
         }
       });
+    }
+  }
+
+  private getGrowthTitle(): string {
+    const map: any = {
+      '7days': 'Last 7 Days',
+      '30days': 'Last 30 Days',
+      '90days': 'Last 90 Days',
+      '6months': 'Last 6 Months',
+      '1year': 'Last 1 Year'
+    };
+    return `User Growth (${map[this.selectedGrowthPeriod] || this.selectedGrowthPeriod})`;
+  }
+
+  private formatGrowthLabel(raw: any): string {
+    try {
+      const d = new Date(raw);
+      if (isNaN(d.getTime())) return String(raw);
+      // Decide format based on period length
+      switch (this.selectedGrowthPeriod) {
+        case '7days':
+        case '30days':
+          return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        case '90days':
+        case '6months':
+          return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        case '1year':
+          return d.toLocaleDateString('en-US', { month: 'short' });
+        default:
+          return d.toLocaleDateString('en-US');
+      }
+    } catch {
+      return String(raw);
     }
   }
 

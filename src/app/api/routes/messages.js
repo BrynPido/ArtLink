@@ -279,6 +279,29 @@ router.post('/send', authenticateToken, async (req, res) => {
     const { receiverId, content, conversationId } = req.body;
     const senderId = req.user.id;
 
+    // Check if sender is currently restricted from sending messages
+    try {
+      const restriction = await queryOne(
+        `SELECT id, type, "expiresAt" FROM user_restriction
+         WHERE "userId" = $1 AND type IN ('messaging','account')
+           AND ("expiresAt" IS NULL OR "expiresAt" > CURRENT_TIMESTAMP)
+         ORDER BY CASE WHEN type='account' THEN 0 ELSE 1 END, "createdAt" DESC
+         LIMIT 1`,
+        [senderId]
+      );
+      if (restriction) {
+        return res.status(403).json({
+          status: 'error',
+          message: restriction.type === 'account'
+            ? 'Your account is suspended and cannot send messages.'
+            : 'Your messaging privileges are temporarily restricted.'
+        });
+      }
+    } catch (e) {
+      // Non-blocking: if restriction check fails, continue gracefully
+      console.warn('Restriction check failed (non-blocking):', e?.message || e);
+    }
+
     if (!content || content.trim() === '') {
       return res.status(400).json({
         status: 'error',
@@ -508,3 +531,92 @@ router.delete('/:messageId', authenticateToken, async (req, res) => {
 });
 
 module.exports = router;
+/**
+ * === MESSAGE REPORTING ENDPOINTS (Privacy-Preserving) ===
+ * These endpoints only expose the single reported message. They never allow bulk
+ * browsing of private conversations. Admin aggregation is handled separately.
+ */
+
+// Report a message
+router.post('/:messageId/report', authenticateToken, async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { reason, description } = req.body;
+    const reporterId = req.user.id;
+
+    if (!reason) {
+      return res.status(400).json({ status: 'error', message: 'Reason is required' });
+    }
+
+    // Validate message exists and reporter participates in conversation
+    const message = await queryOne(
+      'SELECT m.id, m."authorId", m."conversationId", c."user1Id", c."user2Id" FROM message m JOIN conversation c ON m."conversationId" = c.id WHERE m.id = $1',
+      [messageId]
+    );
+    if (!message) {
+      return res.status(404).json({ status: 'error', message: 'Message not found' });
+    }
+
+    // Ensure reporter is participant
+    if (reporterId !== message.user1Id && reporterId !== message.user2Id) {
+      return res.status(403).json({ status: 'error', message: 'Not a participant in this conversation' });
+    }
+
+    // Prevent self-report (optional, avoids abuse)
+    if (message.authorId === reporterId) {
+      return res.status(400).json({ status: 'error', message: 'You cannot report your own message' });
+    }
+
+    // Check duplicate
+    const existing = await queryOne(
+      'SELECT id FROM message_report WHERE "messageId" = $1 AND "reporterId" = $2',
+      [messageId, reporterId]
+    );
+    if (existing) {
+      return res.status(400).json({ status: 'error', message: 'You have already reported this message' });
+    }
+
+    // Insert report (content not duplicated; referenced by FK)
+    const inserted = await queryOne(
+      'INSERT INTO message_report ("messageId", "conversationId", "reporterId", reason, description, status, "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5, \'pending\', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id',
+      [messageId, message.conversationId, reporterId, reason, description || null]
+    );
+
+    return res.json({ status: 'success', message: 'Message reported', payload: { reportId: inserted.id } });
+  } catch (error) {
+    console.error('Report message error:', error);
+    return res.status(500).json({ status: 'error', message: 'Failed to report message' });
+  }
+});
+
+// Check if user has reported a specific message
+router.get('/:messageId/check-report', authenticateToken, async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const userId = req.user.id;
+    const report = await queryOne(
+      'SELECT id FROM message_report WHERE "messageId" = $1 AND "reporterId" = $2',
+      [messageId, userId]
+    );
+    return res.json({ status: 'success', payload: { hasReported: !!report } });
+  } catch (error) {
+    console.error('Check message report error:', error);
+    return res.status(500).json({ status: 'error', message: 'Failed to check message report status' });
+  }
+});
+
+// (Optional) Get current user's message reports
+router.get('/reports/my', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const reports = await query(
+      'SELECT mr.id, mr."messageId", mr.reason, mr.description, mr.status, mr."createdAt" FROM message_report mr WHERE mr."reporterId" = $1 ORDER BY mr."createdAt" DESC',
+      [userId]
+    );
+    return res.json({ status: 'success', payload: reports });
+  } catch (error) {
+    console.error('Get own message reports error:', error);
+    return res.status(500).json({ status: 'error', message: 'Failed to fetch message reports' });
+  }
+});
+

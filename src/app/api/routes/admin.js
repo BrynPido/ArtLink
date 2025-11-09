@@ -2,6 +2,8 @@ const express = require('express');
 const { query, queryOne } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const softDeleteService = require('../services/soft-delete.service');
+const emailService = require('../services/email.service');
+const { createNotification } = require('./notifications');
 
 const router = express.Router();
 
@@ -12,6 +14,53 @@ router.use((req, res, next) => {
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control');
   
+
+// Suspend user (account-level restriction)
+router.post('/users/:userId/suspend', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const adminId = req.user?.id || null;
+    const { reason = 'Account suspended due to policy violation' } = req.body || {};
+
+    const user = await queryOne('SELECT id FROM "user" WHERE id = $1', [userId]);
+    if (!user) return res.status(404).json({ status: 'error', message: 'User not found' });
+
+    const ins = await query(
+      `INSERT INTO user_restriction ("userId", type, reason, "adminId", metadata, "expiresAt")
+       VALUES ($1, 'account', $2, $3, $4, NULL)
+       RETURNING id`,
+      [userId, reason, adminId, JSON.stringify({ source: 'admin_panel' })]
+    );
+
+    await softDeleteService.logAdminAction(adminId, 'suspend_user', 'user', Number(userId), reason);
+
+    return res.json({ status: 'success', message: 'User suspended', payload: ins.rows?.[0] || null });
+  } catch (error) {
+    console.error('Error suspending user:', error);
+    return res.status(500).json({ status: 'error', message: 'Failed to suspend user' });
+  }
+});
+
+// Unsuspend user (remove active account restriction)
+router.post('/users/:userId/unsuspend', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const adminId = req.user?.id || null;
+
+    await query(
+      `UPDATE user_restriction SET "expiresAt" = CURRENT_TIMESTAMP
+       WHERE "userId" = $1 AND type = 'account' AND ("expiresAt" IS NULL OR "expiresAt" > CURRENT_TIMESTAMP)`,
+      [userId]
+    );
+
+    await softDeleteService.logAdminAction(adminId, 'unsuspend_user', 'user', Number(userId), 'Lifted account suspension');
+
+    return res.json({ status: 'success', message: 'User unsuspended' });
+  } catch (error) {
+    console.error('Error unsuspending user:', error);
+    return res.status(500).json({ status: 'error', message: 'Failed to unsuspend user' });
+  }
+});
   // Handle preflight requests for admin routes
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -402,36 +451,47 @@ router.get('/reports/users', async (req, res) => {
   try {
     const period = req.query.period || '30days';
     let days = 30;
-    
     if (period === '7days') days = 7;
-    else if (period === '90days') days = 90;
-    
+    else if (period === '90days' || period === '3months') days = 90;
+    else if (period === '6months') days = 180;
+    else if (period === '1year') days = 365;
+
+    // Build continuous series and include both daily new users and cumulative total users
     const growthData = await query(`
-      SELECT 
-        DATE("createdAt") as date,
-        COUNT(*) as users
-      FROM "user" 
-      WHERE "createdAt" >= CURRENT_TIMESTAMP - INTERVAL '${days} days'
-      GROUP BY DATE("createdAt")
-      ORDER BY date ASC
+      WITH series AS (
+        SELECT generate_series(
+          CURRENT_DATE - INTERVAL '${days} days' + INTERVAL '1 day',
+          CURRENT_DATE,
+          INTERVAL '1 day'
+        ) AS day
+      ), daily AS (
+        SELECT DATE("createdAt") AS day, COUNT(*) AS new_users
+        FROM "user"
+        WHERE "createdAt" >= CURRENT_DATE - INTERVAL '${days} days'
+          AND "createdAt" <= CURRENT_DATE + INTERVAL '1 day'
+        GROUP BY DATE("createdAt")
+      )
+      SELECT s.day AS date,
+             COALESCE(d.new_users, 0) AS "newUsers",
+             (
+               SELECT COUNT(*) FROM "user" u2 WHERE DATE(u2."createdAt") <= s.day
+             ) AS "totalUsers"
+      FROM series s
+      LEFT JOIN daily d ON d.day = s.day
+      ORDER BY s.day ASC;
     `);
-    
+
     const labels = growthData.map(item => item.date);
-    const values = growthData.map(item => parseInt(item.users));
-    
+    const newUsers = growthData.map(item => parseInt(item.newUsers));
+    const totalUsers = growthData.map(item => parseInt(item.totalUsers));
+
     res.json({
       status: 'success',
-      payload: {
-        labels,
-        values
-      }
+      payload: { labels, newUsers, totalUsers }
     });
   } catch (error) {
     console.error('Error fetching user growth stats:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Error fetching user growth statistics'
-    });
+    res.status(500).json({ status: 'error', message: 'Error fetching user growth statistics' });
   }
 });
 
@@ -445,9 +505,9 @@ router.get('/reports/content', async (req, res) => {
     res.json({
       status: 'success',
       payload: {
-        posts: postsCount.count,
-        listings: listingsCount.count,
-        comments: commentsCount.count
+        posts: parseInt(postsCount.count) || 0,
+        listings: parseInt(listingsCount.count) || 0,
+        comments: parseInt(commentsCount.count) || 0
       }
     });
   } catch (error) {
@@ -663,50 +723,95 @@ router.delete('/messages/:id', async (req, res) => {
   }
 });
 
-// Reports Overview
-router.get('/reports/overview', async (req, res) => {
+// Reports Overview - handler reused by multiple routes
+const getReportsOverviewHandler = async (req, res) => {
   try {
     const start = req.query.start;
     const end = req.query.end;
+    const hasRange = Boolean(start && end);
+    const formatDate = (d) => d.toISOString().slice(0, 10);
+    let prevStart = null, prevEnd = null;
+    if (hasRange) {
+      const startDate = new Date(start);
+      const endDate = new Date(end);
+      const msPerDay = 24 * 60 * 60 * 1000;
+      const spanDays = Math.max(1, Math.round((endDate - startDate) / msPerDay) + 1);
+      const prevEndDate = new Date(startDate.getTime() - msPerDay);
+      const prevStartDate = new Date(prevEndDate.getTime() - (spanDays - 1) * msPerDay);
+      prevStart = formatDate(prevStartDate);
+      prevEnd = formatDate(prevEndDate);
+    }
     
     // Basic reports data
     const reports = {
       overview: {
+        // in-period counts (if range provided) for growth comparisons
         totalUsers: 0,
+        previousTotalUsers: 0,
         totalPosts: 0,
+        previousTotalPosts: 0,
         totalListings: 0,
-        totalMessages: 0
+        previousTotalListings: 0,
+        totalMessages: 0,
+        // all-time totals for headline cards
+        totalUsersAllTime: 0,
+        totalPostsAllTime: 0,
+        totalListingsAllTime: 0,
+        totalMessagesAllTime: 0,
+        activeUsers: 0
       },
       period: {
         start: start,
-        end: end
+        end: end,
+        previousStart: prevStart,
+        previousEnd: prevEnd
       }
     };
 
-    // Get counts for the specified period if provided
+    // In-period counts (new items within date range)
     let dateFilter = '';
     let dateParams = [];
     
-    if (start && end) {
+    if (hasRange) {
       dateFilter = 'WHERE DATE("createdAt") >= $1 AND DATE("createdAt") <= $2';
       dateParams = [start, end];
     }
 
-    // Get user count
-    const userCount = await queryOne(`SELECT COUNT(*) as count FROM "user" ${dateFilter}`, dateParams);
-    reports.overview.totalUsers = userCount.count;
+    // New counts in the current period (if range), else zero
+    if (hasRange) {
+      const userCount = await queryOne(`SELECT COUNT(*) as count FROM "user" ${dateFilter}`, dateParams);
+      reports.overview.totalUsers = parseInt(userCount.count) || 0;
+      const postCount = await queryOne(`SELECT COUNT(*) as count FROM post ${dateFilter}`, dateParams);
+      reports.overview.totalPosts = parseInt(postCount.count) || 0;
+      const listingCount = await queryOne(`SELECT COUNT(*) as count FROM listing ${dateFilter}`, dateParams);
+      reports.overview.totalListings = parseInt(listingCount.count) || 0;
+      const messageCount = await queryOne(`SELECT COUNT(*) as count FROM message ${dateFilter}`, dateParams);
+      reports.overview.totalMessages = parseInt(messageCount.count) || 0;
+    }
 
-    // Get post count
-    const postCount = await queryOne(`SELECT COUNT(*) as count FROM post ${dateFilter}`, dateParams);
-    reports.overview.totalPosts = postCount.count;
+    // Previous period counts for growth
+    if (hasRange && prevStart && prevEnd) {
+      const prevFilter = 'WHERE DATE("createdAt") >= $1 AND DATE("createdAt") <= $2';
+      const prevParams = [prevStart, prevEnd];
+      const prevUsers = await queryOne(`SELECT COUNT(*) as count FROM "user" ${prevFilter}`, prevParams);
+      reports.overview.previousTotalUsers = parseInt(prevUsers.count) || 0;
+      const prevPosts = await queryOne(`SELECT COUNT(*) as count FROM post ${prevFilter}`, prevParams);
+      reports.overview.previousTotalPosts = parseInt(prevPosts.count) || 0;
+      const prevListings = await queryOne(`SELECT COUNT(*) as count FROM listing ${prevFilter}`, prevParams);
+      reports.overview.previousTotalListings = parseInt(prevListings.count) || 0;
+    }
 
-    // Get listing count
-    const listingCount = await queryOne(`SELECT COUNT(*) as count FROM listing ${dateFilter}`, dateParams);
-    reports.overview.totalListings = listingCount.count;
-
-    // Get message count
-    const messageCount = await queryOne(`SELECT COUNT(*) as count FROM message ${dateFilter}`, dateParams);
-    reports.overview.totalMessages = messageCount.count;
+    // All-time headline totals
+    const allUsers = await queryOne('SELECT COUNT(*) as count FROM "user" WHERE "deletedAt" IS NULL');
+    reports.overview.totalUsersAllTime = parseInt(allUsers.count) || 0;
+    const allPosts = await queryOne('SELECT COUNT(*) as count FROM post WHERE published = true');
+    reports.overview.totalPostsAllTime = parseInt(allPosts.count) || 0;
+    const allListings = await queryOne('SELECT COUNT(*) as count FROM listing WHERE published = true');
+    reports.overview.totalListingsAllTime = parseInt(allListings.count) || 0;
+    const allMessages = await queryOne('SELECT COUNT(*) as count FROM message');
+    reports.overview.totalMessagesAllTime = parseInt(allMessages.count) || 0;
+    const activeUsers = await queryOne(`SELECT COUNT(*) as count FROM "user" WHERE "updatedAt" >= CURRENT_TIMESTAMP - INTERVAL '24 hours'`);
+    reports.overview.activeUsers = parseInt(activeUsers.count) || 0;
 
     res.json({
       status: 'success',
@@ -719,7 +824,12 @@ router.get('/reports/overview', async (req, res) => {
       message: 'Error fetching reports'
     });
   }
-});
+};
+
+// Primary endpoint
+router.get('/reports/overview', getReportsOverviewHandler);
+// Backward-compatible alias expected by frontend
+router.get('/reports', getReportsOverviewHandler);
 
 // Admin Settings
 router.get('/settings', async (req, res) => {
@@ -1002,6 +1112,416 @@ router.get('/reports/stats', async (req, res) => {
   }
 });
 
+/**
+ * === MESSAGE REPORT MANAGEMENT (Admins) ===
+ * Only exposes messages that were explicitly reported. No browsing of private conversations.
+ */
+
+// List message reports
+router.get('/message-reports/list', async (req, res) => {
+  try {
+    const { status, page = 1, limit = 20 } = req.query;
+    const offset = (page - 1) * limit;
+
+    let whereClause = '';
+    const params = [];
+    let idx = 1;
+    if (status && status !== 'all') {
+      whereClause = `WHERE mr.status = $${idx}`;
+      params.push(status);
+      idx++;
+    }
+
+    const reports = await query(`
+      SELECT 
+        mr.id,
+        mr."messageId",
+        mr."conversationId",
+        mr."reporterId",
+        mr.reason,
+        mr.description,
+        mr.status,
+        mr."createdAt",
+        m.content as "messageContent",
+        m."authorId" as "messageAuthorId",
+        ru.name as "reporterName",
+        ru.username as "reporterUsername",
+        au.name as "authorName",
+        au.username as "authorUsername"
+      FROM message_report mr
+      LEFT JOIN message m ON mr."messageId" = m.id
+      LEFT JOIN "user" ru ON mr."reporterId" = ru.id
+      LEFT JOIN "user" au ON m."authorId" = au.id
+      ${whereClause}
+      ORDER BY mr."createdAt" DESC
+      LIMIT $${idx} OFFSET $${idx + 1}
+    `, [...params, limit, offset]);
+
+    const countRow = await queryOne(`
+      SELECT COUNT(*)::int AS total
+      FROM message_report mr
+      ${whereClause}
+    `, params);
+
+    const total = countRow.total || 0;
+    const totalPages = Math.ceil(total / limit);
+
+    return res.json({
+      status: 'success',
+      payload: {
+        reports,
+        pagination: { page: Number(page), limit: Number(limit), total, totalPages }
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching message reports:', error);
+    return res.status(500).json({ status: 'error', message: 'Error fetching message reports' });
+  }
+});
+
+// Update message report status
+router.patch('/message-reports/:reportId/status', async (req, res) => {
+  try {
+    const { reportId } = req.params;
+    const { status, adminNote } = req.body;
+    const adminId = req.user?.id || null; // rely on upstream auth middleware
+
+    const validStatuses = ['pending', 'actioned', 'dismissed'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ status: 'error', message: 'Invalid status' });
+    }
+
+    const existing = await queryOne('SELECT id FROM message_report WHERE id = $1', [reportId]);
+    if (!existing) {
+      return res.status(404).json({ status: 'error', message: 'Report not found' });
+    }
+
+    await query('UPDATE message_report SET status = $1, "updatedAt" = CURRENT_TIMESTAMP WHERE id = $2', [status, reportId]);
+
+    // Log admin action
+    if (adminId) {
+      await query(
+        'INSERT INTO admin_action_log ("adminId", action, "targetTable", "targetId", reason, metadata, "createdAt") VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)',
+        [adminId, 'update_report_status', 'message_report', reportId, adminNote || null, JSON.stringify({ status })]
+      );
+    }
+
+    return res.json({ status: 'success', message: 'Message report status updated' });
+  } catch (error) {
+    console.error('Error updating message report status:', error);
+    return res.status(500).json({ status: 'error', message: 'Error updating message report status' });
+  }
+});
+
+// Delete a message report (rarely used; retention preferred)
+router.delete('/message-reports/:reportId', async (req, res) => {
+  try {
+    const { reportId } = req.params;
+    const adminId = req.user?.id || null;
+    const existing = await queryOne('SELECT id FROM message_report WHERE id = $1', [reportId]);
+    if (!existing) {
+      return res.status(404).json({ status: 'error', message: 'Report not found' });
+    }
+    await query('DELETE FROM message_report WHERE id = $1', [reportId]);
+    if (adminId) {
+      await query(
+        'INSERT INTO admin_action_log ("adminId", action, "targetTable", "targetId", reason, metadata, "createdAt") VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)',
+        [adminId, 'delete_report', 'message_report', reportId, null, JSON.stringify({})]
+      );
+    }
+    return res.json({ status: 'success', message: 'Message report deleted' });
+  } catch (error) {
+    console.error('Error deleting message report:', error);
+    return res.status(500).json({ status: 'error', message: 'Error deleting message report' });
+  }
+});
+
+// Message report statistics
+router.get('/message-reports/stats', async (req, res) => {
+  try {
+    const totalRow = await queryOne('SELECT COUNT(*)::int AS total FROM message_report');
+    const statusRows = await query('SELECT status, COUNT(*)::int AS count FROM message_report GROUP BY status');
+    const topReasons = await query('SELECT reason, COUNT(*)::int AS count FROM message_report GROUP BY reason ORDER BY count DESC LIMIT 5');
+    return res.json({
+      status: 'success',
+      payload: {
+        totalReports: totalRow.total || 0,
+        statusBreakdown: statusRows,
+        topReasons: topReasons
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching message report stats:', error);
+    return res.status(500).json({ status: 'error', message: 'Error fetching message report stats' });
+  }
+});
+
+// Message report details (single message content only)
+router.get('/message-reports/:reportId/details', async (req, res) => {
+  try {
+    const { reportId } = req.params;
+    const report = await queryOne(`
+      SELECT mr.id, mr.reason, mr.description, mr.status, mr."createdAt", m.id AS "messageId", m.content,
+             m."authorId", u.username AS authorUsername, u.name AS authorName
+      FROM message_report mr
+      JOIN message m ON mr."messageId" = m.id
+      JOIN "user" u ON m."authorId" = u.id
+      WHERE mr.id = $1
+    `, [reportId]);
+    if (!report) {
+      return res.status(404).json({ status: 'error', message: 'Report not found' });
+    }
+    return res.json({
+      status: 'success',
+      payload: {
+        id: report.id,
+        reason: report.reason,
+        description: report.description,
+        status: report.status,
+        reportedAt: report.createdAt,
+        message: {
+          id: report.messageId,
+            content: report.content,
+            authorId: report.authorId,
+            authorUsername: report.authorusername || report.authorusername, // ensure casing safe
+            authorName: report.authorname || report.authorname
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching report details:', error);
+    return res.status(500).json({ status: 'error', message: 'Failed to fetch report details' });
+  }
+});
+
+/**
+ * === USER MODERATION SUMMARY & ACTIONS ===
+ */
+router.get('/users/:userId/moderation-summary', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await queryOne('SELECT id, email, username, name, "createdAt" FROM "user" WHERE id = $1', [userId]);
+    if (!user) return res.status(404).json({ status: 'error', message: 'User not found' });
+
+    const totals = await queryOne(`
+      SELECT
+        COALESCE(COUNT(mr.id),0)::int AS total,
+        COALESCE(SUM(CASE WHEN mr.status = 'pending' THEN 1 ELSE 0 END),0)::int AS pending
+      FROM message_report mr
+      JOIN message m ON mr."messageId" = m.id
+      WHERE m."authorId" = $1
+    `, [userId]);
+
+    const volumes = await queryOne(`
+      SELECT
+        COALESCE(SUM(CASE WHEN m."createdAt" >= (CURRENT_TIMESTAMP - INTERVAL '24 hours') THEN 1 ELSE 0 END),0)::int AS last24h,
+        COALESCE(SUM(CASE WHEN m."createdAt" >= (CURRENT_TIMESTAMP - INTERVAL '7 days') THEN 1 ELSE 0 END),0)::int AS last7d
+      FROM message m WHERE m."authorId" = $1
+    `, [userId]);
+
+    const activeRestriction = await queryOne(`
+      SELECT id, type, reason, "createdAt", "expiresAt" FROM user_restriction
+      WHERE "userId" = $1 AND type = 'messaging'
+        AND ("expiresAt" IS NULL OR "expiresAt" > CURRENT_TIMESTAMP)
+      ORDER BY "createdAt" DESC LIMIT 1
+    `, [userId]);
+
+    const recentReports = await query(`
+      SELECT mr.id, mr.reason, mr.status, mr."createdAt",
+             LEFT(m.content, 140) AS snippet
+      FROM message_report mr
+      JOIN message m ON mr."messageId" = m.id
+      WHERE m."authorId" = $1
+      ORDER BY mr."createdAt" DESC LIMIT 5
+    `, [userId]);
+
+    return res.json({
+      status: 'success',
+      payload: {
+        user,
+        totals,
+        volumes,
+        activeRestriction: activeRestriction || null,
+        recentReports
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching moderation summary:', error);
+    return res.status(500).json({ status: 'error', message: 'Failed to fetch moderation summary' });
+  }
+});
+
+router.post('/users/:userId/warn', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const adminId = req.user?.id;
+    const { reason = 'Community Guidelines Warning', note } = req.body || {};
+    const user = await queryOne('SELECT id FROM "user" WHERE id = $1', [userId]);
+    if (!user) return res.status(404).json({ status: 'error', message: 'User not found' });
+    const content = note ? `${reason}: ${note}` : `${reason}. Please review our messaging rules.`;
+    await createNotification('MESSAGE', Number(userId), adminId || null, content, {});
+    await softDeleteService.logAdminAction(adminId || null, 'warn_user', 'user', Number(userId), reason, { note });
+    return res.json({ status: 'success', message: 'Warning sent to user' });
+  } catch (error) {
+    console.error('Error warning user:', error);
+    return res.status(500).json({ status: 'error', message: 'Failed to warn user' });
+  }
+});
+
+router.post('/users/:userId/restrict-messaging', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const adminId = req.user?.id || null;
+    const { durationMinutes = 1440, reason = 'Messaging restriction due to policy violation' } = req.body || {};
+    const user = await queryOne('SELECT id FROM "user" WHERE id = $1', [userId]);
+    if (!user) return res.status(404).json({ status: 'error', message: 'User not found' });
+    const minutes = Math.max(1, Number(durationMinutes));
+    const ins = await query(`
+      INSERT INTO user_restriction ("userId", type, reason, "adminId", metadata, "expiresAt")
+      VALUES ($1, 'messaging', $2, $3, $4, CURRENT_TIMESTAMP + INTERVAL '${minutes} minutes')
+      RETURNING id, "expiresAt"`, [userId, reason, adminId, JSON.stringify({ source: 'admin_panel' })]);
+    await softDeleteService.logAdminAction(adminId, 'restrict_messaging', 'user', Number(userId), reason, { durationMinutes: minutes });
+    return res.json({ status: 'success', message: 'Messaging restriction applied', payload: ins.rows?.[0] || null });
+  } catch (error) {
+    console.error('Error restricting messaging:', error);
+    return res.status(500).json({ status: 'error', message: 'Failed to apply restriction' });
+  }
+});
+
+router.post('/users/:userId/unrestrict-messaging', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const adminId = req.user?.id || null;
+    await query(`UPDATE user_restriction SET "expiresAt" = CURRENT_TIMESTAMP
+                 WHERE "userId" = $1 AND type = 'messaging'
+                   AND ("expiresAt" IS NULL OR "expiresAt" > CURRENT_TIMESTAMP)`, [userId]);
+    await softDeleteService.logAdminAction(adminId, 'lift_restriction', 'user', Number(userId), 'Lifted messaging restriction');
+    return res.json({ status: 'success', message: 'Messaging restriction lifted' });
+  } catch (error) {
+    console.error('Error lifting restriction:', error);
+    return res.status(500).json({ status: 'error', message: 'Failed to lift restriction' });
+  }
+});
+
+/**
+ * Spam detection (heuristic, privacy-preserving):
+ * We flag messages that meet simple patterns without exposing entire conversation history.
+ * Heuristics:
+ *  - High duplicate ratio: same content sent >=3 times by same sender within last 2 hours
+ *  - Excessive links: >=3 URLs in message
+ *  - Keyword spam: contains repeated scam phrases (e.g., 'free money', 'click here')
+ * Returns limited snippet, sender, detection reason, score, and timestamp.
+ */
+router.get('/message-reports/spam-detection', async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit) || 50, 100);
+    const page = parseInt(req.query.page) || 1;
+    const offset = (page - 1) * limit;
+
+    // Duplicate content heuristic (same content >=3x last 2h)
+    const duplicates = await query(`
+      SELECT m."authorId" as senderId, u.username as senderUsername, m.content,
+             COUNT(*) as occurrences,
+             MIN(m."createdAt") as firstSeen,
+             MAX(m."createdAt") as lastSeen
+      FROM message m
+      JOIN "user" u ON u.id = m."authorId"
+      WHERE m."createdAt" > NOW() - INTERVAL '2 hours'
+      GROUP BY m."authorId", u.username, m.content
+      HAVING COUNT(*) >= 3
+      ORDER BY COUNT(*) DESC
+    `);
+
+    // High volume heuristic (>=100 messages in last 1 minute)
+    const highVolume = await query(`
+      SELECT m."authorId" as senderId, u.username as senderUsername, COUNT(*) as msg_count,
+             MAX(m."createdAt") as lastSeen
+      FROM message m
+      JOIN "user" u ON u.id = m."authorId"
+      WHERE m."createdAt" > NOW() - INTERVAL '1 minute'
+      GROUP BY m."authorId", u.username
+      HAVING COUNT(*) >= 100
+      ORDER BY COUNT(*) DESC
+    `);
+
+    // Build candidate list with scoring
+    const candidates = [];
+    const urlRegex = /(https?:\/\/|www\.)[\w.-]+/gi;
+    const spamPhrases = ['free money', 'click here', 'investment guaranteed', 'easy cash'];
+
+    for (const row of duplicates) {
+      const linkCount = (row.content.match(urlRegex) || []).length;
+      let phraseHits = 0;
+      const lowered = row.content.toLowerCase();
+      for (const phrase of spamPhrases) {
+        if (lowered.includes(phrase)) phraseHits++;
+      }
+      // Simple score formula
+      const score = (row.occurrences * 20) + (linkCount * 15) + (phraseHits * 25);
+      let reasonParts = [];
+      if (row.occurrences >= 3) reasonParts.push(`Repeated ${row.occurrences}x`);
+      if (linkCount >= 3) reasonParts.push('Excessive links');
+      if (phraseHits > 0) reasonParts.push('Spam phrases');
+      const reason = reasonParts.join(' / ') || 'Pattern match';
+      candidates.push({
+        id: `${row.senderId}-${row.firstSeen}`,
+        messageId: null, // not tying to a single message to avoid exposing thread; could map later
+        senderId: row.senderId,
+        senderUsername: row.senderUsername,
+        messageContent: row.content,
+        score,
+        reason,
+        detectedAt: row.lastSeen,
+        status: 'pending'
+      });
+    }
+
+    // High volume candidates (no content bulk exposure; fetch a representative latest message)
+    for (const hv of highVolume) {
+      const latestMessage = await queryOne(`
+        SELECT content FROM message WHERE "authorId" = $1 ORDER BY "createdAt" DESC LIMIT 1
+      `, [hv.senderId]);
+      const representativeContent = latestMessage ? latestMessage.content : '[content unavailable]';
+      const linkCount = (representativeContent.match(urlRegex) || []).length;
+      const lowered = representativeContent.toLowerCase();
+      let phraseHits = 0; spamPhrases.forEach(p => { if (lowered.includes(p)) phraseHits++; });
+      const score = (hv.msg_count * 0.5) + (linkCount * 10) + (phraseHits * 20) + 50; // base weight for volume
+      let reasonParts = [`High volume ${hv.msg_count} msgs/1min`];
+      if (linkCount >= 3) reasonParts.push('Excessive links');
+      if (phraseHits > 0) reasonParts.push('Spam phrases');
+      candidates.push({
+        id: `${hv.senderId}-vol-${hv.lastSeen}`,
+        messageId: null,
+        senderId: hv.senderId,
+        senderUsername: hv.senderUsername,
+        messageContent: representativeContent.slice(0, 300), // cap snippet length
+        score,
+        reason: reasonParts.join(' / '),
+        detectedAt: hv.lastSeen,
+        status: 'pending'
+      });
+    }
+
+    // Pagination on candidates
+    const paged = candidates.slice(offset, offset + limit);
+    return res.json({
+      status: 'success',
+      payload: {
+        items: paged,
+        pagination: {
+          page,
+          limit,
+          total: candidates.length,
+          totalPages: Math.max(1, Math.ceil(candidates.length / limit))
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Spam detection error:', error);
+    return res.status(500).json({ status: 'error', message: 'Failed to run spam detection' });
+  }
+});
+
 // === SOFT DELETE MANAGEMENT ENDPOINTS ===
 
 // Delete user (Soft Delete)
@@ -1030,7 +1550,22 @@ router.delete('/users/:id', async (req, res) => {
     
     // Perform soft delete
     await softDeleteService.softDelete('user', userId, adminId, reason);
-    
+
+    // Fire-and-forget email notification (don't block success if email fails)
+    (async () => {
+      try {
+        const emailReady = await emailService.ensureTransporter();
+        const emailResult = await emailService.sendAccountArchivedEmail(user.email, user.name, reason);
+        if (!emailResult.success) {
+          console.warn('⚠️ Archive email failed to send:', { userId, email: user.email, error: emailResult.error });
+        } else {
+          console.log('📧 Archive email sent:', { userId, email: user.email, messageId: emailResult.messageId });
+        }
+      } catch (e) {
+        console.error('Email send failed for archived user:', e?.message || e);
+      }
+    })();
+
     res.json({
       status: 'success',
       message: 'User soft deleted successfully'

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { Observable, of } from 'rxjs';
+import { catchError, shareReplay, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
 export interface AdminStats {
@@ -31,20 +31,38 @@ export interface UserManagement {
 })
 export class AdminService {
   private apiUrl = environment.apiUrl;
+  // Simple in-memory cache for read-heavy admin endpoints
+  private cache = new Map<string, { expiry: number; obs: Observable<any> }>();
 
   constructor(private http: HttpClient) {}
 
-  // Dashboard Statistics
-  getDashboardStats(): Observable<any> {
-    return this.http.get(`${this.apiUrl}admin/dashboard/stats`).pipe(
+  private getWithCache(url: string, ttlMs: number = 10000): Observable<any> {
+    const now = Date.now();
+    const cached = this.cache.get(url);
+    if (cached && cached.expiry > now) {
+      return cached.obs;
+    }
+    const request$ = this.http.get(url).pipe(
+      shareReplay(1),
+      tap({
+        error: () => {
+          // Evict failed responses so subsequent attempts can retry
+          this.cache.delete(url);
+        }
+      }),
       catchError(this.handleError)
     );
+    this.cache.set(url, { expiry: now + ttlMs, obs: request$ });
+    return request$;
+  }
+
+  // Dashboard Statistics
+  getDashboardStats(): Observable<any> {
+    return this.getWithCache(`${this.apiUrl}admin/dashboard/stats`, 15000);
   }
 
   getRecentActivity(): Observable<any> {
-    return this.http.get(`${this.apiUrl}admin/dashboard/activity`).pipe(
-      catchError(this.handleError)
-    );
+    return this.getWithCache(`${this.apiUrl}admin/dashboard/activity`, 15000);
   }
 
   // User Management
@@ -201,32 +219,24 @@ export class AdminService {
 
   // Reports and Analytics
   getReports(dateRange?: { start: string; end: string }): Observable<any> {
-    let url = `${this.apiUrl}admin/reports`;
+    let url = `${this.apiUrl}admin/reports/overview`;
     if (dateRange) {
       url += `?start=${dateRange.start}&end=${dateRange.end}`;
     }
-    return this.http.get(url).pipe(
-      catchError(this.handleError)
-    );
+    return this.getWithCache(url, 15000);
   }
 
   getUserGrowthStats(period: string = '30days'): Observable<any> {
-    return this.http.get(`${this.apiUrl}admin/reports/users?period=${period}`).pipe(
-      catchError(this.handleError)
-    );
+    return this.getWithCache(`${this.apiUrl}admin/reports/users?period=${period}`, 60000);
   }
 
   getContentStats(period: string = '30days'): Observable<any> {
-    return this.http.get(`${this.apiUrl}admin/reports/content?period=${period}`).pipe(
-      catchError(this.handleError)
-    );
+    return this.getWithCache(`${this.apiUrl}admin/reports/content?period=${period}`, 60000);
   }
 
   // Notifications
   getAdminNotifications(): Observable<any> {
-    return this.http.get(`${this.apiUrl}admin/notifications`).pipe(
-      catchError(this.handleError)
-    );
+    return this.getWithCache(`${this.apiUrl}admin/notifications`, 10000);
   }
 
   markNotificationAsRead(notificationId: number): Observable<any> {
@@ -237,9 +247,7 @@ export class AdminService {
 
   // System Settings
   getSystemSettings(): Observable<any> {
-    return this.http.get(`${this.apiUrl}admin/settings`).pipe(
-      catchError(this.handleError)
-    );
+    return this.getWithCache(`${this.apiUrl}admin/settings`, 60000);
   }
 
   updateSystemSettings(settings: any): Observable<any> {
@@ -323,6 +331,76 @@ export class AdminService {
     );
   }
 
+  // === MESSAGE REPORTS (Admin) ===
+  getMessageReports(status: string = 'all', page: number = 1, limit: number = 20): Observable<any> {
+    const params = new URLSearchParams();
+    if (status) params.set('status', status);
+    params.set('page', String(page));
+    params.set('limit', String(limit));
+    return this.http.get(`${this.apiUrl}admin/message-reports/list?${params.toString()}`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  updateMessageReportStatus(reportId: number, status: 'pending' | 'actioned' | 'dismissed', adminNote?: string): Observable<any> {
+    return this.http.patch(`${this.apiUrl}admin/message-reports/${reportId}/status`, { status, adminNote }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  deleteMessageReport(reportId: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}admin/message-reports/${reportId}`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  getMessageReportStats(): Observable<any> {
+    return this.http.get(`${this.apiUrl}admin/message-reports/stats`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // Spam detection (privacy-safe: only flagged messages)
+  getSpamDetectedMessages(page: number = 1, limit: number = 50): Observable<any> {
+    return this.http.get(`${this.apiUrl}admin/message-reports/spam-detection?page=${page}&limit=${limit}`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // Single report details (only the specific message, not whole conversation)
+  getMessageReportDetails(reportId: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}admin/message-reports/${reportId}/details`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // Moderation summary for a user
+  getUserModerationSummary(userId: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}admin/users/${userId}/moderation-summary`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // Warn user
+  warnUser(userId: number, reason: string, note?: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}admin/users/${userId}/warn`, { reason, note }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // Restrict messaging
+  restrictMessaging(userId: number, durationMinutes: number, reason: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}admin/users/${userId}/restrict-messaging`, { durationMinutes, reason }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // Lift messaging restriction
+  unrestrictMessaging(userId: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}admin/users/${userId}/unrestrict-messaging`, {}).pipe(
+      catchError(this.handleError)
+    );
+  }
   // Trigger manual archive cleanup
   triggerManualCleanup(reason?: string): Observable<any> {
     return this.http.post(`${this.apiUrl}admin/archive/cleanup`, { reason }).pipe(

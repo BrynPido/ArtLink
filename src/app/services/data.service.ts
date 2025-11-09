@@ -699,6 +699,20 @@ export class DataService {
     );
   }
 
+  // === Message Reporting ===
+  reportMessage(messageId: number, reason: string, description?: string): Observable<any> {
+    const data = { reason, description };
+    return this.http.post(`${this.apiUrl}messages/${messageId}/report`, data).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  checkMessageReport(messageId: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}messages/${messageId}/check-report`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
   // Admin: Get all reports
   getReports(status?: string, page: number = 1, limit: number = 20): Observable<any> {
     let params = `?page=${page}&limit=${limit}`;
@@ -731,6 +745,7 @@ export class DataService {
       catchError(this.handleError)
     );
   }
+
 
   // Listing Transaction Management
   markListingAsSold(listingId: number, buyerId: number, conversationId: number, finalPrice?: number): Observable<any> {

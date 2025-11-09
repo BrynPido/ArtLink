@@ -36,12 +36,7 @@ app.use(compression());
 // Logging middleware
 app.use(morgan('combined'));
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
-});
-app.use(limiter);
+// Note: Move rate limiting AFTER CORS/preflight handling and skip OPTIONS to avoid counting preflights
 
 // CORS configuration - Enhanced for Render deployment
 app.use(cors({
@@ -96,6 +91,33 @@ app.use((req, res, next) => {
   next();
 });
 
+// Rate limiting (after CORS so that preflights are handled first)
+const commonLimiterOptions = {
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Don't count preflight or websocket upgrade requests
+  skip: (req) => req.method === 'OPTIONS' || req.headers.upgrade === 'websocket'
+};
+
+// Stricter limiter for auth endpoints (login/register)
+const authLimiter = rateLimit({
+  ...commonLimiterOptions,
+  max: 50 // per IP per window for auth-specific routes
+});
+
+// General API limiter (higher to accommodate admin console bursty loads)
+const apiLimiter = rateLimit({
+  ...commonLimiterOptions,
+  max: 2000
+});
+
+// Even higher allowance for admin endpoints (GET heavy dashboards, charts)
+const adminLimiter = rateLimit({
+  ...commonLimiterOptions,
+  max: 4000
+});
+
 // Body parsing middleware
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -110,14 +132,14 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
   }
 }));
 
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/posts', postRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/listings', listingRoutes);
-app.use('/api/messages', messageRoutes);
-app.use('/api/notifications', notificationRoutes);
-app.use('/api/admin', adminRoutes);
+// Routes with scoped limiters
+app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/admin', adminLimiter, adminRoutes);
+app.use('/api/posts', apiLimiter, postRoutes);
+app.use('/api/users', apiLimiter, userRoutes);
+app.use('/api/listings', apiLimiter, listingRoutes);
+app.use('/api/messages', apiLimiter, messageRoutes);
+app.use('/api/notifications', apiLimiter, notificationRoutes);
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
