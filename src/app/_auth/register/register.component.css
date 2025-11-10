@@ -35,6 +35,35 @@
 .group:hover input {
   border-color: #cbd5e1;
   background-color: rgba(255, 255, 255, 0.9);
+  color: #0f172a !important; /* slate-900 - force dark text on hover */
+}
+
+/* Dark mode override */
+.dark .group:hover input {
+  border-color: #4b5563; /* gray-600 */
+  background-color: rgba(31, 41, 55, 0.85); /* gray-800 with slight transparency */
+  color: #f3f4f6 !important; /* gray-100 - force light text on hover */
+}
+
+/* Autocomplete state - force text visibility when browser applies autocomplete */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #0f172a !important;
+  -webkit-box-shadow: 0 0 0px 1000px rgba(255, 255, 255, 0.9) inset !important;
+  box-shadow: 0 0 0px 1000px rgba(255, 255, 255, 0.9) inset !important;
+  border-color: #cbd5e1 !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #0f172a !important;
+  -webkit-box-shadow: 0 0 0px 1000px rgba(255, 255, 255, 0.85) inset !important;
+  box-shadow: 0 0 0px 1000px rgba(255, 255, 255, 0.85) inset !important;
+  border-color: #cbd5e1 !important;
+  transition: background-color 5000s ease-in-out 0s;
 }
 
 /* Smooth transitions for all interactive elements */

@@ -5,9 +5,38 @@
 }
 
 /* Custom hover effects for form fields */
+/* Light mode */
 .group:hover input {
   border-color: #cbd5e1;
   background-color: rgba(255, 255, 255, 0.9);
+  color: #0f172a !important; /* slate-900 - force dark text on hover */
+}
+/* Dark mode override to avoid bright flash on hover */
+.dark .group:hover input {
+  border-color: #4b5563; /* gray-600 */
+  background-color: rgba(31, 41, 55, 0.85); /* gray-800 with slight transparency */
+  color: #f3f4f6 !important; /* gray-100 - force light text on hover */
+}
+
+/* Autocomplete state - force text visibility when browser applies autocomplete */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #0f172a !important;
+  -webkit-box-shadow: 0 0 0px 1000px rgba(255, 255, 255, 0.9) inset !important;
+  box-shadow: 0 0 0px 1000px rgba(255, 255, 255, 0.9) inset !important;
+  border-color: #cbd5e1 !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #0f172a !important;
+  -webkit-box-shadow: 0 0 0px 1000px rgba(255, 255, 255, 0.85) inset !important;
+  box-shadow: 0 0 0px 1000px rgba(255, 255, 255, 0.85) inset !important;
+  border-color: #cbd5e1 !important;
+  transition: background-color 5000s ease-in-out 0s;
 }
 
 /* Smooth transitions for all interactive elements */
@@ -17,7 +46,11 @@ input, button, a {
 
 /* Enhanced focus ring for accessibility */
 input:focus {
-  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1), 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.18), 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+/* Dark mode focus ring tuning */
+.dark input:focus {
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.35), 0 10px 15px -3px rgba(0, 0, 0, 0.35);
 }
 
 /* Button hover effects */

@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
+import { Router } from '@angular/router';
 import { RouterLink } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { DataService } from '../../services/data.service';
@@ -18,7 +19,7 @@ export class LoginComponent {
   errorMessage: string | null = null;
   isSubmitting: boolean = false;
 
-  constructor(private fb: FormBuilder, private dataService: DataService, private toastService: ToastService) {
+  constructor(private fb: FormBuilder, private dataService: DataService, private toastService: ToastService, private router: Router) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6)]],
@@ -42,8 +43,12 @@ export class LoginComponent {
         next: (response) => {
           console.log('Login Successful', response);
           this.errorMessage = null; // Clear errors on success
-          this.toastService.showToast('Login successful!', 'success');
-          this.isSubmitting = false;
+          this.toastService.showToast('Welcome back! You\'re now signed in.', 'success');
+          // Navigate after a brief delay so the toast is visible and doesn\'t get cut by route change
+          setTimeout(() => {
+            this.isSubmitting = false;
+            this.router.navigate(['/home']);
+          }, 400);
         },
         error: (error) => {
           this.errorMessage = error.message;

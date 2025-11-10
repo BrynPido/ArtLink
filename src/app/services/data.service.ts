@@ -31,24 +31,25 @@ export class DataService {
 
   // Method for login with error handling and saving JWT token
   login(credentials: { email: string; password: string }): Observable<any> {
+    const start = performance.now();
     return this.http.post(`${this.apiUrl}auth/login`, credentials).pipe(
       tap((response: any) => {
-        if (response && response.payload) {
-          const { token, user } = response.payload;
-          if (token) {
-            // Store the JWT token in localStorage
-            localStorage.setItem('token', token);
-          }
-          if (user) {
-            // Normalize user data structure for consistent access
-            const normalizedUser = {
-              ...user,
-              profileImage: user.profilePictureUrl || user.profileImage
-            };
-            // Use updateCurrentUser instead of direct localStorage
+        if (!response?.payload) { return; }
+        const { token, user } = response.payload;
+        if (token) {
+          localStorage.setItem('token', token);
+        }
+        if (user) {
+          const normalizedUser = {
+            ...user,
+            profileImage: user.profilePictureUrl || user.profileImage
+          };
             this.updateCurrentUser(normalizedUser);
-          }
-          this.router.navigate(['/home']); // Redirect to home on success
+        }
+        // NOTE: navigation now handled by LoginComponent AFTER showing toast to avoid UX race.
+        const duration = performance.now() - start;
+        if (duration > 1500) {
+          console.log(`[LOGIN] Warning: slow login took ${Math.round(duration)}ms`);
         }
       }),
       catchError(this.handleError)
