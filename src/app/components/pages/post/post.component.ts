@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit, OnDestroy } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -34,6 +34,7 @@ export class PostComponent implements OnInit, OnDestroy {
   loading = true;
   isFollowing: boolean = false;
   showFollowButton: boolean = false;
+  menuOpen: boolean = false;
   private notificationSubscription?: Subscription;
 
   // Add Math as a property to make it available in the template
@@ -618,6 +619,73 @@ export class PostComponent implements OnInit, OnDestroy {
 
   goBack(): void {
     window.history.back();
+  }
+
+  toggleMenu(): void {
+    this.menuOpen = !this.menuOpen;
+  }
+
+  openDeleteConfirmation(): void {
+    event?.stopPropagation();
+    
+    Swal.fire({
+      title: 'Delete Post?',
+      text: 'This action cannot be undone. Are you sure you want to delete this post?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel',
+      backdrop: true,
+      customClass: {
+        container: 'swal-container',
+        popup: 'swal-popup',
+      },
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.deletePost();
+      }
+      this.menuOpen = false;
+    });
+  }
+
+  deletePost(): void {
+    if (!this.post?.id || !this.currentUser?.id) return;
+
+    const userId = this.currentUser.id;
+    const postId = this.post.id;
+
+    this.dataService.deletePost(postId, userId).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.toastService.showToast('Post deleted successfully!', 'success');
+          // Navigate back to home or previous page after successful deletion
+          setTimeout(() => {
+            this.router.navigate(['/home']);
+          }, 500);
+        } else {
+          console.error('Error deleting post:', response.message);
+          this.toastService.showToast('Failed to delete post!', 'error');
+        }
+      },
+      error: (err) => {
+        console.error('Error deleting post:', err);
+        this.toastService.showToast('Failed to delete post!', 'error');
+      }
+    });
+  }
+
+  @HostListener('document:click', ['$event'])
+  handleClickOutside(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    const menuButton = target.closest('.relative button');
+    const dropdownMenu = target.closest('.z-50');
+
+    if (!menuButton && !dropdownMenu && this.menuOpen) {
+      this.menuOpen = false;
+      this.cdr.detectChanges();
+    }
   }
 
   ngOnDestroy() {

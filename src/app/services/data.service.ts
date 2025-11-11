@@ -546,6 +546,38 @@ export class DataService {
     );
   }
 
+  // Change Password
+  changePassword(passwordData: {currentPassword: string, newPassword: string, confirmPassword: string}): Observable<any> {
+    return this.http.post(`${this.apiUrl}users/change-password`, passwordData).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // Forgot Password - Request reset OTP
+  forgotPassword(email: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}auth/forgot-password`, { email }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // Verify Reset OTP
+  verifyResetOTP(email: string, otpCode: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}auth/verify-reset-otp`, { email, otpCode }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // Reset Password with token
+  resetPassword(resetToken: string, newPassword: string, confirmPassword: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}auth/reset-password`, { 
+      resetToken, 
+      newPassword, 
+      confirmPassword 
+    }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
   // Centralized error handling method
   private handleError(error: HttpErrorResponse) {
     let errorMessage = 'An unknown error occurred!';

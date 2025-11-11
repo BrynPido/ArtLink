@@ -14,7 +14,7 @@
   <!-- Post Content -->
   <div *ngIf="!loading && post" class="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl overflow-hidden">
     <!-- Author Header - More compact on mobile -->
-    <div class="p-3 sm:p-4 flex items-center gap-3 sm:gap-4 border-b border-gray-200 dark:border-gray-700">
+    <div class="p-3 sm:p-4 flex items-center gap-3 sm:gap-4 border-b border-gray-200 dark:border-gray-700 relative z-30">
       <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
         <img [src]="post?.author?.profileImage || 'assets/images/default-avatar.svg'" alt="Author profile"
           class="w-full h-full object-cover cursor-pointer" (click)="goToAuthorProfile()">
@@ -30,15 +30,30 @@
         }" (click)="toggleFollow()">
         {{ isFollowing ? 'Following' : 'Follow' }}
       </button>
+      
+      <!-- Three-dot menu for post author -->
+      <div *ngIf="!showFollowButton" class="ml-auto relative">
+        <button (click)="toggleMenu(); $event.stopPropagation()" 
+          class="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-full transition-all duration-200">
+          <span class="material-symbols-rounded text-sm">more_vert</span>
+        </button>
+        <!-- Dropdown menu -->
+        <div *ngIf="menuOpen" class="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 shadow-xl rounded-xl z-50 border border-gray-100 dark:border-gray-700 overflow-hidden">
+          <button (click)="openDeleteConfirmation(); $event.stopPropagation()"
+            class="block w-full text-left px-4 py-3 text-sm text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors duration-200">
+            Delete Post
+          </button>
+        </div>
+      </div>
     </div>
 
-    <!-- Media Carousel - Improved display with blurred background -->
+    <!-- Media Carousel - Improved display with blurred background - More compact -->
     <div class="relative">
       <div *ngIf="post?.media?.length > 1" class="relative">
         <div class="flex transition-transform duration-300"
           [style.transform]="'translateX(-' + (currentMediaIndex * 100) + '%)'">
           <div *ngFor="let media of post?.media" class="w-full flex-shrink-0">
-            <div class="relative bg-black" style="height: 0; padding-bottom: 75%;">
+            <div class="relative bg-black" style="height: 0; padding-bottom: 56.25%;">
               <!-- Blurred background -->
               <div class="absolute inset-0 bg-cover bg-center blur-md opacity-50" 
                   [ngStyle]="{'background-image': 'url(' + media.url + ')'}"></div>
@@ -65,9 +80,9 @@
         </button>
       </div>
 
-      <!-- Single Media - Improved display with blurred background -->
+      <!-- Single Media - Improved display with blurred background - More compact -->
       <div *ngIf="post?.media?.length === 1">
-        <div class="relative bg-black" style="height: 0; padding-bottom: 75%;">
+        <div class="relative bg-black" style="height: 0; padding-bottom: 56.25%;">
           <!-- Blurred background that fills the container -->
           <div class="absolute inset-0 bg-cover bg-center blur-md opacity-50" 
               [ngStyle]="{'background-image': 'url(' + post?.media[0]?.url + ')'}"></div>
@@ -115,7 +130,7 @@
         {{ post?.createdAt | timeAgo:'full' }}
       </p>
 
-      <!-- Comments Section -->
+      <!-- Comments Section - More compact with max height -->
       <div class="mt-4 sm:mt-6 border-t border-gray-200 dark:border-gray-700 pt-3 sm:pt-4">
         <h3 class="font-medium mb-3 sm:mb-4 text-sm sm:text-base text-gray-900 dark:text-white">Comments</h3>
 
@@ -136,8 +151,8 @@
           </form>
         </div>
 
-        <!-- Comments List -->
-        <div class="space-y-4 sm:space-y-6">
+        <!-- Comments List with scrollable container -->
+        <div class="space-y-4 sm:space-y-6 max-h-[400px] overflow-y-auto pr-2">
           <ng-container *ngFor="let comment of post?.comments">
             <ng-container *ngTemplateOutlet="commentTemplate; context: { $implicit: comment, level: 0 }">
             </ng-container>

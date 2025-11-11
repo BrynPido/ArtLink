@@ -231,6 +231,92 @@ class OTPService {
 
     return stats;
   }
+
+  /**
+   * Generate OTP for a user ID (for password reset)
+   * @param {number} userId - User ID
+   * @param {string} purpose - Purpose of OTP
+   */
+  async generateOTPForUser(userId, purpose = 'password_reset') {
+    try {
+      // Get user email
+      const user = await queryOne('SELECT email FROM "user" WHERE id = $1', [userId]);
+      
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      // Create OTP
+      const result = await this.createOTP(user.email, purpose);
+      
+      if (result.success) {
+        return result.otpCode;
+      }
+      
+      throw new Error('Failed to generate OTP');
+    } catch (error) {
+      console.error('Error generating OTP for user:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Verify OTP for a user ID
+   * @param {number} userId - User ID
+   * @param {string} otpCode - OTP code to verify
+   * @param {string} purpose - Purpose of OTP
+   */
+  async verifyOTPForUser(userId, otpCode, purpose = 'password_reset') {
+    try {
+      // Get user email
+      const user = await queryOne('SELECT email FROM "user" WHERE id = $1', [userId]);
+      
+      if (!user) {
+        return false;
+      }
+
+      // Verify OTP using email
+      const result = await this.verifyOTP(user.email, otpCode, purpose);
+      
+      return result.success;
+    } catch (error) {
+      console.error('Error verifying OTP for user:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Invalidate all OTPs for a user
+   * @param {number} userId - User ID
+   * @param {string} purpose - Purpose of OTP (optional)
+   */
+  async invalidateOTPs(userId, purpose = null) {
+    try {
+      // Get user email
+      const user = await queryOne('SELECT email FROM "user" WHERE id = $1', [userId]);
+      
+      if (!user) {
+        return;
+      }
+
+      // Delete all OTPs for this user and purpose
+      if (purpose) {
+        await query(
+          'DELETE FROM email_verification WHERE email = $1 AND purpose = $2',
+          [user.email, purpose]
+        );
+        console.log(`🗑️ Invalidated all ${purpose} OTPs for user ${userId}`);
+      } else {
+        await query(
+          'DELETE FROM email_verification WHERE email = $1',
+          [user.email]
+        );
+        console.log(`🗑️ Invalidated all OTPs for user ${userId}`);
+      }
+    } catch (error) {
+      console.error('Error invalidating OTPs:', error);
+    }
+  }
 }
 
 module.exports = new OTPService();

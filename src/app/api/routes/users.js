@@ -2,6 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const bcrypt = require('bcrypt');
 const { query, queryOne } = require('../config/database');
 const { authenticateToken, optionalAuth } = require('../middleware/auth');
 const { createNotification } = require('./notifications');
@@ -593,6 +594,93 @@ router.get('/suggested', optionalAuth, async (req, res) => {
     res.status(500).json({
       status: 'error',
       message: 'Failed to get suggested users'
+    });
+  }
+});
+
+// Change password
+router.post('/change-password', authenticateToken, async (req, res) => {
+  try {
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+    const userId = req.user.id;
+
+    // Validate input
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'All fields are required'
+      });
+    }
+
+    // Check if new password and confirm password match
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'New password and confirmation do not match'
+      });
+    }
+
+    // Validate new password strength
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Password must be at least 8 characters long'
+      });
+    }
+
+    // Check if new password is different from current password
+    if (currentPassword === newPassword) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'New password must be different from current password'
+      });
+    }
+
+    // Get user's current password hash
+    const user = await queryOne(
+      'SELECT password FROM "user" WHERE id = $1',
+      [userId]
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found'
+      });
+    }
+
+    // Verify current password
+    const isValidPassword = await bcrypt.compare(currentPassword, user.password);
+
+    if (!isValidPassword) {
+      return res.status(401).json({
+        status: 'error',
+        message: 'Current password is incorrect'
+      });
+    }
+
+    // Hash new password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    // Update password
+    await query(
+      'UPDATE "user" SET password = $1, "updatedAt" = CURRENT_TIMESTAMP WHERE id = $2',
+      [hashedPassword, userId]
+    );
+
+    console.log(`✅ Password changed successfully for user ${userId}`);
+
+    res.json({
+      status: 'success',
+      message: 'Password changed successfully'
+    });
+
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to change password'
     });
   }
 });

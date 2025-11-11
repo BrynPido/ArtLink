@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ActivatedRoute, Router, ParamMap } from '@angular/router';
@@ -36,6 +36,20 @@ export class ProfileComponent implements OnInit {
   editingBio: boolean = false;
   editableBio: string = '';
   updatingBio: boolean = false;
+  
+  // Password change modal
+  showPasswordModal: boolean = false;
+  settingsMenuOpen: boolean = false;
+  changingPassword: boolean = false;
+  passwordError: string = '';
+  showCurrentPassword: boolean = false;
+  showNewPassword: boolean = false;
+  showConfirmPassword: boolean = false;
+  passwordForm = {
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  };
 
   constructor(
     private route: ActivatedRoute,
@@ -481,6 +495,105 @@ export class ProfileComponent implements OnInit {
         console.error('Error updating bio:', error);
         this.updatingBio = false;
         this.toastService.showToast('Failed to update bio. Please try again.', 'error');
+      }
+    });
+  }
+
+  // Settings menu methods
+  toggleSettingsMenu(): void {
+    this.settingsMenuOpen = !this.settingsMenuOpen;
+  }
+
+  @HostListener('document:click', ['$event'])
+  handleClickOutside(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    const settingsButton = target.closest('[class*="relative"] button');
+    const settingsMenu = target.closest('.z-50');
+
+    if (!settingsButton && !settingsMenu && this.settingsMenuOpen) {
+      this.settingsMenuOpen = false;
+    }
+  }
+
+  // Password change methods
+  openPasswordModal(): void {
+    this.showPasswordModal = true;
+    this.settingsMenuOpen = false;
+    this.resetPasswordForm();
+  }
+
+  closePasswordModal(): void {
+    this.showPasswordModal = false;
+    this.resetPasswordForm();
+  }
+
+  resetPasswordForm(): void {
+    this.passwordForm = {
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    };
+    this.passwordError = '';
+    this.showCurrentPassword = false;
+    this.showNewPassword = false;
+    this.showConfirmPassword = false;
+  }
+
+  isPasswordFormValid(): boolean {
+    return !!(
+      this.passwordForm.currentPassword &&
+      this.passwordForm.newPassword &&
+      this.passwordForm.confirmPassword &&
+      this.passwordForm.newPassword === this.passwordForm.confirmPassword &&
+      this.passwordForm.newPassword.length >= 8
+    );
+  }
+
+  submitPasswordChange(): void {
+    if (!this.isPasswordFormValid() || this.changingPassword) {
+      return;
+    }
+
+    // Additional client-side validation
+    if (this.passwordForm.newPassword !== this.passwordForm.confirmPassword) {
+      this.passwordError = 'New password and confirmation do not match';
+      return;
+    }
+
+    if (this.passwordForm.newPassword.length < 8) {
+      this.passwordError = 'Password must be at least 8 characters long';
+      return;
+    }
+
+    if (this.passwordForm.currentPassword === this.passwordForm.newPassword) {
+      this.passwordError = 'New password must be different from current password';
+      return;
+    }
+
+    this.changingPassword = true;
+    this.passwordError = '';
+
+    this.dataService.changePassword(this.passwordForm).subscribe({
+      next: (response) => {
+        this.changingPassword = false;
+        this.closePasswordModal();
+        
+        // Show success message with SweetAlert
+        Swal.fire({
+          title: 'Success!',
+          text: 'Your password has been changed successfully.',
+          icon: 'success',
+          confirmButtonColor: '#4f46e5',
+          confirmButtonText: 'OK'
+        });
+      },
+      error: (error) => {
+        this.changingPassword = false;
+        console.error('Password change error:', error);
+        
+        // Extract error message from response
+        const errorMessage = error.error?.message || 'Failed to change password. Please try again.';
+        this.passwordError = errorMessage;
       }
     });
   }

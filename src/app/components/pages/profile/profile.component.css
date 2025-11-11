@@ -1,0 +1,93 @@
+/* Profile Settings Dropdown */
+.relative {
+  position: relative;
+}
+
+.z-50 {
+  z-index: 50;
+}
+
+/* Password Modal Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Apply animations to modal */
+[class*="showPasswordModal"] {
+  animation: fadeIn 0.2s ease-out;
+}
+
+[class*="showPasswordModal"] > div {
+  animation: slideUp 0.3s ease-out;
+}
+
+/* Input focus styles */
+input:focus {
+  outline: none;
+}
+
+/* Password strength indicator (optional enhancement) */
+.password-strength-indicator {
+  height: 4px;
+  margin-top: 8px;
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.password-strength-weak {
+  width: 33%;
+  background-color: #ef4444;
+}
+
+.password-strength-medium {
+  width: 66%;
+  background-color: #f59e0b;
+}
+
+.password-strength-strong {
+  width: 100%;
+  background-color: #10b981;
+}
+
+/* Hover effects for settings menu */
+button:hover .material-symbols-rounded {
+  transform: scale(1.1);
+  transition: transform 0.2s ease;
+}
+
+/* Smooth transitions */
+* {
+  transition-property: color, background-color, border-color;
+  transition-duration: 0.2s;
+  transition-timing-function: ease-in-out;
+}
+
+/* Loading spinner */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
