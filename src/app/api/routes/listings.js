@@ -415,12 +415,15 @@ router.get('/user/:userId', optionalAuth, async (req, res) => {
 });
 
 // Update a listing
-router.post('/:id/update', authenticateToken, upload.array('media', 10), validateListing, handleValidationErrors, async (req, res) => {
+router.post('/:id/update', authenticateToken, upload.array('media', 10), async (req, res) => {
   try {
     const listingId = req.params.id;
     const { title, content, listingDetails } = req.body;
     const userId = req.user.id;
     const files = req.files || [];
+
+    console.log('🔍 Updating listing:', listingId);
+    console.log('🔍 New files count:', files.length);
 
     // Check if user owns the listing
     const listing = await queryOne(
@@ -447,24 +450,35 @@ router.post('/:id/update', authenticateToken, upload.array('media', 10), validat
 
     await transaction(async (connection) => {
       // Update listing
-      await connection.execute(
+      await connection.query(
         'UPDATE listing SET title = $1, content = $2, "updatedAt" = CURRENT_TIMESTAMP WHERE id = $3',
         [title, content || '', listingId]
       );
 
       // Update listing details
-      await connection.execute(
-        'UPDATE listing_details SET price = $1, category = $2, condition = $3, location = $4, "updatedAt" = CURRENT_TIMESTAMP WHERE "listingId" = $5',
+      await connection.query(
+        'UPDATE listing_details SET price = $1, category = $2, "condition" = $3, location = $4, "updatedAt" = CURRENT_TIMESTAMP WHERE "listingId" = $5',
         [details.price, details.category, details.condition, details.location, listingId]
       );
 
-      // Add new media if files were uploaded
+      // Upload new media files if provided
       if (files.length > 0) {
         for (const file of files) {
-          await connection.execute(
-            'INSERT INTO media ("listingId", "mediaUrl", "mediaType", "createdAt", "updatedAt") VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
-            [listingId, `/uploads/listings/${file.filename}`, file.mimetype]
+          console.log('🔍 Uploading new listing file to Supabase:', file.originalname);
+          
+          const uploadResult = await storageService.uploadFile(
+            file.buffer,
+            file.originalname,
+            'listings',
+            file.mimetype
           );
+
+          await connection.query(
+            'INSERT INTO media ("listingId", "mediaUrl", "mediaType", "createdAt", "updatedAt") VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
+            [listingId, uploadResult.url, file.mimetype]
+          );
+
+          console.log('✅ New listing file uploaded and media record created:', uploadResult.url);
         }
       }
     });
@@ -476,9 +490,90 @@ router.post('/:id/update', authenticateToken, upload.array('media', 10), validat
 
   } catch (error) {
     console.error('Update listing error:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({
       status: 'error',
-      message: 'Failed to update listing'
+      message: 'Failed to update listing',
+      error: error.message
+    });
+  }
+});
+
+// Delete media from a listing
+router.delete('/:id/media/:mediaId', authenticateToken, async (req, res) => {
+  try {
+    const { id: listingId, mediaId } = req.params;
+    const userId = req.user.id;
+
+    // Check if user owns the listing
+    const listing = await queryOne(
+      'SELECT id, "authorId" FROM listing WHERE id = $1',
+      [listingId]
+    );
+
+    if (!listing) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Listing not found'
+      });
+    }
+
+    if (listing.authorId !== userId) {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Unauthorized to delete media from this listing'
+      });
+    }
+
+    // Check how many media items the listing has
+    const mediaCount = await queryOne(
+      'SELECT COUNT(*) as count FROM media WHERE "listingId" = $1',
+      [listingId]
+    );
+
+    if (parseInt(mediaCount.count) <= 1) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Cannot delete the last image. Listings must have at least one image.'
+      });
+    }
+
+    // Get media info before deleting
+    const media = await queryOne(
+      'SELECT id, "mediaUrl" FROM media WHERE id = $1 AND "listingId" = $2',
+      [mediaId, listingId]
+    );
+
+    if (!media) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Media not found'
+      });
+    }
+
+    // Delete from Supabase storage if it's a Supabase URL
+    if (media.mediaUrl && media.mediaUrl.includes('supabase')) {
+      try {
+        await storageService.deleteFile(media.mediaUrl);
+        console.log('✅ Media file deleted from Supabase:', media.mediaUrl);
+      } catch (deleteError) {
+        console.error('⚠️ Error deleting file from Supabase (continuing anyway):', deleteError);
+      }
+    }
+
+    // Delete media record from database
+    await query('DELETE FROM media WHERE id = $1', [mediaId]);
+
+    res.json({
+      status: 'success',
+      message: 'Media deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Delete media error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to delete media'
     });
   }
 });

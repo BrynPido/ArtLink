@@ -138,7 +138,39 @@ export class ListingEditComponent implements OnInit, OnDestroy {
   }
 
   removeExistingImage(index: number) {
-    this.existingMedia.splice(index, 1);
+    const media = this.existingMedia[index];
+    
+    // Confirm before deleting
+    Swal.fire({
+      title: 'Delete Image?',
+      text: 'This will permanently delete this image from your listing.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Check if this is the last image
+        if (this.existingMedia.length === 1 && this.imageFiles.length === 0) {
+          this.toastService.showToast('Cannot delete the last image. Listings must have at least one image.', 'error');
+          return;
+        }
+
+        // Call API to delete the media
+        this.dataService.deleteListingMedia(this.listingId, media.id).subscribe({
+          next: () => {
+            this.existingMedia.splice(index, 1);
+            this.toastService.showToast('Image deleted successfully', 'success');
+          },
+          error: (error) => {
+            console.error('Error deleting media:', error);
+            this.toastService.showToast(error.message || 'Failed to delete image', 'error');
+          }
+        });
+      }
+    });
   }
 
   removeNewImage(index: number) {
@@ -157,41 +189,27 @@ export class ListingEditComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // Allow update without new images if existing media exists
     if (this.existingMedia.length === 0 && this.imageFiles.length === 0) {
-      this.toastService.showToast('Please add at least one image', 'error');
+      this.toastService.showToast('Please keep at least one image', 'error');
       return;
     }
 
-    // Create a copy of the form data for submission
-    const updateData = {...this.formData};
-    
-    // First, include existing media
-    updateData.media = [...this.existingMedia];
-    
-    // Then process new images if any
+    // Create FormData for the update
+    const formData = new FormData();
+    formData.append('title', this.formData.title);
+    formData.append('content', this.formData.content);
+    formData.append('listingDetails', JSON.stringify(this.formData.listingDetails));
+
+    // Append new image files if any
     if (this.imageFiles.length > 0) {
-      // Convert new images to base64
-      const promises = this.imageFiles.map(file => this.fileToBase64(file));
-      
-      Promise.all(promises).then(base64Array => {
-        const newMedia = base64Array.map(base64 => ({
-          url: base64,
-          mediaType: 'image'
-        }));
-
-        // Combine existing and new media
-        updateData.media = [...updateData.media, ...newMedia];
-        
-        this.submitUpdate(updateData);
+      this.imageFiles.forEach(file => {
+        formData.append('media', file);
       });
-    } else {
-      // No new images, just update with existing media
-      this.submitUpdate(updateData);
     }
-  }
 
-  submitUpdate(updateData: any) {
-    this.dataService.updateListing(this.listingId, updateData).subscribe({
+    // Submit the update
+    this.dataService.updateListing(this.listingId, formData).subscribe({
       next: (response) => {
         this.toastService.showToast('Listing updated successfully', 'success');
         this.router.navigate(['/listing', this.listingId]);

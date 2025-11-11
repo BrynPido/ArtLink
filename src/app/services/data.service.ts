@@ -525,6 +525,13 @@ export class DataService {
     );
   }
 
+  // Delete media from a listing
+  deleteListingMedia(listingId: string, mediaId: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}listings/${listingId}/media/${mediaId}`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
   // Profile Update
   updateProfile(profileData: {userId: number, imageData: string}): Observable<any> {
     return this.http.post(`${this.apiUrl}users/updateProfile`, profileData).pipe(
