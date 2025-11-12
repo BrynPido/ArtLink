@@ -248,7 +248,7 @@ router.post('/conversations/create', authenticateToken, async (req, res) => {
       status: 'success',
       message: 'Conversation created successfully',
       payload: {
-        id: result.rows[0].id,
+        id: result[0].id,
         user1Id: user1Id,
         user2Id: recipientId,
         createdAt: new Date().toISOString(),
@@ -323,11 +323,15 @@ router.post('/send', authenticateToken, async (req, res) => {
         finalConversationId = existingConversation.id;
       } else {
         // Create new conversation
-        const newConversation = await query(
+        const newConversation = await queryOne(
           'INSERT INTO conversation ("user1Id", "user2Id", "createdAt", "updatedAt") VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id',
           [senderId, receiverId]
         );
-        finalConversationId = newConversation.rows[0].id;
+        if (!newConversation || !newConversation.id) {
+          console.error('Failed to create conversation: INSERT returned no id');
+          return res.status(500).json({ status: 'error', message: 'Failed to create conversation' });
+        }
+        finalConversationId = newConversation.id;
       }
     }
 
@@ -345,10 +349,14 @@ router.post('/send', authenticateToken, async (req, res) => {
     }
 
     // Insert message
-    const result = await query(
+    const insertedMessage = await queryOne(
       'INSERT INTO message (content, "conversationId", "authorId", "receiverId", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id',
       [content.trim(), finalConversationId, senderId, receiverId]
     );
+    if (!insertedMessage || !insertedMessage.id) {
+      console.error('Failed to insert message: INSERT returned no id');
+      return res.status(500).json({ status: 'error', message: 'Failed to send message' });
+    }
 
     // Update conversation timestamp
     await query(
@@ -367,7 +375,7 @@ router.post('/send', authenticateToken, async (req, res) => {
       LEFT JOIN "user" u ON m."authorId" = u.id
       LEFT JOIN profile p ON u.id = p."userId"
       WHERE m.id = $1
-    `, [result.rows[0].id]);
+    `, [insertedMessage.id]);
 
     res.status(201).json({
       status: 'success',
