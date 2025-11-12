@@ -57,6 +57,7 @@ app.use(cors({
       'https://artlink-seven.vercel.app/',
       'https://art-link-seven.vercel.app/',
       'https://art-link.site/',
+      'https://art-link.online/',
       'https://artlink.vercel.app/',
       'https://art-link.vercel.app/'
     ];
