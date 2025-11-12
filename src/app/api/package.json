@@ -4,8 +4,8 @@
   "description": "ArtLink API Backend",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "build": "echo 'No build step required for Node.js server'",
+    "start": "npm run start",
+    "build": "npm run build",
     "dev": "nodemon server.js",
     "test": "jest"
   },
