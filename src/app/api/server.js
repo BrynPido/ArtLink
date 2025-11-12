@@ -44,28 +44,37 @@ app.use(cors({
   origin: function(origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    
+
+    // Use a normalized allowlist without trailing slashes
     const allowedOrigins = [
       'http://localhost:4200',
+      'http://localhost:3000',
+      'https://artlink-api.onrender.com',
       'https://art-link.site',
-      'https://artlink-seven.vercel.app',
-      'https://art-link-seven.vercel.app',
+      'https://www.art-link.site',
+      'https://art-link.online',
+      'https://www.art-link.online',
       'https://artlink.vercel.app',
       'https://art-link.vercel.app',
-      'https://artlink-api.onrender.com',
-      'https://artlink-api.onrender.com/',
-      'https://artlink-seven.vercel.app/',
-      'https://art-link-seven.vercel.app/',
-      'https://art-link.site/',
-      'https://art-link.online/',
-      'https://artlink.vercel.app/',
-      'https://art-link.vercel.app/'
+      'https://artlink-seven.vercel.app',
+      'https://art-link-seven.vercel.app'
     ];
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
+
+    // Accept exact matches OR subdomains of art-link.online
+    const allowBySuffix = (orig) => {
+      try {
+        const url = new URL(orig);
+        const host = url.hostname;
+        return host === 'art-link.online' || host.endsWith('.art-link.online');
+      } catch {
+        return false;
+      }
+    };
+
+    if (allowedOrigins.includes(origin) || allowBySuffix(origin)) {
       return callback(null, true);
     }
-    
+
     const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
     return callback(new Error(msg), false);
   },
