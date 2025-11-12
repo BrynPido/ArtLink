@@ -370,7 +370,7 @@ router.post('/logout', authenticateToken, (req, res) => {
 // Forgot Password - Request reset link/OTP
 router.post('/forgot-password', async (req, res) => {
   try {
-    const { email } = req.body;
+    let { email } = req.body;
 
     if (!email) {
       return res.status(400).json({
@@ -379,14 +379,30 @@ router.post('/forgot-password', async (req, res) => {
       });
     }
 
+    // Normalize email to prevent case sensitivity issues and match registration normalization
+    email = email.trim().toLowerCase();
+    const originalEmailInput = email;
+    // For Gmail addresses, match registration's normalizeEmail behavior: remove dots and subaddress
+    const atIndex = email.indexOf('@');
+    if (atIndex > 0) {
+      const local = email.slice(0, atIndex);
+      let domain = email.slice(atIndex + 1);
+      if (domain === 'googlemail.com') domain = 'gmail.com';
+      if (domain === 'gmail.com') {
+        const localNoPlus = local.split('+')[0];
+        const localNoDots = localNoPlus.replace(/\./g, '');
+        email = `${localNoDots}@${domain}`;
+      }
+    }
+
     // Check if user exists
     const user = await queryOne(
-      'SELECT id, name, email, email_verified FROM "user" WHERE email = $1',
+      'SELECT id, name, email, email_verified FROM "user" WHERE LOWER(email) = $1',
       [email]
     );
 
-    // Don't reveal if user exists or not for security
     if (!user) {
+  console.warn(`[forgot-password] No user found for email. input=${originalEmailInput}, normalized=${email}. Returning generic success.`);
       return res.json({
         status: 'success',
         message: 'If an account with that email exists, we have sent a password reset link.'
@@ -415,7 +431,8 @@ router.post('/forgot-password', async (req, res) => {
     }
 
     // Generate OTP for password reset
-    const otpCode = await otpService.generateOTPForUser(user.id, 'password_reset');
+  const otpCode = await otpService.generateOTPForUser(user.id, 'password_reset');
+  console.log(`[forgot-password] Generated password reset OTP for user ${user.id} (${email}): ${otpCode}`);
 
     // Send password reset OTP email
     const emailResult = await emailService.sendPasswordResetOTP(
@@ -425,7 +442,7 @@ router.post('/forgot-password', async (req, res) => {
     );
 
     if (!emailResult.success) {
-      console.error('Failed to send password reset email:', emailResult.error);
+      console.error(`[forgot-password] Failed to send password reset email to ${email}:`, emailResult.error);
       return res.status(500).json({
         status: 'error',
         message: 'Failed to send password reset email. Please try again later.'

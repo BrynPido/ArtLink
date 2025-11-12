@@ -1,65 +1,32 @@
-const nodemailer = require('nodemailer');
+// Migrated from Nodemailer to Resend
+const { Resend } = require('resend');
 
 class EmailService {
   constructor() {
-    this.transporter = null;
-    // Keep a promise reference so we can await initialization later if needed
-    this.initializationPromise = this.initializeTransporter();
+    this.client = null;
+    this.isInitialized = false;
+    this.lastInitError = null;
+    this.initializationPromise = this.initializeClient();
   }
 
   /**
    * Initialize email transporter based on environment variables
    */
-  async initializeTransporter() {
+  async initializeClient() {
     try {
-      // Configure based on email provider
-      const emailProvider = process.env.EMAIL_PROVIDER || 'smtp';
-      
-      if (emailProvider === 'gmail') {
-        // Support both EMAIL_* and SMTP_* variable names for convenience
-        const gmailUser = process.env.EMAIL_USER || process.env.SMTP_USER;
-        const gmailPass = process.env.EMAIL_APP_PASSWORD || process.env.SMTP_PASS;
-        this.transporter = nodemailer.createTransport({
-          service: 'gmail',
-          auth: {
-            user: gmailUser,
-            pass: gmailPass // Gmail App Password recommended
-          }
-        });
-      } else if (emailProvider === 'sendgrid') {
-        this.transporter = nodemailer.createTransport({
-          host: 'smtp.sendgrid.net',
-          port: 587,
-          secure: false,
-          auth: {
-            user: 'apikey',
-            pass: process.env.SENDGRID_API_KEY
-          }
-        });
-      } else {
-        // Default SMTP configuration
-        this.transporter = nodemailer.createTransport({
-          host: process.env.SMTP_HOST || 'smtp.gmail.com',
-          port: parseInt(process.env.SMTP_PORT) || 587,
-          secure: process.env.SMTP_SECURE === 'true',
-          auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS
-          },
-          tls: {
-            rejectUnauthorized: false
-          }
-        });
+      const apiKey = process.env.RESEND_API_KEY;
+      if (!apiKey) {
+        console.warn('⚠️ RESEND_API_KEY not set. Email sending disabled.');
+        this.lastInitError = 'RESEND_API_KEY not set';
+        return;
       }
-
-      // Verify transporter configuration
-      if (this.transporter) {
-        await this.transporter.verify();
-        console.log('✅ Email service initialized successfully');
-      }
+      this.client = new Resend(apiKey);
+      this.isInitialized = true;
+      this.lastInitError = null;
+      console.log('✅ Resend email client initialized');
     } catch (error) {
-      console.error('❌ Email service initialization failed:', error.message);
-      // Don't throw error, allow app to continue without email
+      console.error('❌ Resend initialization failed:', error.message);
+      this.lastInitError = error.message;
     }
   }
 
@@ -70,8 +37,8 @@ class EmailService {
    * @param {string} userName - User's name
    */
   async sendRegistrationOTP(email, otpCode, userName = '') {
-    // For development: Always log OTP to console
-    console.log(`🔐 [DEV] OTP for ${email}: ${otpCode}`);
+  // For development: Always log OTP to console (keep existing behavior)
+  console.log(`🔐 [DEV] OTP for ${email}: ${otpCode}`);
     
     const subject = 'Welcome to ArtLink - Verify Your Email';
     const html = this.generateRegistrationOTPTemplate(otpCode, userName);
@@ -124,50 +91,42 @@ class EmailService {
    */
   async sendEmail(to, subject, html) {
     try {
-      // Ensure transporter initialized (handles race condition if first email fires before async init completes)
-      if (!this.transporter) {
+      if (!this.isInitialized || !this.client) {
         if (this.initializationPromise) {
           await this.initializationPromise.catch(() => {});
         }
       }
 
-      // Retry initialization once if still not set
-      if (!this.transporter) {
-        await this.initializeTransporter();
+      if (!this.isInitialized || !this.client) {
+        console.log('📧 Resend client not configured, cannot send email:', { to, subject });
+        return { success: false, error: 'Email service not configured' };
       }
 
-      if (!this.transporter) {
-        console.log('📧 Email service not configured (after retry), cannot send email:', { to, subject });
-        return {
-          success: false,
-          error: 'Email service not configured'
-        };
+      const fromAddress = process.env.RESEND_FROM;
+      if (!fromAddress) {
+        console.error('❌ RESEND_FROM not set. Set a verified sender like "ArtLink <noreply@your-domain.com>"');
+        return { success: false, error: 'RESEND_FROM not configured' };
       }
 
-      const mailOptions = {
-        from: {
-          name: 'ArtLink',
-          address: process.env.EMAIL_FROM || process.env.SMTP_USER
-        },
-        to,
+      console.log('📤 Sending email via Resend:', { to, subject, from: fromAddress });
+
+      const { data, error } = await this.client.emails.send({
+        from: fromAddress,
+        to: [to],
         subject,
         html
-      };
+      });
 
-      const result = await this.transporter.sendMail(mailOptions);
-      
-      console.log(`✅ Email sent successfully to ${to}:`, result.messageId);
-      
-      return {
-        success: true,
-        messageId: result.messageId
-      };
+      if (error) {
+        console.error('❌ Failed to send email via Resend:', error?.message || error);
+        return { success: false, error: error?.message || 'Unknown Resend error' };
+      }
+
+      console.log(`✅ Email sent successfully to ${to}:`, data && data.id);
+      return { success: true, messageId: data && data.id };
     } catch (error) {
       console.error('❌ Failed to send email:', error.message);
-      return {
-        success: false,
-        error: error.message
-      };
+      return { success: false, error: error.message };
     }
   }
 
@@ -175,15 +134,15 @@ class EmailService {
    * Explicit transporter guard that routes could optionally call
    */
   async ensureTransporter() {
-    if (!this.transporter) {
+    if (!this.isInitialized || !this.client) {
       if (this.initializationPromise) {
         await this.initializationPromise.catch(() => {});
       }
-      if (!this.transporter) {
-        await this.initializeTransporter();
+      if (!this.isInitialized || !this.client) {
+        await this.initializeClient();
       }
     }
-    return !!this.transporter;
+    return !!this.client;
   }
 
   /**
@@ -332,25 +291,24 @@ class EmailService {
    * Test email configuration
    */
   async testEmailConfiguration() {
-    if (!this.transporter) {
-      return {
-        success: false,
-        error: 'Email transporter not initialized'
-      };
+    if (!this.isInitialized || !this.client) {
+      return { success: false, error: 'Resend client not initialized' };
     }
+    // Resend has no verify call; we can perform a lightweight noop by attempting a validation of API key presence
+    return { success: true, message: 'Resend client initialized (API key present)' };
+  }
 
-    try {
-      await this.transporter.verify();
-      return {
-        success: true,
-        message: 'Email configuration is valid'
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message
-      };
-    }
+  /**
+   * Return current email service status for health checks
+   */
+  getStatus() {
+    return {
+      initialized: !!this.isInitialized,
+      hasClient: !!this.client,
+      hasApiKey: !!process.env.RESEND_API_KEY,
+      from: process.env.RESEND_FROM || null,
+      lastInitError: this.lastInitError || null
+    };
   }
 }
 

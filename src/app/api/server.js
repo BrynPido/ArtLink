@@ -23,6 +23,7 @@ const listingRoutes = require('./routes/listings');
 const messageRoutes = require('./routes/messages');
 const notificationRoutes = require('./routes/notifications');
 const adminRoutes = require('./routes/admin');
+const emailService = require('./services/email.service');
 
 // Security middleware - adjusted for development
 app.use(helmet({
@@ -167,6 +168,27 @@ app.get('/api/health', async (req, res) => {
       database: 'disconnected',
       error: error.message
     });
+  }
+});
+
+// Email health endpoint
+app.get('/api/email/health', (req, res) => {
+  try {
+    const status = emailService.getStatus();
+    const ok = status.initialized && status.hasClient && status.hasApiKey && !!status.from;
+    res.status(ok ? 200 : 503).json({
+      status: ok ? 'OK' : 'ERROR',
+      timestamp: new Date().toISOString(),
+      provider: 'Resend',
+      initialized: status.initialized,
+      hasClient: status.hasClient,
+      hasApiKey: status.hasApiKey,
+      fromConfigured: !!status.from,
+      from: status.from || undefined,
+      lastInitError: status.lastInitError || undefined
+    });
+  } catch (error) {
+    res.status(500).json({ status: 'ERROR', error: error.message });
   }
 });
 

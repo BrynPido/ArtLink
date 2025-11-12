@@ -11,20 +11,21 @@ async function testEmailService() {
     // Test email configuration
     const configTest = await emailService.testEmailConfiguration();
     console.log('📧 Email configuration test:', configTest);
-    
-    // Test OTP email (replace with your email)
-    if (process.env.EMAIL_USER) {
-      console.log('📤 Testing OTP email send...');
+
+    // Test OTP email if RESEND_FROM + TARGET_EMAIL provided
+    const targetEmail = process.env.TEST_EMAIL_RECIPIENT || process.env.RESEND_TEST_TO;
+    if (targetEmail) {
+      console.log('📤 Testing OTP email send via Resend...');
       const result = await emailService.sendRegistrationOTP(
-        process.env.EMAIL_USER, 
-        '123456', 
+        targetEmail,
+        '123456',
         'Test User'
       );
       console.log('📧 Email send result:', result);
     } else {
-      console.log('⚠️  EMAIL_USER not configured, skipping email send test');
+      console.log('⚠️ TEST_EMAIL_RECIPIENT not set. Set it in .env to send a test email.');
     }
-    
+
   } catch (error) {
     console.error('❌ Email service test failed:', error.message);
   }

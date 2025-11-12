@@ -4,8 +4,8 @@
   "description": "ArtLink API Backend",
   "main": "server.js",
   "scripts": {
-    "start": "npm run start",
-    "build": "npm run build",
+    "start": "node server.js",
+    "build": "echo 'No build step required for Node.js server'",
     "dev": "nodemon server.js",
     "test": "jest"
   },
@@ -23,6 +23,7 @@
     ]
   },
   "dependencies": {
+    "resend": "^4.0.0",
     "@supabase/supabase-js": "^2.55.0",
     "aws-sdk": "^2.1692.0",
     "bcrypt": "^6.0.0",
