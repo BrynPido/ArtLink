@@ -593,11 +593,10 @@ export class DataService {
       // If we detect a success-shaped body coming through the error channel for the
       // delete post endpoint, convert it into a successful observable instead of throwing.
       try {
-        const isDeletePost = typeof error.url === 'string' && error.url.includes('/posts/deletePost');
         const body = error.error;
-        if (isDeletePost && body && typeof body === 'object' && body.status === 'success') {
-          // Return a stream that emits the response so subscriber's next() runs.
-          return of(body);
+        // Generic success-shape recovery: sometimes backend or proxies emit a success JSON with non-2xx status.
+        if (body && typeof body === 'object' && body.status === 'success') {
+          return of(body); // Treat as success.
         }
       } catch {}
       

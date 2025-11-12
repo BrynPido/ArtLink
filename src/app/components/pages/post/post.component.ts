@@ -658,7 +658,8 @@ export class PostComponent implements OnInit, OnDestroy {
 
     this.dataService.deletePost(postId, userId).subscribe({
       next: (response) => {
-        if (response.success) {
+        // Accept either { status: 'success' } or { success: true }
+        if (response && (response.status === 'success' || response.success === true)) {
           this.toastService.showToast('Post deleted successfully!', 'success');
           // Navigate back to home or previous page after successful deletion
           setTimeout(() => {

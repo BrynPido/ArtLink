@@ -89,8 +89,8 @@ export class PostCardComponent implements OnInit {
   }
 
   // Fetch posts from the backend
-  fetchPosts(): void {
-    if (this.posts.length > 0) {
+  fetchPosts(force: boolean = false): void {
+    if (!force && this.posts.length > 0) {
       this.loading = false; // Stop loading if posts are already fetched
       return;
     }
@@ -233,9 +233,14 @@ export class PostCardComponent implements OnInit {
     const userId = this.currentUser.id;
     this.dataService.deletePost(postId, userId).subscribe({
       next: (response) => {
-        if (response.success) {
-          this.posts = this.posts.filter(post => post.id !== postId); // Remove post from UI
+        // Backend returns shape { status: 'success', message: string }
+        if (response && (response.status === 'success' || response.success === true)) {
+          // Optimistically remove from current list
+          this.posts = this.posts.filter(post => post.id !== postId);
           this.toastService.showToast('Post deleted successfully!', 'success');
+
+          // Force refresh the feed to reflect latest state
+          this.fetchPosts(true);
         } else {
           console.error('Error deleting post:', response.message);
           this.toastService.showToast('Failed to delete post!', 'error');
