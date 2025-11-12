@@ -100,8 +100,8 @@
 
     <!-- Post Content - Better padding on mobile -->
     <div class="p-3 sm:p-4">
-      <!-- Interaction Buttons -->
-      <div class="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
+      <!-- Interaction Buttons (only show for posts with media) -->
+      <div *ngIf="post?.media?.length > 0" class="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
         <span class="material-symbols-rounded text-xl sm:text-2xl cursor-pointer transition-transform duration-200 ease-in-out select-none"
           [ngClass]="{'animate-pop': isLiked(post?.id)}" [ngStyle]="{
           'font-variation-settings': '\'FILL\' ' + (isLiked(post?.id) ? 1 : 0),
@@ -118,12 +118,33 @@
         </span>
       </div>
 
-      <!-- Likes Count -->
-      <p class="font-medium mb-2 text-sm sm:text-base text-gray-900 dark:text-white">{{ likesCount(post?.id) }} likes</p>
+      <!-- Likes Count (only for posts with media) -->
+      <p *ngIf="post?.media?.length > 0" class="font-medium mb-2 text-sm sm:text-base text-gray-900 dark:text-white">{{ likesCount(post?.id) }} likes</p>
 
       <!-- Post Title & Description -->
       <h1 class="text-lg sm:text-xl font-bold mb-2 text-gray-900 dark:text-white">{{ post?.title }}</h1>
       <p class="text-gray-600 dark:text-gray-300 whitespace-pre-line text-sm sm:text-base">{{ post?.content }}</p>
+
+      <!-- Interaction Buttons and Likes Count (for text-only posts) -->
+      <div *ngIf="!post?.media || post?.media?.length === 0" class="flex items-center gap-4 mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+        <div class="flex items-center gap-3">
+          <span class="material-symbols-rounded text-xl sm:text-2xl cursor-pointer transition-transform duration-200 ease-in-out select-none"
+            [ngClass]="{'animate-pop': isLiked(post?.id)}" [ngStyle]="{
+            'font-variation-settings': '\'FILL\' ' + (isLiked(post?.id) ? 1 : 0),
+            'color': isLiked(post?.id) ? '#ef4444' : '#6b7280'
+          }" (click)="toggleLike(post?.id)">
+            favorite
+          </span>
+          <span class="material-symbols-rounded text-xl sm:text-2xl cursor-pointer transition-transform duration-200 ease-in-out select-none"
+            [ngClass]="{'animate-pop': isSaved(post?.id)}" [ngStyle]="{
+            'font-variation-settings': '\'FILL\' ' + (isSaved(post?.id) ? 1 : 0),
+            'color': isSaved(post?.id) ? '#6366f1' : '#6b7280'
+          }" (click)="toggleSave(post?.id)">
+            bookmark
+          </span>
+        </div>
+        <p class="font-medium text-sm sm:text-base text-gray-900 dark:text-white">{{ likesCount(post?.id) }} likes</p>
+      </div>
 
       <!-- Timestamp -->
       <p class="text-xs sm:text-sm text-gray-400 dark:text-gray-500 mt-2">

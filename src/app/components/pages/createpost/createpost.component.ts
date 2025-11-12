@@ -90,8 +90,9 @@ export class CreatePostComponent implements OnDestroy {
       return;
     }
 
-    if (this.imageFiles.length === 0) {
-      this.toastService.showToast('Please add at least one image', 'error');
+    // For listings, require at least one image; for posts, images are optional
+    if (this.isListingMode && this.imageFiles.length === 0) {
+      this.toastService.showToast('Please add at least one image for a listing', 'error');
       return;
     }
 
@@ -124,10 +125,10 @@ export class CreatePostComponent implements OnDestroy {
           }
         });
       } else {
-        // For posts, use the existing structure
+        // For posts, images are optional; if none provided, send without media
         const postData = {
           ...this.formData,
-          media: mediaArray
+          media: mediaArray // can be empty []
         };
 
         this.dataService.createPost(postData).subscribe({

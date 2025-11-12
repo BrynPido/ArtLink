@@ -194,3 +194,48 @@
   content-visibility: auto;
   contain-intrinsic-size: 300px;
 }
+
+/* ===== Text-only post enhancements ===== */
+.text-only-post .post-content {
+  color: var(--text-secondary, #6b7280);
+  font-size: 0.95rem;
+  line-height: 1.5rem;
+  white-space: pre-line; /* keep user newlines */
+}
+
+.text-only-post .post-content.clamped {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4; /* 4 lines preview */
+  line-clamp: 4; /* standard property */
+  overflow: hidden;
+}
+
+/* Soft container treatment for text-only cards */
+.text-only-post {
+  /* subtle separation when no media */
+  background: linear-gradient(
+    180deg,
+    rgba(99,102,241,0.06) 0%,
+    rgba(99,102,241,0.03) 100%
+  );
+  border-radius: 0.75rem;
+}
+
+.dark .text-only-post {
+  background: linear-gradient(
+    180deg,
+    rgba(99,102,241,0.10) 0%,
+    rgba(99,102,241,0.06) 100%
+  );
+}
+
+.text-only-post .see-more {
+  color: #6366f1;
+}
+
+/* Text-only post actions bar */
+.text-only-post .flex.border-t {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+}

@@ -35,6 +35,8 @@ export class PostCardComponent implements OnInit {
   imageLoaded: { [key: string]: boolean } = {}; // Track which images have loaded
   modalImageLoaded: boolean = false;
   modalZoom: number = 1.0;
+  // Expand/collapse state for long text posts
+  expandedPosts: { [key: number]: boolean } = {};
 
   // Report modal state
   showReportModal: boolean = false;
@@ -51,6 +53,25 @@ export class PostCardComponent implements OnInit {
     private webSocketService: WebSocketService
   ) {
     this.currentUser = this.dataService.getCurrentUser();
+  }
+
+  // Whether current post content should be clamped (eligible for See more)
+  shouldClamp(content: string | undefined | null): boolean {
+    if (!content) return false;
+    // Heuristics: clamp if over 180 chars or more than 6 lines
+    const tooLong = content.trim().length > 180;
+    const lineCount = content.split(/\r?\n/).length;
+    return tooLong || lineCount > 6;
+  }
+
+  isExpanded(postId: number): boolean {
+    return !!this.expandedPosts[postId];
+  }
+
+  toggleExpand(postId: number, event?: Event): void {
+    if (event) { event.stopPropagation(); }
+    this.expandedPosts[postId] = !this.expandedPosts[postId];
+    this.cdr.markForCheck();
   }
 
   // Helper method to construct full media URL

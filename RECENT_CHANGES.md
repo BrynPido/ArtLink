@@ -20,6 +20,26 @@
 
 ## 🎨 Recent UI/UX Improvements
 
+### 0. Text-only Posts Support
+**What changed:**
+- ✅ Posts can now be created without images (great for commission requests and text-only updates)
+- ✅ Listings still require at least one image
+- ✅ Feed cards show inline like/save controls for text-only posts
+- ✅ Long text posts now display a 4-line preview with a "Show more / Show less" toggle
+- ✅ Subtle gradient background applied to text-only cards for visual distinction
+- ✅ Preserves user line breaks (white-space: pre-line) for better readability
+- ✅ Likes counter moved below content for text-only posts (matches third-party UI rhythm)
+
+**Files touched:**
+- `src/app/components/pages/createpost/createpost.component.ts`
+- `src/app/components/pages/createpost/createpost.component.html`
+- `src/app/components/ui/post-card/post-card.component.html`
+- `src/app/components/ui/post-card/post-card.component.ts`
+- `src/app/components/ui/post-card/post-card.component.css`
+- `src/app/components/pages/post/post.component.html`
+
+**Notes:** Backend already supported zero-media posts; this update removes the frontend restriction and ensures the feed UX still exposes like/save actions when no media is present. The likes counter positioning is context-aware: above for posts with media, below for text-only posts.
+
 ### 1. **Post Card Component** (`src/app/components/ui/post-card/`)
 **Recent Changes:**
 - ✅ Fixed navigation button positioning (now appear on sides of photos)

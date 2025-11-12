@@ -48,7 +48,7 @@
   </div>
 
   <!-- Media Section -->
-  <div class="relative mx-4 mb-4">
+  <div class="relative mx-4 mb-4" *ngIf="post.media && post.media.length > 0">
     <div class="w-full bg-gray-50 dark:bg-gray-900 rounded-xl overflow-hidden shadow-inner">
       <!-- Carousel container with improved aspect ratio and loading -->
     <div *ngIf="post.media && post.media.length > 1" class="w-full relative" style="height: 0; padding-bottom: 75%;">
@@ -128,7 +128,7 @@
     </div>
   </div>
 
-    <!-- Modern Like and save controls -->
+  <!-- Modern Like and save controls -->
     <div class="absolute -bottom-5 right-6 flex items-center bg-white dark:bg-gray-800 rounded-full shadow-lg border border-gray-100 dark:border-gray-700 p-1">
       <button class="p-1.5 rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 group flex items-center justify-center"
         (click)="toggleLike(post.id, post.authorId); $event.stopPropagation()">
@@ -157,9 +157,9 @@
   </div>
 
   <!-- Content Section -->
-  <div class="px-4 pb-4 pt-6">
-    <!-- Likes Counter -->
-    <div class="flex items-center gap-1 mb-3">
+  <div class="px-4 pb-4 pt-6" [ngClass]="{'text-only-post': !post.media || post.media.length === 0}">
+    <!-- Likes Counter (for posts WITH media - shown at top) -->
+    <div *ngIf="post.media && post.media.length > 0" class="flex items-center gap-1 mb-3">
       <span class="material-symbols-rounded text-red-500 text-sm">favorite</span>
       <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{likesCount(post.id)}}</span>
       <span class="text-sm text-gray-500 dark:text-gray-400">like{{likesCount(post.id) === 1 ? '' : 's'}}</span>
@@ -168,6 +168,50 @@
     <!-- Post Title -->
     <div class="mb-2">
       <p class="text-gray-900 dark:text-white font-medium text-sm leading-relaxed">{{post.title}}</p>
+    </div>
+
+    <!-- Post Content Preview (only show when expanded or clamped) -->
+    <div *ngIf="post.content" class="mb-3">
+      <div class="post-content" [ngClass]="{'clamped': shouldClamp(post.content) && !isExpanded(post.id)}">
+        {{ post.content }}
+      </div>
+      <button *ngIf="shouldClamp(post.content)" (click)="toggleExpand(post.id, $event)"
+        class="mt-1 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 focus:outline-none">
+        {{ isExpanded(post.id) ? 'Show less' : 'Show more' }}
+      </button>
+    </div>
+
+    <!-- Like/Save controls and likes counter for text-only posts (no media) -->
+    <div *ngIf="!post.media || post.media.length === 0" class="flex items-center gap-4 mb-3 pt-2 border-t border-gray-100 dark:border-gray-700">
+      <div class="flex items-center gap-3">
+        <button class="p-1.5 rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 group flex items-center justify-center"
+          (click)="toggleLike(post.id, post.authorId); $event.stopPropagation()">
+          <span class="material-symbols-rounded text-lg leading-none transition-all duration-200 select-none group-hover:scale-110"
+            [ngClass]="{'animate-pop': isLiked(post.id)}" [ngStyle]="{
+              'font-variation-settings': '\'FILL\' ' + (isLiked(post.id) ? 1 : 0),
+              'color': isLiked(post.id) ? '#ef4444' : '#6b7280'
+            }">
+            favorite
+          </span>
+        </button>
+
+        <button class="p-1.5 rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 group flex items-center justify-center"
+          (click)="toggleSave(post.id); $event.stopPropagation()">
+          <span class="material-symbols-rounded text-lg leading-none transition-all duration-200 select-none group-hover:scale-110"
+            [ngClass]="{'animate-pop': isSaved(post.id)}" [ngStyle]="{
+              'font-variation-settings': '\'FILL\' ' + (isSaved(post.id) ? 1 : 0),
+              'color': isSaved(post.id) ? '#6366f1' : '#6b7280'
+            }">
+            bookmark
+          </span>
+        </button>
+      </div>
+
+      <!-- Likes Counter (for text-only posts - shown after actions) -->
+      <div class="flex items-center gap-1">
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{likesCount(post.id)}}</span>
+        <span class="text-sm text-gray-500 dark:text-gray-400">like{{likesCount(post.id) === 1 ? '' : 's'}}</span>
+      </div>
     </div>
     
     <!-- Post Meta -->
