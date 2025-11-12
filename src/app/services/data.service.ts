@@ -589,6 +589,18 @@ export class DataService {
       // Server-side error
       console.error('Server error details:', error);
       
+      // Edge case: Some backends wrongly send a success JSON with a non-2xx code.
+      // If we detect a success-shaped body coming through the error channel for the
+      // delete post endpoint, convert it into a successful observable instead of throwing.
+      try {
+        const isDeletePost = typeof error.url === 'string' && error.url.includes('/posts/deletePost');
+        const body = error.error;
+        if (isDeletePost && body && typeof body === 'object' && body.status === 'success') {
+          // Return a stream that emits the response so subscriber's next() runs.
+          return of(body);
+        }
+      } catch {}
+      
       // Check for authentication errors (401/403)
       if (error.status === 401 || error.status === 403) {
         // Check if it's a token-related error
