@@ -2,7 +2,6 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, throwError, Observable, of, tap, map, BehaviorSubject, forkJoin } from 'rxjs';
-import { timeout } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -65,9 +64,7 @@ export class DataService {
     password: string;
     confirmPassword: string;
   }): Observable<any> {
-    // Apply a 15s timeout so mobile devices hitting an unreachable dev host don't hang indefinitely.
     return this.http.post(`${this.apiUrl}auth/register`, data).pipe(
-      timeout(15000),
       catchError(this.handleError)
     );
   }

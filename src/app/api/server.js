@@ -38,49 +38,45 @@ app.use(morgan('combined'));
 
 // Note: Move rate limiting AFTER CORS/preflight handling and skip OPTIONS to avoid counting preflights
 
-// CORS configuration - broadened for LAN development (mobile devices) while keeping production origins strict
-const PRODUCTION_ORIGINS = [
-  'https://art-link.site',
-  'https://artlink-seven.vercel.app',
-  'https://art-link-seven.vercel.app',
-  'https://artlink.vercel.app',
-  'https://art-link.vercel.app',
-  'https://artlink-api.onrender.com'
-];
-
+// CORS configuration - Enhanced for Render deployment
 app.use(cors({
   origin: function(origin, callback) {
-    // Allow requests with no origin (mobile apps, curl)
+    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-
-    // Always allow localhost origins
-    if (/^http:\/\/localhost(?::\d+)?$/.test(origin)) {
+    
+    const allowedOrigins = [
+      'http://localhost:4200',
+      'https://art-link.site',
+      'https://artlink-seven.vercel.app',
+      'https://art-link-seven.vercel.app',
+      'https://artlink.vercel.app',
+      'https://art-link.vercel.app',
+      'https://artlink-api.onrender.com',
+      'https://artlink-api.onrender.com/',
+      'https://artlink-seven.vercel.app/',
+      'https://art-link-seven.vercel.app/',
+      'https://art-link.site/',
+      'https://artlink.vercel.app/',
+      'https://art-link.vercel.app/'
+    ];
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
       return callback(null, true);
     }
-
-    // Allow same-LAN IP origins in development (e.g., http://192.168.x.x:4200)
-    if (process.env.NODE_ENV !== 'production' && /^http:\/\/\d{1,3}(?:\.\d{1,3}){3}(?::\d+)?$/.test(origin)) {
-      return callback(null, true);
-    }
-
-    // Production whitelist
-    if (PRODUCTION_ORIGINS.includes(origin) || PRODUCTION_ORIGINS.includes(origin.replace(/\/$/, ''))) {
-      return callback(null, true);
-    }
-
-    return callback(new Error('CORS blocked for origin: ' + origin), false);
+    
+    const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+    return callback(new Error(msg), false);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Cache-Control'],
   exposedHeaders: ['Content-Length', 'Content-Type'],
-  optionsSuccessStatus: 200,
+  optionsSuccessStatus: 200, // Some legacy browsers choke on 204
   preflightContinue: false
 }));
 
 // Additional CORS headers for all requests
 app.use((req, res, next) => {
-  // Echo back origin if permitted above; fallback to first dev origin
   res.header('Access-Control-Allow-Origin', req.headers.origin || 'http://localhost:4200');
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
@@ -107,7 +103,7 @@ const commonLimiterOptions = {
 // Stricter limiter for auth endpoints (login/register)
 const authLimiter = rateLimit({
   ...commonLimiterOptions,
-  max: 100 // allow a bit more for mobile retry scenarios in dev
+  max: 50 // per IP per window for auth-specific routes
 });
 
 // General API limiter (higher to accommodate admin console bursty loads)
