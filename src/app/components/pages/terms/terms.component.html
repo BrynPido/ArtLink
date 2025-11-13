@@ -1,0 +1,178 @@
+<!-- Terms & Conditions Page -->
+<div class="terms-container min-h-screen bg-gray-50 dark:bg-gray-900">
+  
+  <!-- Header -->
+  <nav class="bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <div class="flex items-center space-x-3">
+          <span class="material-symbols-rounded text-indigo-600 dark:text-indigo-400 text-3xl">palette</span>
+          <span class="text-2xl font-bold text-gray-900 dark:text-white">ArtLink</span>
+        </div>
+        <button (click)="goBack()" class="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+          <span class="material-icons">arrow_back</span>
+          <span class="font-medium">Back</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Content -->
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 md:p-12 border border-gray-200 dark:border-gray-700">
+      
+      <!-- Title -->
+      <div class="mb-8">
+        <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+          Terms & Conditions
+        </h1>
+        <p class="text-gray-600 dark:text-gray-400">
+          Last Updated: <span class="font-semibold">{{ lastUpdated }}</span>
+        </p>
+      </div>
+
+      <!-- Introduction -->
+      <div class="prose prose-lg dark:prose-invert max-w-none">
+        <p class="text-gray-700 dark:text-gray-300 mb-6">
+          Welcome to ArtLink. By accessing or using our platform, you agree to be bound by these Terms and Conditions. 
+          Please read them carefully before using our services.
+        </p>
+
+        <!-- Section 1 -->
+        <h2 class="section-title text-2xl font-bold text-gray-900 dark:text-white mt-8 mb-4">
+          1. Acceptance of Terms
+        </h2>
+        <p class="text-gray-700 dark:text-gray-300 mb-4">
+          By creating an account or using ArtLink, you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions, 
+          as well as our Privacy Policy. If you do not agree, please do not use our services.
+        </p>
+
+        <!-- Section 2 -->
+        <h2 class="section-title text-2xl font-bold text-gray-900 dark:text-white mt-8 mb-4">
+          2. User Accounts
+        </h2>
+        <div class="text-gray-700 dark:text-gray-300 mb-4 space-y-3">
+          <p><strong>2.1 Account Creation:</strong> You must provide accurate and complete information when creating your account.</p>
+          <p><strong>2.2 Account Security:</strong> You are responsible for maintaining the confidentiality of your account credentials.</p>
+          <p><strong>2.3 Age Requirement:</strong> You must be at least 13 years old to use ArtLink.</p>
+          <p><strong>2.4 Account Termination:</strong> We reserve the right to suspend or terminate accounts that violate these terms.</p>
+        </div>
+
+        <!-- Section 3 -->
+        <h2 class="section-title text-2xl font-bold text-gray-900 dark:text-white mt-8 mb-4">
+          3. Content Guidelines
+        </h2>
+        <div class="text-gray-700 dark:text-gray-300 mb-4 space-y-3">
+          <p><strong>3.1 User Content:</strong> You retain all rights to content you post on ArtLink.</p>
+          <p><strong>3.2 Content License:</strong> By posting content, you grant ArtLink a non-exclusive, worldwide license to display and distribute your content on our platform.</p>
+          <p><strong>3.3 Prohibited Content:</strong> You may not post content that is illegal, harmful, threatening, abusive, harassing, defamatory, vulgar, obscene, or otherwise objectionable.</p>
+          <p><strong>3.4 Copyright:</strong> You must own or have permission to use all content you post. Respect intellectual property rights.</p>
+        </div>
+
+        <!-- Section 4 -->
+        <h2 class="section-title text-2xl font-bold text-gray-900 dark:text-white mt-8 mb-4">
+          4. Marketplace and Transactions
+        </h2>
+        <div class="text-gray-700 dark:text-gray-300 mb-4 space-y-3">
+          <p><strong>4.1 Seller Responsibilities:</strong> Sellers must accurately describe items and fulfill orders in a timely manner.</p>
+          <p><strong>4.2 Buyer Protection:</strong> We facilitate transactions but are not responsible for disputes between buyers and sellers.</p>
+          <p><strong>4.3 Fees:</strong> ArtLink may charge transaction fees for marketplace sales as specified in our fee schedule.</p>
+          <p><strong>4.4 Refunds:</strong> Refund policies are determined by individual sellers unless otherwise specified.</p>
+        </div>
+
+        <!-- Section 5 -->
+        <h2 class="section-title text-2xl font-bold text-gray-900 dark:text-white mt-8 mb-4">
+          5. User Conduct
+        </h2>
+        <div class="text-gray-700 dark:text-gray-300 mb-4">
+          <p class="mb-3">Users agree not to:</p>
+          <ul class="list-disc pl-6 space-y-2">
+            <li>Harass, abuse, or harm other users</li>
+            <li>Impersonate others or misrepresent your identity</li>
+            <li>Spam, phish, or engage in fraudulent activities</li>
+            <li>Attempt to hack or compromise the platform's security</li>
+            <li>Use automated systems to access the platform without permission</li>
+            <li>Violate any applicable laws or regulations</li>
+          </ul>
+        </div>
+
+        <!-- Section 6 -->
+        <h2 class="section-title text-2xl font-bold text-gray-900 dark:text-white mt-8 mb-4">
+          6. Intellectual Property
+        </h2>
+        <p class="text-gray-700 dark:text-gray-300 mb-4">
+          ArtLink and its original content, features, and functionality are owned by ArtLink and are protected by international copyright, 
+          trademark, patent, trade secret, and other intellectual property laws.
+        </p>
+
+        <!-- Section 7 -->
+        <h2 class="section-title text-2xl font-bold text-gray-900 dark:text-white mt-8 mb-4">
+          7. Privacy and Data
+        </h2>
+        <p class="text-gray-700 dark:text-gray-300 mb-4">
+          Your use of ArtLink is also governed by our <a routerLink="/privacy" class="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold">Privacy Policy</a>. 
+          We are committed to protecting your personal information and using it responsibly.
+        </p>
+
+        <!-- Section 8 -->
+        <h2 class="section-title text-2xl font-bold text-gray-900 dark:text-white mt-8 mb-4">
+          8. Disclaimers and Limitations
+        </h2>
+        <div class="text-gray-700 dark:text-gray-300 mb-4 space-y-3">
+          <p><strong>8.1 Service Availability:</strong> We strive for 24/7 availability but do not guarantee uninterrupted service.</p>
+          <p><strong>8.2 Content Accuracy:</strong> We are not responsible for the accuracy of user-generated content.</p>
+          <p><strong>8.3 Limitation of Liability:</strong> ArtLink shall not be liable for any indirect, incidental, special, or consequential damages.</p>
+        </div>
+
+        <!-- Section 9 -->
+        <h2 class="section-title text-2xl font-bold text-gray-900 dark:text-white mt-8 mb-4">
+          9. Modifications to Terms
+        </h2>
+        <p class="text-gray-700 dark:text-gray-300 mb-4">
+          We reserve the right to modify these Terms and Conditions at any time. We will notify users of significant changes via email or 
+          platform notification. Continued use of ArtLink after changes constitutes acceptance of the new terms.
+        </p>
+
+        <!-- Section 10 -->
+        <h2 class="section-title text-2xl font-bold text-gray-900 dark:text-white mt-8 mb-4">
+          10. Termination
+        </h2>
+        <p class="text-gray-700 dark:text-gray-300 mb-4">
+          We may terminate or suspend your account and access to ArtLink immediately, without prior notice or liability, for any reason, 
+          including breach of these Terms. Upon termination, your right to use the service will cease immediately.
+        </p>
+
+        <!-- Section 11 -->
+        <h2 class="section-title text-2xl font-bold text-gray-900 dark:text-white mt-8 mb-4">
+          11. Governing Law
+        </h2>
+        <p class="text-gray-700 dark:text-gray-300 mb-4">
+          These Terms shall be governed by and construed in accordance with applicable laws, without regard to conflict of law provisions.
+        </p>
+
+        <!-- Section 12 -->
+        <h2 class="section-title text-2xl font-bold text-gray-900 dark:text-white mt-8 mb-4">
+          12. Contact Us
+        </h2>
+        <p class="text-gray-700 dark:text-gray-300 mb-4">
+          If you have any questions about these Terms and Conditions, please contact us at:
+        </p>
+        <div class="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+          <p class="text-gray-700 dark:text-gray-300">
+            <strong>Email:</strong> contact&#64;art-link.online<br>
+            <strong>Support:</strong> Available through our contact form
+          </p>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="mt-12 pt-8 border-t border-gray-200 dark:border-gray-700">
+        <p class="text-sm text-gray-600 dark:text-gray-400 text-center">
+          By using ArtLink, you acknowledge that you have read and understood these Terms and Conditions.
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+</div>

@@ -4,8 +4,26 @@ import { LayoutComponent } from './components/layout/layout.component';
 import { AuthGuard } from './services/_auth/auth.guard';
 
 export const routes: Routes = [
+  // Landing page (public, no layout)
+  { 
+    path: '', 
+    loadComponent: () => import('./components/pages/landing/landing.component').then(m => m.LandingComponent),
+    pathMatch: 'full'
+  },
+  
+  // Legal pages (public, no layout)
   {
-    path: '',
+    path: 'terms',
+    loadComponent: () => import('./components/pages/terms/terms.component').then(m => m.TermsComponent)
+  },
+  {
+    path: 'privacy',
+    loadComponent: () => import('./components/pages/privacy/privacy.component').then(m => m.PrivacyComponent)
+  },
+  
+  // Auth routes
+  {
+    path: 'auth',
     component: AuthLayoutComponent,
     children: [
       { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -15,6 +33,12 @@ export const routes: Routes = [
       { path: 'reset-password', loadComponent: () => import('./_auth/reset-password/reset-password.component').then(m => m.ResetPasswordComponent) },
     ],
   },
+  
+  // Legacy auth redirects for backward compatibility
+  { path: 'login', redirectTo: 'auth/login', pathMatch: 'full' },
+  { path: 'register', redirectTo: 'auth/register', pathMatch: 'full' },
+  { path: 'verify-email', redirectTo: 'auth/verify-email', pathMatch: 'full' },
+  { path: 'reset-password', redirectTo: 'auth/reset-password', pathMatch: 'full' },
   {
     path: 'admin',
     loadChildren: () => import('./admin/admin.routes').then(m => m.adminRoutes)
