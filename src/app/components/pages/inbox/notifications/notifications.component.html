@@ -6,9 +6,13 @@
              (click)="handleNotificationClick(notification)">
             <div class="flex items-start">
                 <div class="flex-1">
-                    <p class="text-sm text-gray-900 dark:text-white" [ngClass]="{'font-bold': !notification.read}">
-                        {{ notification.content }}
-                    </p>
+                                        <p class="text-sm text-gray-900 dark:text-white" [ngClass]="{'font-bold': !notification.read}">
+                                                <ng-container *ngIf="notification.senderUsername || notification.senderName; else plainContent">
+                                                    <span class="font-semibold">{{ notification.senderUsername || notification.senderName }}</span>
+                                                    <span class="ml-1">{{ notification.content }}</span>
+                                                </ng-container>
+                                                <ng-template #plainContent>{{ notification.content }}</ng-template>
+                                        </p>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                         {{ notification.createdAt | timeAgo }}
                     </p>

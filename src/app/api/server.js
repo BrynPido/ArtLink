@@ -57,7 +57,8 @@ app.use(cors({
       'https://artlink.vercel.app',
       'https://art-link.vercel.app',
       'https://artlink-seven.vercel.app',
-      'https://art-link-seven.vercel.app'
+      'https://art-link-seven.vercel.app',
+      'http://localhost:56950'
     ];
 
     // Accept exact matches OR subdomains of art-link.online

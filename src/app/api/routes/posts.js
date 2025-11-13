@@ -8,6 +8,7 @@ const { validatePost, validateComment, handleValidationErrors } = require('../mi
 const storageService = require('../services/supabase-storage');
 
 const router = express.Router();
+const { createNotification } = require('./notifications');
 
 // Configure multer for memory storage (we'll upload to Supabase)
 const storage = multer.memoryStorage();
@@ -346,6 +347,24 @@ router.post('/likePost', authenticateToken, async (req, res) => {
     const isLiked = !existingLike; // If no existing like, then we just liked it
     const likesCount = parseInt(likesCountResult.count);
 
+    // Notify post author on like (not on unlike)
+    if (isLiked) {
+      try {
+        const post = await queryOne('SELECT "authorId" FROM post WHERE id = $1', [postId]);
+        if (post && post.authorId && post.authorId !== userId) {
+          await createNotification(
+            'LIKE',
+            post.authorId,
+            userId,
+            'liked your post',
+            { postId }
+          );
+        }
+      } catch (notifyErr) {
+        console.warn('Failed to create like_post notification:', notifyErr?.message || notifyErr);
+      }
+    }
+
     res.json({
       status: 'success',
       message: isLiked ? 'Post liked' : 'Post unliked',
@@ -472,6 +491,35 @@ router.post('/addComment', authenticateToken, validateComment, handleValidationE
       WHERE c.id = $1
     `, [result[0].id]);
 
+    // Notifications: notify post author and (if applicable) parent comment author
+    try {
+      const post = await queryOne('SELECT "authorId" FROM post WHERE id = $1', [postId]);
+      if (post && post.authorId && post.authorId !== authorId) {
+        await createNotification(
+          'COMMENT',
+          post.authorId,
+          authorId,
+          'commented on your post',
+          { postId, commentId: result[0].id }
+        );
+      }
+
+      if (parentId) {
+        const parent = await queryOne('SELECT "authorId" FROM comment WHERE id = $1', [parentId]);
+        if (parent && parent.authorId && parent.authorId !== authorId && (!post || parent.authorId !== post.authorId)) {
+          await createNotification(
+            'COMMENT',
+            parent.authorId,
+            authorId,
+            'replied to your comment',
+            { postId, commentId: result[0].id }
+          );
+        }
+      }
+    } catch (notifyErr) {
+      console.warn('Failed to create comment notifications:', notifyErr?.message || notifyErr);
+    }
+
     res.status(201).json({
       status: 'success',
       message: 'Comment added successfully',
@@ -518,6 +566,24 @@ router.post('/likeComment', authenticateToken, async (req, res) => {
     const likesCount = parseInt(likesCountResult.count);
 
     const liked = !existingLike; // If we just liked, liked = true
+
+    // Notify comment author on like (not on unlike)
+    if (liked) {
+      try {
+        const c = await queryOne('SELECT "authorId", "postId" FROM comment WHERE id = $1', [commentId]);
+        if (c && c.authorId && c.authorId !== userId) {
+          await createNotification(
+            'LIKE',
+            c.authorId,
+            userId,
+            'liked your comment',
+            { postId: c.postId, commentId }
+          );
+        }
+      } catch (notifyErr) {
+        console.warn('Failed to create like_comment notification:', notifyErr?.message || notifyErr);
+      }
+    }
 
     res.json({
       status: 'success',

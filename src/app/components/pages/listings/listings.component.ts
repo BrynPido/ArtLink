@@ -57,6 +57,7 @@ export class ListingsComponent implements OnInit {
   categories = [
     { value: '', label: 'All Categories' },
     { value: 'art', label: 'Art' },
+    { value: 'commission', label: 'Commission' },
     { value: 'supplies', label: 'Art Supplies' },
     { value: 'tools', label: 'Tools' },
     { value: 'other', label: 'Other' }

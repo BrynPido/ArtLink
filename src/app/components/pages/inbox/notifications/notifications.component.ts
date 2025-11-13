@@ -53,8 +53,11 @@ export class NotificationsComponent implements OnInit, OnDestroy {
   loadNotifications() {
     this.dataService.getNotifications(this.currentUser.id).subscribe({
       next: (response: any) => {
-        if (response.payload) {
-          this.notificationState.setNotifications(response.payload);
+        if (response && response.payload) {
+          const notifications = response.payload.notifications || response.payload;
+          this.notificationState.setNotifications(Array.isArray(notifications) ? notifications : []);
+        } else {
+          this.notificationState.setNotifications([]);
         }
       },
       error: (error: Error) => {
@@ -64,29 +67,35 @@ export class NotificationsComponent implements OnInit, OnDestroy {
   }
 
   handleNotificationClick(notification: Notification) {
-    // Mark the notification as read first
-    if (!notification.read) {
-      this.notificationState.markAsRead(notification.id);
-    }
+    const navigate = () => {
+      switch (notification.type) {
+        case 'LIKE':
+        case 'COMMENT':
+          if (notification.postId) {
+            this.router.navigate(['/post', notification.postId]);
+          }
+          break;
+        case 'FOLLOW':
+          if (notification.senderId) {
+            this.router.navigate(['/profile', notification.senderId]);
+          }
+          break;
+        case 'MESSAGE':
+          if (notification.messageId) {
+            this.router.navigate(['/inbox'], { queryParams: { tab: 'messages', chat: notification.senderId } });
+          }
+          break;
+      }
+    };
 
-    // Then navigate based on notification type
-    switch (notification.type) {
-      case 'LIKE':
-      case 'COMMENT':
-        if (notification.postId) {
-          this.router.navigate(['/post', notification.postId]);
-        }
-        break;
-      case 'FOLLOW':
-        if (notification.senderId) {
-          this.router.navigate(['/profile', notification.senderId]);
-        }
-        break;
-      case 'MESSAGE':
-        if (notification.messageId) {
-          this.router.navigate(['/inbox'], { queryParams: { tab: 'messages', chat: notification.senderId } });
-        }
-        break;
+    // Mark read and only navigate after the request completes to avoid cancellation
+    if (!notification.read) {
+      this.notificationState.markAsRead(notification.id).subscribe({
+        next: () => navigate(),
+        error: () => navigate()
+      });
+    } else {
+      navigate();
     }
   }
 

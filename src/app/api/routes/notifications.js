@@ -1,6 +1,7 @@
 const express = require('express');
 const { query, queryOne } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
+const wsService = require('../services/websocket-service');
 
 const router = express.Router();
 
@@ -32,15 +33,7 @@ router.get('/getNotifications', authenticateToken, async (req, res) => {
       LIMIT $2 OFFSET $3
     `, [userId, limit, offset]);
 
-    // Mark notifications as read when fetched
-    if (notifications.length > 0) {
-      const notificationIds = notifications.map(n => n.id);
-      const placeholders = notificationIds.map((_, index) => `$${index + 1}`).join(',');
-      await query(
-        `UPDATE notification SET read = true WHERE id IN (${placeholders})`,
-        notificationIds
-      );
-    }
+    // Do NOT auto-mark as read on fetch; let client mark on click.
 
     res.json({
       status: 'success',
@@ -218,12 +211,31 @@ async function createNotification(type, recipientId, senderId, content, relatedI
     const { postId, commentId, followId, messageId } = relatedIds;
     
     console.log(`Creating notification: type=${type}, recipientId=${recipientId}, senderId=${senderId}, content=${content}`);
-    
-    await query(
-      'INSERT INTO notification (type, "recipientId", "senderId", content, "postId", "commentId", "followId", "messageId", read, "createdAt") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false, CURRENT_TIMESTAMP)',
+    // Create notification in DB and return id
+    const inserted = await queryOne(
+      'INSERT INTO notification (type, "recipientId", "senderId", content, "postId", "commentId", "followId", "messageId", read, "createdAt") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false, CURRENT_TIMESTAMP) RETURNING id',
       [type, recipientId, senderId, content, postId || null, commentId || null, followId || null, messageId || null]
     );
-    
+
+    // Attempt realtime push via WebSocket (best-effort)
+    try {
+      const sender = await queryOne('SELECT name, username FROM "user" WHERE id = $1', [senderId]);
+      wsService.sendNotification(recipientId, {
+        id: inserted?.id,
+        type,
+        message: content,
+        userId: senderId,
+        senderName: sender?.name,
+        senderUsername: sender?.username,
+        postId: postId || undefined,
+        commentId: commentId || undefined,
+        followId: followId || undefined,
+        messageId: messageId || undefined,
+        timestamp: new Date().toISOString()
+      });
+    } catch (wsErr) {
+      console.warn('WebSocket notification send failed (non-fatal):', wsErr?.message || wsErr);
+    }
     console.log(`Notification created successfully for user ${recipientId}`);
   } catch (error) {
     console.error('Create notification error:', error);

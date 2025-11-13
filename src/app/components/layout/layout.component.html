@@ -79,9 +79,9 @@
           >
             <div class="relative">
               <span class="material-symbols-rounded text-xl group-hover:scale-110 transition-transform">inbox</span>
-              <span *ngIf="(unreadNotificationsCount + unreadMessagesCount) > 0" 
+              <span *ngIf="unreadNotificationsCount > 0" 
                 class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium shadow-sm">
-                {{unreadNotificationsCount + unreadMessagesCount}}
+                {{unreadNotificationsCount}}
               </span>
             </div>
             <span class="hidden md:inline ml-3">Inbox</span>

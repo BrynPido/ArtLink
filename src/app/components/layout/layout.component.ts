@@ -100,16 +100,24 @@ export class LayoutComponent implements OnInit, OnDestroy {
         if (messages.length > 0) {
           const latestMessage = messages[messages.length - 1];
           if (latestMessage?.content && isNotificationContent(latestMessage.content)) {
+            const raw = (latestMessage as any).content as any;
+            const wsId = Number(raw.id);
+            // Guard: ignore realtime notifications without a valid DB id to avoid duplicates
+            if (!Number.isFinite(wsId) || wsId <= 0) {
+              return;
+            }
             const notification: Notification = {
-              id: Date.now(),
+              id: wsId,
               type: latestMessage.content.type,
               content: latestMessage.content.message,
-              recipientId: this.currentUser.id,
-              senderId: latestMessage.content.userId,
-              postId: latestMessage.content.postId,
+              recipientId: Number(this.currentUser.id),
+              senderId: Number(latestMessage.content.userId),
+              senderName: raw.senderName,
+              senderUsername: raw.senderUsername,
+              postId: latestMessage.content.postId !== undefined ? Number(latestMessage.content.postId) : undefined,
               createdAt: latestMessage.content.timestamp,
               read: false,
-              commentId: latestMessage.content.commentId,
+              commentId: latestMessage.content.commentId !== undefined ? Number(latestMessage.content.commentId) : undefined,
               followId: undefined,
               messageId: undefined
             };
