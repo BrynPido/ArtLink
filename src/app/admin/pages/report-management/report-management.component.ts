@@ -2,8 +2,11 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DataService } from '../../../services/data.service';
+import { AdminService } from '../../services/admin.service';
 import { SweetAlertService } from '../../services/sweetalert.service';
 import { Workbook } from 'exceljs';
+import { getDeletionReasons } from '../../constants/deletion-reasons';
+import Swal from 'sweetalert2';
 
 interface Report {
   id: number;
@@ -56,8 +59,10 @@ export class ReportManagementComponent implements OnInit {
   // Modal
   showDetailsModal = false;
   selectedReport: Report | null = null;
+  selectedPostMedia: Array<{ mediaUrl: string; mediaType?: string }> = [];
+  selectedPostImageUrl: string | null = null;
 
-  constructor(private dataService: DataService, private sweetAlert: SweetAlertService) {}
+  constructor(private dataService: DataService, private sweetAlert: SweetAlertService, private adminService: AdminService) {}
 
   ngOnInit(): void {
     this.loadReports();
@@ -224,29 +229,40 @@ export class ReportManagementComponent implements OnInit {
     });
   }
 
-  deleteReport(reportId: number): void {
-    this.sweetAlert.confirmDelete('report', 'This action cannot be undone.').then((result: any) => {
-      if (result.isConfirmed) {
+  async deleteReport(reportId: number): Promise<void> {
+    // Archive semantics (soft delete) with reason capture
+    const confirm = await this.sweetAlert.confirmArchive('report', 'This report will be archived for audit and removed from the active queue.');
+    if (!confirm.isConfirmed) return;
+
+    const reasonResult = await this.sweetAlert.selectWithOther('Select Archive Reason', getDeletionReasons('ARCHIVE'), true);
+    if (!(reasonResult.isConfirmed && reasonResult.value)) return;
+
+    const reason = reasonResult.value;
+
+    // Store reason into report status as admin note before archiving
+    this.dataService.updateReportStatus(reportId, 'resolved', reason).subscribe({
+      next: () => {
         this.dataService.deleteReport(reportId).subscribe({
           next: (response) => {
             if (response.status === 'success') {
-              // Remove the report from the local array
               this.reports = this.reports.filter(r => r.id !== reportId);
               this.filterReports();
-              this.loadStats(); // Refresh stats
-              
+              this.loadStats();
               if (this.selectedReport && this.selectedReport.id === reportId) {
                 this.closeDetailsModal();
               }
-              
-              this.sweetAlert.success('Success!', 'Report deleted successfully');
+              this.sweetAlert.success('Archived!', 'Report archived with reason recorded.');
             }
           },
           error: (error) => {
-            console.error('Error deleting report:', error);
-            this.sweetAlert.error('Error!', 'Failed to delete report. Please try again.');
+            console.error('Error archiving report:', error);
+            this.sweetAlert.error('Error!', 'Failed to archive report. Please try again.');
           }
         });
+      },
+      error: (error) => {
+        console.error('Error saving archive reason:', error);
+        this.sweetAlert.error('Error!', 'Failed to save archive reason. Please try again.');
       }
     });
   }
@@ -255,11 +271,31 @@ export class ReportManagementComponent implements OnInit {
   viewReportDetails(report: Report): void {
     this.selectedReport = report;
     this.showDetailsModal = true;
+    this.selectedPostMedia = [];
+    this.selectedPostImageUrl = null;
+    if (report?.postId) {
+      this.dataService.getPostById(String(report.postId)).subscribe({
+        next: (res) => {
+          const post = res?.payload || res;
+          const mediaUrls: string[] = post?.mediaUrls || [];
+          if (Array.isArray(mediaUrls) && mediaUrls.length > 0) {
+            // Take the first media URL as preview
+            const first = mediaUrls[0];
+            this.selectedPostImageUrl = first.startsWith('http') ? first : this.dataService.getFullImageUrl(first);
+          }
+        },
+        error: (err) => {
+          console.error('Failed to load post media for report', report.id, err);
+        }
+      });
+    }
   }
 
   closeDetailsModal(): void {
     this.showDetailsModal = false;
     this.selectedReport = null;
+    this.selectedPostMedia = [];
+    this.selectedPostImageUrl = null;
   }
 
   // Utility methods
@@ -377,4 +413,140 @@ export class ReportManagementComponent implements OnInit {
   }
   private formatDateHuman(raw: any): string { if (!raw) return ''; const d = new Date(typeof raw === 'string' && raw.length === 10 ? raw + 'T00:00:00' : raw); if (isNaN(d.getTime())) return ''; return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }); }
   private downloadBlob(blob: Blob, filename: string) { const url = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = filename; a.click(); window.URL.revokeObjectURL(url); }
+
+  // Open moderation summary/actions for the reported user (post author)
+  async reviewReportedUser() {
+    const report = this.selectedReport;
+    if (!report || !report.postAuthorId) {
+      this.sweetAlert.error?.('Missing Data', 'Reported user information is unavailable.');
+      return;
+    }
+    this.loading = true;
+    this.adminService.getUserModerationSummary(report.postAuthorId).subscribe({
+      next: async (res) => {
+        this.loading = false;
+        const summary = res?.payload;
+        if (!summary) {
+          this.sweetAlert.error?.('Error', 'Failed to load moderation summary');
+          return;
+        }
+        const restriction = summary.activeRestriction;
+        const vol = summary.volumes || {};
+        const totals = summary.totals || {};
+        const recent = summary.recentReports || [];
+        const isDarkMode = document.documentElement.classList.contains('dark') || window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const html = `
+          <div style='text-align:left;font-size:13px'>
+            <strong>User:</strong> ${summary.user?.username || ''} (${summary.user?.name || ''})<br>
+            <strong>Reports:</strong> Total ${totals.total || 0}, Pending ${totals.pending || 0}<br>
+            <strong>Message Volume:</strong> 24h ${vol.last24h || 0}, 7d ${vol.last7d || 0}<br>
+            <strong>Restriction:</strong> ${restriction ? 'Active until ' + (restriction.expiresAt || '(indef)') : 'None'}<br>
+            <hr style='margin:8px 0'>
+            <strong>Recent Report Reasons:</strong><br>
+            ${recent.map((r: any) => `• ${r.reason} (${r.status})`).join('<br>') || 'None'}
+          </div>
+        `;
+        const footer = `
+          <button id="suspendBtn" class="swal2-styled" style="background-color: #dc2626; margin-right: 8px;">
+            ${restriction?.type === 'account' ? 'Unsuspend Account' : 'Suspend Account'}
+          </button>
+        `;
+
+        const result = await Swal.fire({
+          title: 'User Moderation',
+          html,
+          footer,
+          width: 600,
+          showCancelButton: true,
+          cancelButtonText: 'Close',
+          showDenyButton: true,
+          denyButtonText: restriction?.type === 'messaging' ? 'Lift Messaging Restriction' : 'Restrict Messaging',
+          showConfirmButton: true,
+          confirmButtonText: 'Warn User',
+          showLoaderOnConfirm: false,
+          background: isDarkMode ? '#1f2937' : '#ffffff',
+          color: isDarkMode ? '#f3f4f6' : '#111827',
+          customClass: {
+            popup: isDarkMode ? 'border border-gray-700' : 'border border-gray-200',
+            title: 'text-indigo-600 dark:text-indigo-400',
+            confirmButton: 'bg-green-600 hover:bg-green-700',
+            denyButton: 'bg-yellow-600 hover:bg-yellow-700',
+            cancelButton: 'bg-gray-500 hover:bg-gray-600',
+            footer: 'border-t border-gray-200 dark:border-gray-700 pt-3'
+          },
+          didOpen: () => {
+            const suspendBtn = document.getElementById('suspendBtn');
+            suspendBtn?.addEventListener('click', async () => {
+              Swal.close();
+              await this.handleSuspendActionForUser(report.postAuthorId, restriction?.type === 'account');
+            });
+          }
+        });
+        if (result.isConfirmed) {
+          const warnReason = await this.sweetAlert.input('Warn User', 'Enter warning reason', 'text');
+          if (warnReason.isConfirmed && warnReason.value) {
+            this.adminService.warnUser(report.postAuthorId, warnReason.value).subscribe({
+              next: () => this.sweetAlert.success('Warning Sent', 'User has been warned.'),
+              error: () => this.sweetAlert.error('Error', 'Failed to send warning')
+            });
+          }
+        } else if (result.isDenied) {
+          if (restriction?.type === 'messaging') {
+            this.adminService.unrestrictMessaging(report.postAuthorId).subscribe({
+              next: () => this.sweetAlert.success('Restriction Lifted', 'User can send messages again.'),
+              error: () => this.sweetAlert.error('Error', 'Failed to lift restriction')
+            });
+          } else {
+            const durResult = await this.sweetAlert.selectWithOther('Restriction Duration', ['15','60','360','1440','10080'], false);
+            if (durResult.isConfirmed) {
+              const minutes = parseInt(durResult.value, 10);
+              const reasonResult = await this.sweetAlert.selectWithOther('Restriction Reason', ['spam','harassment','hate','other']);
+              if (reasonResult.isConfirmed) {
+                const finalReason = reasonResult.value || reasonResult?.value;
+                this.adminService.restrictMessaging(report.postAuthorId, minutes, finalReason).subscribe({
+                  next: () => this.sweetAlert.success('Restriction Applied', `Messaging blocked for ${minutes} min.`),
+                  error: () => this.sweetAlert.error('Error', 'Failed to apply restriction')
+                });
+              }
+            }
+          }
+        }
+      },
+      error: () => {
+        this.loading = false;
+        this.sweetAlert.error?.('Error', 'Failed to load moderation summary');
+      }
+    });
+  }
+
+  private async handleSuspendActionForUser(userId: number, isCurrentlySuspended: boolean) {
+    if (isCurrentlySuspended) {
+      const confirm = await this.sweetAlert.confirm(
+        'Unsuspend Account',
+        'Remove the account suspension and allow this user to access the platform again?',
+        'Yes, unsuspend'
+      );
+      if (confirm.isConfirmed) {
+        this.adminService.unsuspendUser(userId).subscribe({
+          next: () => this.sweetAlert.success('Account Unsuspended', 'User can now access the platform.'),
+          error: () => this.sweetAlert.error('Error', 'Failed to unsuspend account')
+        });
+      }
+    } else {
+      const confirm = await this.sweetAlert.confirm(
+        'Suspend Account',
+        'This will completely suspend the user\'s account. They will not be able to log in or access the platform. This action can be reversed later.',
+        'Yes, suspend account'
+      );
+      if (confirm.isConfirmed) {
+        const reasonResult = await this.sweetAlert.input('Suspension Reason', 'Enter reason for suspension', 'text');
+        if (reasonResult.isConfirmed && reasonResult.value) {
+          this.adminService.suspendUser(userId, reasonResult.value).subscribe({
+            next: () => this.sweetAlert.success('Account Suspended', 'User account has been suspended.'),
+            error: () => this.sweetAlert.error('Error', 'Failed to suspend account')
+          });
+        }
+      }
+    }
+  }
 }

@@ -187,12 +187,13 @@ export class PostManagementComponent implements OnInit, OnDestroy {
   }
 
   async deletePost(postId: number) {
-    const confirmResult = await this.sweetAlert.confirmDelete('post', 'This post will be soft deleted and can be restored within 60 days. After 60 days, it will be permanently removed.');
+    // Archive = soft delete
+    const confirmResult = await this.sweetAlert.confirmArchive('post', 'This post will be archived (soft deleted) and can be restored within 60 days. After 60 days, it may be permanently removed.');
     
     if (confirmResult.isConfirmed) {
       // Show dropdown with predefined reasons
       const reasonResult = await this.sweetAlert.selectWithOther(
-        'Select Deletion Reason',
+        'Select Archival Reason',
         getDeletionReasons('POST'),
         true
       );
@@ -202,14 +203,14 @@ export class PostManagementComponent implements OnInit, OnDestroy {
         this.adminService.deletePost(postId, reasonResult.value).subscribe({
           next: (response: any) => {
             if (response.status === 'success') {
-              this.sweetAlert.success('Deleted!', 'The post has been soft deleted successfully.');
+              this.sweetAlert.success('Archived!', 'The post has been archived successfully.');
               this.loadPosts();
             }
             this.actionLoading = false;
           },
           error: (error: any) => {
             console.error('Error deleting post:', error);
-            this.sweetAlert.error('Error', 'Failed to delete the post. Please try again.');
+            this.sweetAlert.error('Error', 'Failed to archive the post. Please try again.');
             this.actionLoading = false;
           }
         });
@@ -219,13 +220,13 @@ export class PostManagementComponent implements OnInit, OnDestroy {
 
   async bulkDelete() {
     if (this.selectedPosts.length === 0) return;
-    
-    const confirmResult = await this.sweetAlert.confirmBulkDelete(this.selectedPosts.length, 'posts');
+    // Bulk archive
+    const confirmResult = await this.sweetAlert.confirmBulkArchive(this.selectedPosts.length, 'posts');
     
     if (confirmResult.isConfirmed) {
       // Show dropdown with predefined reasons
       const reasonResult = await this.sweetAlert.selectWithOther(
-        'Select Bulk Deletion Reason',
+        'Select Bulk Archival Reason',
         getDeletionReasons('POST'),
         true
       );
@@ -235,7 +236,7 @@ export class PostManagementComponent implements OnInit, OnDestroy {
         this.adminService.bulkDeletePosts(this.selectedPosts, reasonResult.value).subscribe({
           next: (response: any) => {
             if (response.status === 'success') {
-              this.sweetAlert.success('Deleted!', `${this.selectedPosts.length} posts have been soft deleted successfully.`);
+              this.sweetAlert.success('Archived!', `${this.selectedPosts.length} posts have been archived successfully.`);
               this.selectedPosts = [];
               this.loadPosts();
             }
@@ -243,7 +244,7 @@ export class PostManagementComponent implements OnInit, OnDestroy {
           },
           error: (error: any) => {
             console.error('Error bulk deleting posts:', error);
-            this.sweetAlert.error('Error', 'Failed to delete the posts. Please try again.');
+            this.sweetAlert.error('Error', 'Failed to archive the posts. Please try again.');
             this.actionLoading = false;
           }
         });
@@ -258,7 +259,7 @@ export class PostManagementComponent implements OnInit, OnDestroy {
       Author: post.authorName,
       Username: `@${post.authorUsername}`,
       'Created At': this.formatDateHuman(post.createdAt),
-      Status: post.published ? 'Published' : 'Hidden',
+      Status: post.published ? 'Published' : 'Unpublished',
       Likes: post.likesCount,
       Comments: post.commentsCount,
       Content: this.truncateText(post.content, 100)
@@ -296,7 +297,7 @@ export class PostManagementComponent implements OnInit, OnDestroy {
         p.title || '',
         p.authorName || '',
         `@${p.authorUsername || ''}`,
-        p.published ? 'Published' : 'Hidden',
+        p.published ? 'Published' : 'Unpublished',
         p.likesCount || 0,
         p.commentsCount || 0,
         this.formatDateHuman(p.createdAt),
@@ -423,7 +424,7 @@ export class PostManagementComponent implements OnInit, OnDestroy {
   }
 
   getPostStatusText(post: Post): string {
-    return post.published ? 'Published' : 'Hidden';
+    return post.published ? 'Published' : 'Unpublished';
   }
 
   truncateText(text: string, length: number): string {

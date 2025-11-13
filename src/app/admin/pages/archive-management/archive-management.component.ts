@@ -215,6 +215,10 @@ export class ArchiveManagementComponent implements OnInit {
               this.sweetAlert.success('Success', 'Record restored successfully');
               this.loadDeletedRecords(this.deletedRecords?.pagination.page || 1);
               this.loadArchiveStats(); // Refresh stats
+              // If restoring a message, attempt to reopen related reports to Pending
+              if (this.selectedTable && this.selectedTable.toLowerCase().includes('message')) {
+                this.reopenRelatedMessageReports(recordId);
+              }
             } else {
               console.log('Unexpected response format:', response);
               this.sweetAlert.error('Error', response?.message || 'Unexpected response format');
@@ -230,6 +234,35 @@ export class ArchiveManagementComponent implements OnInit {
         });
       }
     }
+  }
+
+  // After restoring a message from archive, move any related actioned reports back to pending
+  private reopenRelatedMessageReports(messageId: number) {
+    // Fetch actioned reports, filter by messageId, then reopen each
+    this.adminService.getMessageReports('actioned', 1, 100).subscribe({
+      next: (res) => {
+        const reports = res?.payload?.reports || [];
+        const related = reports.filter((r: any) => Number(r.messageId) === Number(messageId));
+        if (!related.length) return;
+        let done = 0; let failed = 0;
+        related.forEach((r: any) => {
+          this.adminService.updateMessageReportStatus(r.id, 'pending').subscribe({
+            next: () => { done++; },
+            error: () => { failed++; }
+          });
+        });
+        // Give a small delay to aggregate results and inform the admin
+        setTimeout(() => {
+          const msg = failed === 0
+            ? `Reopened ${done} related report(s) to Pending.`
+            : `Reopened ${done} report(s); ${failed} failed.`;
+          this.sweetAlert.toast?.(failed === 0 ? 'success' : 'warning', msg);
+        }, 600);
+      },
+      error: () => {
+        // Non-blocking: if this fails, restoration already succeeded
+      }
+    });
   }
 
   async permanentlyDeleteRecord(recordId: number) {

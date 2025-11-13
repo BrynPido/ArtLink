@@ -195,11 +195,11 @@
                 
                 <div class="relative group">
                   <button (click)="deleteReport(report.id)"
-                          class="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300 transition-colors p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-500/20">
-                    <span class="material-icons text-sm">delete</span>
+                          class="text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 transition-colors p-1 rounded-full hover:bg-amber-100/60 dark:hover:bg-amber-500/20">
+                    <span class="material-icons text-sm">inventory_2</span>
                   </button>
-                  <div class="absolute bottom-full right-0 mb-2 w-14 bg-black dark:bg-gray-900 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-                    Delete
+                  <div class="absolute bottom-full right-0 mb-2 w-16 bg-black dark:bg-gray-900 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                    Archive
                     <div class="absolute top-full right-2 -mt-1 border-4 border-transparent border-t-black dark:border-t-gray-900"></div>
                   </div>
                 </div>
@@ -317,6 +317,14 @@
         <div>
           <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Post &amp; User Information</h3>
           <dl class="space-y-3">
+            <div *ngIf="selectedPostImageUrl" class="mb-3">
+              <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Post Media</dt>
+              <dd class="mt-1">
+                <div class="relative w-full max-w-xs overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
+                  <img [src]="selectedPostImageUrl" alt="Post media preview" class="w-full h-48 object-cover">
+                </div>
+              </dd>
+            </div>
             <div>
               <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Post Title</dt>
               <dd class="text-sm text-gray-900 dark:text-white">{{ selectedReport.postTitle || 'No title' }}</dd>
@@ -340,6 +348,10 @@
       <!-- Actions -->
       <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
         <div class="flex gap-3 flex-wrap">
+          <button (click)="reviewReportedUser()"
+                  class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg transition-colors">
+            Review User
+          </button>
           <button *ngIf="selectedReport.status === 'pending'" 
                   (click)="updateReportStatus(selectedReport.id, 'approved')"
                   class="px-4 py-2 bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white rounded-lg transition-colors">
@@ -356,8 +368,8 @@
             Mark as Resolved
           </button>
           <button (click)="deleteReport(selectedReport.id)"
-                  class="px-4 py-2 bg-gray-600 hover:bg-gray-700 dark:bg-gray-500 dark:hover:bg-gray-600 text-white rounded-lg transition-colors">
-            Delete Report
+                  class="px-4 py-2 bg-amber-600 hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 text-white rounded-lg transition-colors">
+            Archive Report
           </button>
         </div>
       </div>

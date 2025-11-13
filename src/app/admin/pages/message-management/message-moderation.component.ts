@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../services/admin.service';
 import { SweetAlertService } from '../../services/sweetalert.service';
+import { getDeletionReasons } from '../../constants/deletion-reasons';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -18,6 +19,8 @@ export class MessageModerationComponent implements OnInit {
   messageStats: any = {};
   loading = false;
   activeTab = 'stats'; // 'stats', 'reported', 'spam'
+  // Show only pending reports by default so archived/dismissed don't linger
+  reportStatusFilter: 'all' | 'pending' | 'actioned' | 'dismissed' = 'pending';
   currentPage = 1;
   itemsPerPage = 20;
   totalPages = 1;
@@ -33,7 +36,7 @@ export class MessageModerationComponent implements OnInit {
   ngOnInit() {
     this.loadModerationData();
     // Prefetch reported messages in the background so the tab is instant
-    this.adminService.getMessageReports('all', this.currentPage, this.itemsPerPage).subscribe({
+    this.adminService.getMessageReports(this.reportStatusFilter, this.currentPage, this.itemsPerPage).subscribe({
       next: (response) => {
         const payload = response?.payload;
         this.reportedMessages = (payload?.reports || []).map((r: any) => ({
@@ -101,7 +104,7 @@ export class MessageModerationComponent implements OnInit {
   loadReportedMessages() {
     this.loading = true;
     // Fetch reported messages via AdminService
-    this.adminService.getMessageReports('all', this.currentPage, this.itemsPerPage).subscribe({
+    this.adminService.getMessageReports(this.reportStatusFilter, this.currentPage, this.itemsPerPage).subscribe({
       next: (response) => {
         const payload = response?.payload;
         this.reportedMessages = (payload?.reports || []).map((r: any) => ({
@@ -158,22 +161,31 @@ export class MessageModerationComponent implements OnInit {
     this.loadModerationData();
   }
 
-  resolveReport(reportId: number, action: 'dismiss' | 'delete') {
-    const actionText = action === 'delete' ? 'delete this reported message' : 'dismiss this report';
-    
-    this.sweetAlert.confirm(
-      'Confirm Action',
-      `Are you sure you want to ${actionText}?`,
-      'Yes, proceed'
-    ).then((result) => {
-      if (result.isConfirmed) {
-        if (action === 'delete') {
-          this.deleteReportedMessage(reportId);
-        } else {
-          this.dismissReport(reportId);
-        }
+  setReportStatusFilter(status: 'all' | 'pending' | 'actioned' | 'dismissed') {
+    if (this.reportStatusFilter !== status) {
+      this.reportStatusFilter = status;
+      this.currentPage = 1;
+      if (this.activeTab === 'reported') {
+        this.loadReportedMessages();
       }
-    });
+    }
+  }
+
+  async resolveReport(reportId: number, action: 'dismiss' | 'delete') {
+    if (action === 'delete') {
+      const confirm = await this.sweetAlert.confirmArchive('message', 'This will archive the reported message. It can be restored from the archive if needed.');
+      if (!confirm.isConfirmed) return;
+
+      const reasonResult = await this.sweetAlert.selectWithOther('Archive Reason', getDeletionReasons('ARCHIVE'), true);
+      if (!(reasonResult.isConfirmed && reasonResult.value)) return;
+
+      return this.deleteReportedMessage(reportId, reasonResult.value);
+    }
+
+    const result = await this.sweetAlert.confirm('Dismiss Report', 'Are you sure you want to dismiss this report?', 'Yes, dismiss');
+    if (result.isConfirmed) {
+      this.dismissReport(reportId);
+    }
   }
 
   // Open sender actions (fetch moderation summary + actions)
@@ -323,29 +335,32 @@ export class MessageModerationComponent implements OnInit {
     }
   }
 
-  deleteReportedMessage(reportId: number) {
+  deleteReportedMessage(reportId: number, reason: string = 'Archived via moderation') {
     const report = this.reportedMessages.find(r => r.id === reportId);
     if (!report) {
       this.sweetAlert.error?.('Error', 'Report not found');
       return;
     }
     // Delete the underlying message, then mark report as actioned
-    this.adminService.deleteMessage(report.messageId, 'Reported message removed').subscribe({
+    this.adminService.deleteMessage(report.messageId, reason).subscribe({
       next: () => {
         this.adminService.updateMessageReportStatus(reportId, 'actioned').subscribe({
           next: () => {
-            this.sweetAlert.success('Success!', 'Reported message has been deleted.');
+            this.sweetAlert.success('Archived!', 'Reported message has been archived.');
+            // Optimistically remove from the current view (pending-only)
+            this.reportedMessages = this.reportedMessages.filter(r => r.id !== reportId);
             this.loadReportedMessages();
           },
           error: () => {
-            this.sweetAlert.success('Success!', 'Message deleted, but failed to update report status.');
+            this.sweetAlert.success('Archived!', 'Message archived, but failed to update report status.');
+            this.reportedMessages = this.reportedMessages.filter(r => r.id !== reportId);
             this.loadReportedMessages();
           }
         });
       },
       error: (err) => {
-        console.error('Failed to delete reported message', err);
-        this.sweetAlert.error?.('Error', 'Failed to delete message');
+        console.error('Failed to archive reported message', err);
+        this.sweetAlert.error?.('Error', 'Failed to archive message');
       }
     });
   }
@@ -368,6 +383,18 @@ export class MessageModerationComponent implements OnInit {
     });
   }
 
+  reopenReport(reportId: number) {
+    this.adminService.updateMessageReportStatus(reportId, 'pending').subscribe({
+      next: () => {
+        // Optimistically update local state
+        this.reportedMessages = this.reportedMessages.map(r => r.id === reportId ? { ...r, status: 'pending' } : r);
+        this.sweetAlert.success('Reopened', 'Report moved back to pending.');
+        this.loadReportedMessages();
+      },
+      error: () => this.sweetAlert.error('Error', 'Failed to reopen report')
+    });
+  }
+
   markAsSpam(messageId: number) {
     this.sweetAlert.confirm(
       'Mark as Spam',
@@ -378,6 +405,38 @@ export class MessageModerationComponent implements OnInit {
         this.sweetAlert.success('Success!', 'Message marked as spam.');
         this.detectSpamPatterns();
       }
+    });
+  }
+
+  // View a single reported message details (privacy-safe: only that message)
+  viewReportedMessage(reportId: number) {
+    const isDarkMode = document.documentElement.classList.contains('dark') || window.matchMedia('(prefers-color-scheme: dark)').matches;
+    this.adminService.getMessageReportDetails(reportId).subscribe({
+      next: (res) => {
+        const msg = res?.payload?.message || res?.payload || {};
+        const content = msg.content || msg.messageContent || '(no content available)';
+        const sender = msg.senderUsername || msg.sender || msg.authorUsername || 'unknown';
+        const recipient = msg.recipientUsername || msg.recipient || 'hidden';
+        const createdAt = msg.createdAt || msg.sentAt || new Date().toISOString();
+        const html = `
+          <div style="text-align:left; font-size:13px;">
+            <div><strong>From:</strong> @${sender}</div>
+            <div><strong>To:</strong> @${recipient}</div>
+            <div><strong>Sent:</strong> ${new Date(createdAt).toLocaleString()}</div>
+            <hr style="margin:8px 0">
+            <div style="white-space:pre-wrap;">${content}</div>
+          </div>
+        `;
+        Swal.fire({
+          title: 'Reported Message',
+          html,
+          width: 600,
+          confirmButtonText: 'Close',
+          background: isDarkMode ? '#1f2937' : '#ffffff',
+          color: isDarkMode ? '#f3f4f6' : '#111827'
+        });
+      },
+      error: () => this.sweetAlert.error('Error', 'Failed to load message details')
     });
   }
 

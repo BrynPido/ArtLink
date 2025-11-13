@@ -55,6 +55,17 @@ export const DELETION_REASONS = {
     'Policy violation'
   ],
 
+  // Shared archive presets used across admin (reports, messages, etc.)
+  ARCHIVE: [
+    'Resolved',
+    'Duplicate',
+    'Invalid',
+    'Policy Violation',
+    'Harassment',
+    'Spam',
+    'Other'
+  ],
+
   CLEANUP: [
     'Scheduled automatic cleanup',
     'Manual cleanup requested',

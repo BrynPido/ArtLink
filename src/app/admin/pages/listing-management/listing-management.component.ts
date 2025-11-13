@@ -25,7 +25,8 @@ export class ListingManagementComponent implements OnInit {
   itemsPerPage = 10;
   totalPages = 1;
 
-  categories = ['digital_art', 'traditional_art', 'photography', 'sculpture', 'mixed_media', 'other'];
+  // Align with user-facing listing categories/creation
+  categories = ['art', 'commission', 'supplies', 'tools', 'other'];
   statuses = ['active', 'inactive'];
 
   // Expose Math to template
@@ -67,6 +68,20 @@ export class ListingManagementComponent implements OnInit {
     });
   }
 
+  // Normalize category labels for consistent display
+  getCategoryLabel(category: string | null | undefined): string {
+    if (!category) return '';
+    const map: Record<string, string> = {
+      art: 'Art',
+      commission: 'Commission',
+      supplies: 'Art Supplies',
+      tools: 'Tools',
+      other: 'Other'
+    };
+    const key = String(category).toLowerCase();
+    return map[key] || key.replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase());
+  }
+
   applyFilters() {
     let filtered = [...this.listings];
 
@@ -90,7 +105,7 @@ export class ListingManagementComponent implements OnInit {
 
     // Category filter
     if (this.filterCategory !== 'all') {
-      filtered = filtered.filter(listing => listing.category === this.filterCategory);
+      filtered = filtered.filter(listing => (listing.category || '').toLowerCase() === this.filterCategory);
     }
 
     this.filteredListings = filtered;
@@ -123,40 +138,33 @@ export class ListingManagementComponent implements OnInit {
   bulkAction(action: string) {
     if (this.selectedListings.length === 0) return;
 
-    let title = '';
-    let text = '';
-    let confirmText = '';
-
-    switch (action) {
-      case 'delete':
-        title = 'Delete Listings';
-        text = `Are you sure you want to delete ${this.selectedListings.length} listing(s)? This action cannot be undone.`;
-        confirmText = 'Yes, delete them';
-        break;
-      case 'unpublish':
-        title = 'Unpublish Listings';
-        text = `Are you sure you want to unpublish ${this.selectedListings.length} listing(s)?`;
-        confirmText = 'Yes, unpublish';
-        break;
-      default:
-        return;
+    if (action === 'delete') {
+      this.sweetAlert
+        .confirmBulkArchive(this.selectedListings.length, 'listings')
+        .then((result) => {
+          if (result.isConfirmed) {
+            this.bulkDeleteListings();
+          }
+        });
+      return;
     }
 
-    this.sweetAlert.confirm(title, text, confirmText).then((result) => {
-      if (result.isConfirmed) {
-        // For delete action, use individual delete calls
-        if (action === 'delete') {
-          this.bulkDeleteListings();
-        } else {
+    if (action === 'unpublish') {
+      const title = 'Unpublish Listings';
+      const text = `Are you sure you want to unpublish ${this.selectedListings.length} listing(s)?`;
+      const confirmText = 'Yes, unpublish';
+      this.sweetAlert.confirm(title, text, confirmText).then((result) => {
+        if (result.isConfirmed) {
           this.bulkUpdateListings(action);
         }
-      }
-    });
+      });
+      return;
+    }
   }
 
   bulkDeleteListings() {
     this.sweetAlert.selectWithOther(
-      'Bulk Delete Listings - Select Reason',
+      'Bulk Archive Listings - Select Reason',
       this.getDeletionReasons().LISTING
     ).then((reasonResult) => {
       if (reasonResult.isConfirmed && reasonResult.value) {
@@ -165,12 +173,12 @@ export class ListingManagementComponent implements OnInit {
         );
 
         Promise.all(deletePromises).then(() => {
-          this.sweetAlert.success('Success!', `Successfully deleted ${this.selectedListings.length} listing(s).`);
+          this.sweetAlert.success('Archived!', `Successfully archived ${this.selectedListings.length} listing(s).`);
           this.loadListings();
           this.selectedListings = [];
         }).catch((error) => {
           console.error('Error with bulk delete:', error);
-          this.sweetAlert.error('Error', 'Failed to delete some listings. Please try again.');
+          this.sweetAlert.error('Error', 'Failed to archive some listings. Please try again.');
         });
       }
     });
@@ -208,6 +216,7 @@ export class ListingManagementComponent implements OnInit {
       ? `<img src="${listing.image_url}" alt="${listing.title}" onclick="window.open('${listing.image_url}', '_blank')" style="width: 100%; max-width: 300px; height: auto; max-height: 250px; object-fit: contain; border-radius: 8px; margin-bottom: 20px; border: 1px solid ${colors.border}; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); cursor: pointer;" title="Click to view full size">`
       : `<div style="width: 100%; height: 200px; background-color: ${colors.background}; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: ${colors.textSecondary}; margin-bottom: 20px; border: 1px solid ${colors.border};">No image available</div>`;
 
+    const categoryLabel = this.getCategoryLabel(listing.category || '');
     const modalContent = `
       <div style="text-align: left; color: ${colors.text};">
         <div style="text-align: center; margin-bottom: 20px;">
@@ -237,7 +246,7 @@ export class ListingManagementComponent implements OnInit {
           </div>
           <div>
             <strong style="color: ${colors.strongText};">Category:</strong><br>
-            <span style="color: ${colors.text};">${listing.category ? listing.category.charAt(0).toUpperCase() + listing.category.slice(1) : 'N/A'}</span>
+            <span style="color: ${colors.text};">${categoryLabel || 'N/A'}</span>
           </div>
         </div>
 
@@ -297,8 +306,8 @@ export class ListingManagementComponent implements OnInit {
         html: modalContent,
         showCancelButton: true,
         showConfirmButton: true,
-        confirmButtonText: '<i class="fas fa-trash"></i> Delete Listing',
-        confirmButtonColor: '#dc2626',
+        confirmButtonText: '<i class="fas fa-archive"></i> Archive Listing',
+        confirmButtonColor: '#f59e0b',
         cancelButtonText: 'Close',
         width: '70vw',
         padding: '1.5rem',
@@ -354,23 +363,23 @@ export class ListingManagementComponent implements OnInit {
 
   deleteListing(listingId: number) {
     this.sweetAlert.selectWithOther(
-      'Delete Listing - Select Reason',
+      'Archive Listing - Select Reason',
       this.getDeletionReasons().LISTING
     ).then((reasonResult) => {
       if (reasonResult.isConfirmed && reasonResult.value) {
-        this.sweetAlert.confirmDelete(
-          'Delete Listing',
-          'This action cannot be undone.'
+        this.sweetAlert.confirmArchive(
+          'listing',
+          'This listing will be archived and hidden. It can be restored later.'
         ).then((result) => {
           if (result.isConfirmed) {
             this.adminService.deleteListing(listingId, reasonResult.value).subscribe({
               next: () => {
-                this.sweetAlert.success('Deleted!', 'The listing has been deleted successfully.');
+                this.sweetAlert.success('Archived!', 'The listing has been archived successfully.');
                 this.loadListings();
               },
               error: (error: any) => {
                 console.error('Error deleting listing:', error);
-                this.sweetAlert.error('Error', 'Failed to delete listing. Please try again.');
+                this.sweetAlert.error('Error', 'Failed to archive listing. Please try again.');
               }
             });
           }

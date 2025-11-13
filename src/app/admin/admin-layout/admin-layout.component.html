@@ -83,7 +83,7 @@
                 <span class="material-icons text-sm mr-2">person</span>
                 View Profile
               </a>
-              <a routerLink="/admin/settings" class="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+              <a *ngIf="showSettings" routerLink="/admin/settings" class="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                 <span class="material-icons text-sm mr-2">settings</span>
                 Settings
               </a>

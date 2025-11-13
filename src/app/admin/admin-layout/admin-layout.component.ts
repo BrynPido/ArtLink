@@ -19,6 +19,8 @@ export class AdminLayoutComponent implements OnInit {
   isNotificationsOpen = false;
   notifications: any[] = [];
   unreadCount = 0;
+  // Feature flag to show/hide Settings across UI
+  showSettings = false;
 
   menuItems = [
     {
@@ -69,12 +71,7 @@ export class AdminLayoutComponent implements OnInit {
       route: '/admin/archive',
       active: false
     },
-    {
-      label: 'Settings',
-      icon: 'settings',
-      route: '/admin/settings',
-      active: false
-    }
+    // Settings entry is controlled via showSettings flag; kept out by default
   ];
 
   constructor(
@@ -85,6 +82,10 @@ export class AdminLayoutComponent implements OnInit {
 
   ngOnInit() {
     this.currentUser = this.dataService.getCurrentUser();
+    // Hide Settings from the sidebar unless explicitly enabled
+    if (!this.showSettings) {
+      this.menuItems = this.menuItems.filter(item => item.route !== '/admin/settings');
+    }
     this.loadNotifications();
   }
 
