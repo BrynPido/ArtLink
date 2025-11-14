@@ -120,6 +120,7 @@ JWT_EXPIRATION=3600
 - `POST /api/notifications/:notificationId/delete` - Delete notification
 - `DELETE /api/notifications/clear-all` - Clear all notifications
 
+
 ## Security Features
 
 - **JWT Authentication**: Secure token-based authentication
