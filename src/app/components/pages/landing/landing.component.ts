@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { DataService } from '../../../services/data.service';
+import { AnalyticsService, SiteStats } from '../../../services/analytics.service';
 
 @Component({
   selector: 'app-landing',
@@ -14,6 +15,8 @@ export class LandingComponent implements OnInit {
   isScrolled = false;
   isMobileMenuOpen = false;
   currentYear = new Date().getFullYear();
+  siteStats: SiteStats | null = null;
+  isLoadingStats = true;
 
   features = [
     {
@@ -52,7 +55,8 @@ export class LandingComponent implements OnInit {
 
   constructor(
     private router: Router,
-    private dataService: DataService
+    private dataService: DataService,
+    private analyticsService: AnalyticsService
   ) {}
 
   ngOnInit(): void {
@@ -63,8 +67,50 @@ export class LandingComponent implements OnInit {
       }
     });
 
+    // Track visit and load stats
+    this.trackPageVisit();
+
     // Listen to scroll events
     window.addEventListener('scroll', this.onScroll.bind(this));
+  }
+
+  trackPageVisit(): void {
+    // Check if this visitor has already been tracked
+    const hasVisited = localStorage.getItem('artlink_visited');
+    
+    if (!hasVisited) {
+      // First time visitor - track the visit
+      this.analyticsService.trackVisit().subscribe({
+        next: () => {
+          // Mark this visitor as tracked
+          localStorage.setItem('artlink_visited', 'true');
+          this.isLoadingStats = false;
+        },
+        error: (error) => {
+          console.error('Error tracking visit:', error);
+          this.isLoadingStats = false;
+          // Still try to load stats even if tracking fails
+          this.loadStats();
+        }
+      });
+    } else {
+      // Returning visitor - just load stats
+      this.loadStats();
+      this.isLoadingStats = false;
+    }
+
+    // Subscribe to stats updates
+    this.analyticsService.stats$.subscribe(stats => {
+      this.siteStats = stats;
+    });
+  }
+
+  loadStats(): void {
+    this.analyticsService.getStats().subscribe({
+      error: (error) => {
+        console.error('Error loading stats:', error);
+      }
+    });
   }
 
   ngOnDestroy(): void {

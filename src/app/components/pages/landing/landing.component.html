@@ -87,6 +87,21 @@
     </div>
   </section>
 
+  <!-- Stats Counter Section -->
+  <section class="py-8 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto">
+      <div class="flex justify-center items-center">
+        <div class="flex items-center gap-2 px-6 py-3 rounded-full bg-white/40 dark:bg-gray-800/40 backdrop-blur-md border border-gray-200/50 dark:border-gray-700/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+          <span class="material-icons text-base text-indigo-600 dark:text-indigo-400">visibility</span>
+          <span *ngIf="!isLoadingStats && siteStats" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            {{ siteStats.totalVisits | number }} <span class="text-gray-500 dark:text-gray-400">Visits</span>
+          </span>
+          <span *ngIf="isLoadingStats" class="text-sm font-medium text-gray-500 dark:text-gray-400">...</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- Features Section -->
   <section id="features" class="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-800/50">
     <div class="max-w-7xl mx-auto">

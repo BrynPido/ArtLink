@@ -23,6 +23,7 @@ const listingRoutes = require('./routes/listings');
 const messageRoutes = require('./routes/messages');
 const notificationRoutes = require('./routes/notifications');
 const adminRoutes = require('./routes/admin');
+const analyticsRoutes = require('./routes/analytics');
 const emailService = require('./services/email.service');
 
 // Security middleware - adjusted for development
@@ -152,6 +153,7 @@ app.use('/api/users', apiLimiter, userRoutes);
 app.use('/api/listings', apiLimiter, listingRoutes);
 app.use('/api/messages', apiLimiter, messageRoutes);
 app.use('/api/notifications', apiLimiter, notificationRoutes);
+app.use('/api/analytics', apiLimiter, analyticsRoutes);
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
