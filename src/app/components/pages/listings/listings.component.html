@@ -137,9 +137,11 @@
           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
         >
           <option value="">All Categories</option>
-          <option *ngFor="let category of categories" [value]="category.value">
-            {{ category.label }}
-          </option>
+          <optgroup *ngFor="let group of categoryGroups" [label]="group.name">
+            <option *ngFor="let catValue of group.categories" [value]="catValue">
+              {{ getCategoryLabel(catValue) }}
+            </option>
+          </optgroup>
         </select>
       </div>
 
@@ -187,6 +189,29 @@
           >
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Quick Category Filter Chips -->
+  <div class="mb-6 overflow-x-auto pb-2 scrollbar-hide">
+    <div class="flex gap-2 min-w-max">
+      <button 
+        (click)="selectedCategory = ''; applyFilters()"
+        class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap flex items-center gap-1"
+        [ngClass]="selectedCategory === '' ? 'bg-indigo-600 text-white shadow-md' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'"
+      >
+        <span class="material-symbols-rounded text-sm">apps</span>
+        All
+      </button>
+      <button 
+        *ngFor="let category of categories.slice(0, 8)"
+        (click)="selectedCategory = category.value; applyFilters()"
+        class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap flex items-center gap-1"
+        [ngClass]="selectedCategory === category.value ? 'bg-indigo-600 text-white shadow-md' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'"
+      >
+        <span class="material-symbols-rounded text-sm">{{ category.icon }}</span>
+        {{ category.label }}
+      </button>
     </div>
   </div>
 
@@ -244,21 +269,23 @@
           <!-- Title and Price Section -->
           <div class="pb-3 border-b border-gray-100 dark:border-gray-700">
             <h3 class="text-base font-semibold text-gray-900 dark:text-white line-clamp-2 mb-2 leading-tight">{{ listing.title }}</h3>
-            <p class="text-lg font-bold text-indigo-600 dark:text-indigo-400">₱{{ listing.price | number:'1.0-0' }}</p>
+            <p class="text-lg font-bold text-indigo-600 dark:text-indigo-400">{{ listing.price | currencyFormat }}</p>
           </div>
           
           <!-- Metadata -->
           <div class="space-y-2 mt-3 flex-grow">
-            <!-- Category and Condition Row -->
-            <div class="flex items-center justify-between text-sm text-gray-600 dark:text-gray-300">
-              <div class="flex items-center">
-                <span class="material-symbols-rounded text-sm mr-1 text-gray-500 dark:text-gray-400">sell</span>
-                <span class="font-medium">{{ listing.category | titlecase }}</span>
-              </div>
-              <div class="flex items-center">
-                <span class="material-symbols-rounded text-sm mr-1 text-gray-500 dark:text-gray-400">inventory_2</span>
-                <span>{{ listing.condition | titlecase }}</span>
-              </div>
+            <!-- Category Badge -->
+            <div class="mb-1">
+              <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300">
+                <span class="material-symbols-rounded text-sm">{{ getCategoryIcon(listing.category || 'other') }}</span>
+                {{ getCategoryLabel(listing.category || 'other') }}
+              </span>
+            </div>
+            
+            <!-- Condition Row -->
+            <div class="flex items-center text-sm text-gray-600 dark:text-gray-300">
+              <span class="material-symbols-rounded text-sm mr-2 text-gray-500 dark:text-gray-400">inventory_2</span>
+              <span>{{ listing.condition | titlecase }}</span>
             </div>
             
             <!-- Location Row -->
@@ -348,7 +375,7 @@
               
               <!-- Price -->
               <td class="px-3 py-3 whitespace-nowrap">
-                <div class="text-sm font-semibold text-indigo-600 dark:text-indigo-400">₱{{ listing.price | number:'1.0-0' }}</div>
+                <div class="text-sm font-semibold text-indigo-600 dark:text-indigo-400">{{ listing.price | currencyFormat }}</div>
               </td>
               
               <!-- Status -->

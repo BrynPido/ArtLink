@@ -199,7 +199,7 @@
             <div class="bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/30 dark:to-blue-900/30 p-6 rounded-xl border border-indigo-100 dark:border-indigo-800 mb-6">
               <div class="text-center">
                 <p class="text-4xl lg:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-blue-600 dark:from-indigo-400 dark:to-blue-400 mb-3">
-                  ₱{{ listing.listingDetails.price }}
+                  {{ listing.listingDetails.price | currencyFormat }}
                 </p>
                 <div class="flex items-center justify-center text-gray-600 dark:text-gray-300 mb-3">
                   <span class="material-symbols-outlined text-sm mr-2">schedule</span>
@@ -226,10 +226,13 @@
                   (click)="goToAuthorProfile()"
                 >
                 <div class="flex-1 min-w-0">
-                  <p class="font-semibold text-gray-900 dark:text-white cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-all truncate text-lg" (click)="goToAuthorProfile()">
-                    {{ listing.author.name }}
-                  </p>
-                  <p class="text-gray-500 dark:text-gray-400 text-sm truncate">{{ listing.author.username }}</p>
+                  <div class="flex items-center gap-2">
+                    <p class="font-semibold text-gray-900 dark:text-white cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-all truncate text-lg" (click)="goToAuthorProfile()">
+                      {{ listing.author.name }}
+                    </p>
+                    <app-admin-badge [isAdmin]="isAdmin()" size="xs" variant="solid" [showLabel]="true"></app-admin-badge>
+                  </div>
+                  <p class="text-gray-500 dark:text-gray-400 text-sm truncate">&commat;{{ listing.author.username }}</p>
                   <div class="flex items-center mt-2">
                     <div class="flex text-yellow-400 mr-2">
                       <span class="material-symbols-outlined text-sm">star</span>

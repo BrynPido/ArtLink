@@ -135,7 +135,10 @@
 
               <!-- Category -->
               <div>
-                <label for="category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Category</label>
+                <label for="category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <span class="material-symbols-rounded text-sm mr-1 align-middle">sell</span>
+                  Category
+                </label>
                 <div class="relative">
                   <select 
                     id="category"
@@ -145,11 +148,11 @@
                     required
                   >
                     <option value="">Select a category</option>
-                    <option value="art">Art</option>
-                    <option value="commission">Commission</option>
-                    <option value="supplies">Art Supplies</option>
-                    <option value="tools">Tools</option>
-                    <option value="other">Other</option>
+                    <optgroup *ngFor="let group of categoryGroups" [label]="group.name">
+                      <option *ngFor="let catValue of group.categories" [value]="catValue">
+                        {{ getCategoryLabel(catValue) }}
+                      </option>
+                    </optgroup>
                   </select>
                   <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 dark:text-gray-400">
                     <span class="material-symbols-outlined">expand_more</span>

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DataService } from '../../../services/data.service';
 import { ToastService } from '../../../services/toast.service';
+import { LISTING_CATEGORIES, CATEGORY_GROUPS, getCategoryLabel } from '../../../constants/listing-categories';
 import Cropper from 'cropperjs';
 import Swal from 'sweetalert2';
 
@@ -30,6 +31,11 @@ export class ListingEditComponent implements OnInit, OnDestroy {
       location: ''
     }
   };
+  
+  // Category data
+  categories = LISTING_CATEGORIES;
+  categoryGroups = CATEGORY_GROUPS;
+  getCategoryLabel = getCategoryLabel;
   
   // For tracking existing and new images
   existingMedia: any[] = [];

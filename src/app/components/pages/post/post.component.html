@@ -20,7 +20,10 @@
           class="w-full h-full object-cover cursor-pointer" (click)="goToAuthorProfile()">
       </div>
       <div class="cursor-pointer" (click)="goToAuthorProfile()">
-        <h2 class="font-medium text-gray-900 dark:text-white text-sm sm:text-base">{{ post?.authorName }}</h2>
+        <div class="flex items-center gap-2">
+          <h2 class="font-medium text-gray-900 dark:text-white text-sm sm:text-base">{{ post?.authorName }}</h2>
+          <app-admin-badge [isAdmin]="isAdmin()" size="xs" variant="solid" [showLabel]="true"></app-admin-badge>
+        </div>
         <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">&commat;{{ post?.authorUsername }}</p>
       </div>
       <button *ngIf="showFollowButton" class="ml-auto px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg transition-colors text-xs sm:text-sm"
@@ -59,12 +62,17 @@
                   [ngStyle]="{'background-image': 'url(' + media.url + ')'}"></div>
               
               <!-- Main image with proper aspect ratio -->
-              <img *ngIf="media.mediaType === 'image'" [src]="media.url" alt="Post media"
+              <img *ngIf="media.mediaType?.startsWith('image')" [src]="media.url" alt="Post media"
                 class="absolute inset-0 w-full h-full object-contain transition-opacity duration-300">
-              <video *ngIf="media.mediaType === 'video'" [src]="media.url" controls
+              <video *ngIf="media.mediaType?.startsWith('video')" [src]="media.url" controls
                 class="absolute inset-0 w-full h-full object-contain">
                 Your browser does not support video playback.
               </video>
+              
+              <!-- Image Caption Overlay -->
+              <div *ngIf="media.caption" class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 sm:p-6 pt-8">
+                <p class="text-white text-sm sm:text-base leading-relaxed">{{ media.caption }}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -88,12 +96,17 @@
               [ngStyle]="{'background-image': 'url(' + post?.media[0]?.url + ')'}"></div>
           
           <!-- Main image with maintained aspect ratio -->
-          <img *ngIf="post?.media[0]?.mediaType === 'image'" [src]="post?.media[0]?.url" alt="Post media"
+          <img *ngIf="post?.media[0]?.mediaType?.startsWith('image')" [src]="post?.media[0]?.url" alt="Post media"
             class="absolute inset-0 w-full h-full object-contain transition-opacity duration-300">
-          <video *ngIf="post?.media[0]?.mediaType === 'video'" [src]="post?.media[0]?.url" controls
+          <video *ngIf="post?.media[0]?.mediaType?.startsWith('video')" [src]="post?.media[0]?.url" controls
             class="absolute inset-0 w-full h-full object-contain">
             Your browser does not support video playback.
           </video>
+          
+          <!-- Image Caption Overlay -->
+          <div *ngIf="post?.media[0]?.caption" class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 sm:p-6 pt-8">
+            <p class="text-white text-sm sm:text-base leading-relaxed">{{ post?.media[0]?.caption }}</p>
+          </div>
         </div>
       </div>
     </div>

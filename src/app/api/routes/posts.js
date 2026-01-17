@@ -53,6 +53,7 @@ router.post('/createPost', authenticateToken, async (req, res) => {
         for (const mediaItem of media) {
           let mediaUrl = mediaItem.url;
           let mediaType = mediaItem.mediaType || 'image/jpeg';
+          const caption = mediaItem.caption || '';
 
           // If it's a base64 data URL, upload it to Supabase
           if (mediaUrl && mediaUrl.startsWith('data:')) {
@@ -91,8 +92,8 @@ router.post('/createPost', authenticateToken, async (req, res) => {
           }
 
           await connection.query(
-            'INSERT INTO media ("postId", "mediaUrl", "mediaType", "createdAt", "updatedAt") VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
-            [postId, mediaUrl, mediaType]
+            'INSERT INTO media ("postId", "mediaUrl", "mediaType", caption, "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
+            [postId, mediaUrl, mediaType, caption]
           );
         }
       }
@@ -185,7 +186,20 @@ router.get('/getPosts', optionalAuth, async (req, res) => {
         p.id, p.title, p.content, p."createdAt", p."updatedAt",
         u.id as "authorId", u.name as "authorName", u.username as "authorUsername",
         pr."profilePictureUrl" as "authorProfilePicture",
-        STRING_AGG(DISTINCT m."mediaUrl", ',') as "mediaUrls",
+        (
+          SELECT COALESCE(
+            json_agg(
+              json_build_object(
+                'url', m."mediaUrl", 
+                'mediaType', m."mediaType",
+                'caption', COALESCE(m.caption, '')
+              ) ORDER BY m.id
+            ),
+            '[]'
+          )
+          FROM media m
+          WHERE m."postId" = p.id
+        ) as media,
         COUNT(DISTINCT l.id) as "likesCount",
         COUNT(DISTINCT c.id) as "commentsCount",
         COUNT(DISTINCT s.id) as "savesCount",
@@ -194,7 +208,6 @@ router.get('/getPosts', optionalAuth, async (req, res) => {
       FROM post p
       LEFT JOIN "user" u ON p."authorId" = u.id
       LEFT JOIN profile pr ON u.id = pr."userId"
-      LEFT JOIN media m ON p.id = m."postId"
       LEFT JOIN "like" l ON p.id = l."postId"
       LEFT JOIN comment c ON p.id = c."postId"
       LEFT JOIN save s ON p.id = s."postId"
@@ -206,10 +219,10 @@ router.get('/getPosts', optionalAuth, async (req, res) => {
       LIMIT $${userId ? '3' : '1'} OFFSET $${userId ? '4' : '2'}
     `, userId ? [userId, userId, limit, offset] : [limit, offset]);
 
-    // Process media URLs
+    // Process posts
     const processedPosts = posts.map(post => ({
       ...post,
-      mediaUrls: post.mediaUrls ? post.mediaUrls.split(',') : [],
+      media: Array.isArray(post.media) ? post.media : [],
       isLiked: Boolean(post.isLiked),
       isSaved: Boolean(post.isSaved)
     }));
@@ -246,7 +259,20 @@ router.get('/post/:id', optionalAuth, async (req, res) => {
         p.id, p.title, p.content, p."createdAt", p."updatedAt",
         u.id as "authorId", u.name as "authorName", u.username as "authorUsername",
         pr."profilePictureUrl" as "authorProfilePicture",
-        STRING_AGG(DISTINCT m."mediaUrl", ',') as "mediaUrls",
+        (
+          SELECT COALESCE(
+            json_agg(
+              json_build_object(
+                'url', m."mediaUrl", 
+                'mediaType', m."mediaType",
+                'caption', COALESCE(m.caption, '')
+              ) ORDER BY m.id
+            ),
+            '[]'
+          )
+          FROM media m
+          WHERE m."postId" = p.id
+        ) as media,
         COUNT(DISTINCT l.id) as "likesCount",
         COUNT(DISTINCT c.id) as "commentsCount",
         COUNT(DISTINCT s.id) as "savesCount",
@@ -255,7 +281,6 @@ router.get('/post/:id', optionalAuth, async (req, res) => {
       FROM post p
       LEFT JOIN "user" u ON p."authorId" = u.id
       LEFT JOIN profile pr ON u.id = pr."userId"
-      LEFT JOIN media m ON p.id = m."postId"
       LEFT JOIN "like" l ON p.id = l."postId"
       LEFT JOIN comment c ON p.id = c."postId"
       LEFT JOIN save s ON p.id = s."postId"
@@ -292,7 +317,7 @@ router.get('/post/:id', optionalAuth, async (req, res) => {
 
     const processedPost = {
       ...post,
-      mediaUrls: post.mediaUrls ? post.mediaUrls.split(',') : [],
+      media: Array.isArray(post.media) ? post.media : [],
       isLiked: Boolean(post.isLiked),
       isSaved: Boolean(post.isSaved),
       comments: comments.map(comment => ({
@@ -656,13 +681,25 @@ router.get('/getSavedPosts', authenticateToken, async (req, res) => {
         p.id, p.title, p.content, p."createdAt", p."updatedAt",
         u.id as "authorId", u.name as "authorName", u.username as "authorUsername",
         pr."profilePictureUrl" as "authorProfilePicture",
-        STRING_AGG(DISTINCT m."mediaUrl", ',') as "mediaUrls",
+        (
+          SELECT COALESCE(
+            json_agg(
+              json_build_object(
+                'url', m."mediaUrl", 
+                'mediaType', m."mediaType",
+                'caption', COALESCE(m.caption, '')
+              ) ORDER BY m.id
+            ),
+            '[]'
+          )
+          FROM media m
+          WHERE m."postId" = p.id
+        ) as media,
         s."createdAt" as "savedAt"
       FROM save s
       LEFT JOIN post p ON s."postId" = p.id
       LEFT JOIN "user" u ON p."authorId" = u.id
       LEFT JOIN profile pr ON u.id = pr."userId"
-      LEFT JOIN media m ON p.id = m."postId"
       WHERE s."userId" = $1 AND p.published = true
       GROUP BY p.id, u.id, pr."profilePictureUrl", s."createdAt"
       ORDER BY s."createdAt" DESC
@@ -670,7 +707,7 @@ router.get('/getSavedPosts', authenticateToken, async (req, res) => {
 
     const processedPosts = savedPosts.map(post => ({
       ...post,
-      mediaUrls: post.mediaUrls ? post.mediaUrls.split(',') : []
+      media: Array.isArray(post.media) ? post.media : []
     }));
 
     res.json({
@@ -697,13 +734,25 @@ router.get('/getLikedPosts', authenticateToken, async (req, res) => {
         p.id, p.title, p.content, p."createdAt", p."updatedAt",
         u.id as "authorId", u.name as "authorName", u.username as "authorUsername",
         pr."profilePictureUrl" as "authorProfilePicture",
-        STRING_AGG(DISTINCT m."mediaUrl", ',') as "mediaUrls",
+        (
+          SELECT COALESCE(
+            json_agg(
+              json_build_object(
+                'url', m."mediaUrl", 
+                'mediaType', m."mediaType",
+                'caption', COALESCE(m.caption, '')
+              ) ORDER BY m.id
+            ),
+            '[]'
+          )
+          FROM media m
+          WHERE m."postId" = p.id
+        ) as media,
         l."createdAt" as "likedAt"
       FROM "like" l
       LEFT JOIN post p ON l."postId" = p.id
       LEFT JOIN "user" u ON p."authorId" = u.id
       LEFT JOIN profile pr ON u.id = pr."userId"
-      LEFT JOIN media m ON p.id = m."postId"
       WHERE l."userId" = $1 AND p.published = true
       GROUP BY p.id, u.id, pr."profilePictureUrl", l."createdAt"
       ORDER BY l."createdAt" DESC
@@ -711,7 +760,7 @@ router.get('/getLikedPosts', authenticateToken, async (req, res) => {
 
     const processedPosts = likedPosts.map(post => ({
       ...post,
-      mediaUrls: post.mediaUrls ? post.mediaUrls.split(',') : []
+      media: Array.isArray(post.media) ? post.media : []
     }));
 
     res.json({
@@ -746,7 +795,20 @@ router.get('/search', optionalAuth, async (req, res) => {
         p.id, p.title, p.content, p."createdAt", p."updatedAt",
         u.id as "authorId", u.name as "authorName", u.username as "authorUsername",
         pr."profilePictureUrl" as "authorProfilePicture",
-        STRING_AGG(DISTINCT m."mediaUrl", ',') as "mediaUrls",
+        (
+          SELECT COALESCE(
+            json_agg(
+              json_build_object(
+                'url', m."mediaUrl", 
+                'mediaType', m."mediaType",
+                'caption', COALESCE(m.caption, '')
+              ) ORDER BY m.id
+            ),
+            '[]'
+          )
+          FROM media m
+          WHERE m."postId" = p.id
+        ) as media,
         COUNT(DISTINCT l.id) as "likesCount",
         COUNT(DISTINCT c.id) as "commentsCount",
         ${userId ? 'CASE WHEN user_likes.id IS NOT NULL THEN 1 ELSE 0 END' : '0'} as "isLiked",
@@ -754,7 +816,6 @@ router.get('/search', optionalAuth, async (req, res) => {
       FROM post p
       LEFT JOIN "user" u ON p."authorId" = u.id
       LEFT JOIN profile pr ON u.id = pr."userId"
-      LEFT JOIN media m ON p.id = m."postId"
       LEFT JOIN "like" l ON p.id = l."postId"
       LEFT JOIN comment c ON p.id = c."postId"
       LEFT JOIN save s ON p.id = s."postId"
@@ -776,7 +837,7 @@ router.get('/search', optionalAuth, async (req, res) => {
 
     const processedPosts = posts.map(post => ({
       ...post,
-      mediaUrls: post.mediaUrls ? post.mediaUrls.split(',') : [],
+      media: Array.isArray(post.media) ? post.media : [],
       isLiked: Boolean(post.isLiked),
       isSaved: Boolean(post.isSaved)
     }));
@@ -811,7 +872,20 @@ router.get('/trending', optionalAuth, async (req, res) => {
         u.name as "authorName",
         u.username as "authorUsername",
         pr."profilePictureUrl" as "authorProfilePicture",
-        STRING_AGG(DISTINCT m."mediaUrl", ',') as "mediaUrls",
+        (
+          SELECT COALESCE(
+            json_agg(
+              json_build_object(
+                'url', m."mediaUrl", 
+                'mediaType', m."mediaType",
+                'caption', COALESCE(m.caption, '')
+              ) ORDER BY m.id
+            ),
+            '[]'
+          )
+          FROM media m
+          WHERE m."postId" = p.id
+        ) as media,
         COUNT(DISTINCT l.id) as "likesCount",
         COUNT(DISTINCT c.id) as "commentsCount",
         ${currentUserId ? 'CASE WHEN user_likes.id IS NOT NULL THEN 1 ELSE 0 END' : '0'} as "isLiked",
@@ -819,7 +893,6 @@ router.get('/trending', optionalAuth, async (req, res) => {
       FROM post p
       LEFT JOIN "user" u ON p."authorId" = u.id
       LEFT JOIN profile pr ON u.id = pr."userId"
-      LEFT JOIN media m ON p.id = m."postId"
       LEFT JOIN "like" l ON p.id = l."postId"
       LEFT JOIN comment c ON p.id = c."postId"
       LEFT JOIN save s ON p.id = s."postId"
@@ -833,7 +906,7 @@ router.get('/trending', optionalAuth, async (req, res) => {
 
     const processedPosts = posts.map(post => ({
       ...post,
-      mediaUrls: post.mediaUrls ? post.mediaUrls.split(',') : [],
+      media: Array.isArray(post.media) ? post.media : [],
       isLiked: Boolean(post.isLiked),
       isSaved: Boolean(post.isSaved)
     }));

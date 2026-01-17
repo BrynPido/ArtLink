@@ -6,6 +6,7 @@ import { DataService } from '../../../services/data.service';
 import { ToastService } from '../../../services/toast.service';
 import { WebSocketService } from '../../../services/websocket.service';
 import { TimeAgoPipe } from '../../../utils/time-ago.pipe';
+import { AdminBadgeComponent } from '../admin-badge/admin-badge.component';
 import { environment } from '../../../../environments/environment';
 // Import SweetAlert2
 import Swal from 'sweetalert2';
@@ -13,7 +14,7 @@ import Swal from 'sweetalert2';
 @Component({
   selector: 'app-post-card',
   standalone: true,
-  imports: [CommonModule, TimeAgoPipe, FormsModule],
+  imports: [CommonModule, TimeAgoPipe, FormsModule, AdminBadgeComponent],
   templateUrl: './post-card.component.html',
   styleUrls: ['./post-card.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -115,10 +116,15 @@ export class PostCardComponent implements OnInit {
 
           // Process and initialize state for each post
           this.posts.forEach(post => {
-            // Convert mediaUrls array to media objects with full URLs for template compatibility
-            post.media = (post.mediaUrls || []).map((url: string) => ({ 
-              url: this.getFullMediaUrl(url) 
-            }));
+            // Process media array - backend now returns media with url, mediaType, and caption
+            if (post.media && Array.isArray(post.media)) {
+              post.media = post.media.map((mediaItem: any) => ({
+                ...mediaItem,
+                url: this.getFullMediaUrl(mediaItem.url)
+              }));
+            } else {
+              post.media = [];
+            }
             
             // Process author profile picture URL
             if (post.authorProfilePicture) {
@@ -331,6 +337,15 @@ export class PostCardComponent implements OnInit {
 
   navigateToPost(postId: number): void {
     this.router.navigate(['/post', postId]);
+  }
+
+  // Check if a user is an admin
+  isAdmin(post: any): boolean {
+    // Check if the author's username or email indicates admin status
+    return post.authorUsername === 'admin' || 
+           post.authorEmail === 'admin@artlink.com' ||
+           post.authorRole === 'admin' ||
+           post.isAdmin === true;
   }
 
   onImageLoad(postId: number, url: string): void {

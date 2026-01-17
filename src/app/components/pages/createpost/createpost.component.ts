@@ -31,6 +31,7 @@ export class CreatePostComponent implements OnDestroy {
   };
   imagePreviewUrls: string[] = [];
   imageFiles: File[] = [];
+  imageCaptions: string[] = [];
   cropper?: Cropper;
   currentUser: any;
 
@@ -64,6 +65,7 @@ export class CreatePostComponent implements OnDestroy {
         const file = files[i];
         if (file.type.startsWith('image/')) {
           this.imageFiles.push(file);
+          this.imageCaptions.push('');
           const reader = new FileReader();
           reader.onload = (e: any) => {
             this.imagePreviewUrls.push(e.target.result);
@@ -77,6 +79,7 @@ export class CreatePostComponent implements OnDestroy {
   removeImage(index: number) {
     this.imagePreviewUrls.splice(index, 1);
     this.imageFiles.splice(index, 1);
+    this.imageCaptions.splice(index, 1);
   }
 
   editImage(index: number) {
@@ -100,9 +103,10 @@ export class CreatePostComponent implements OnDestroy {
     const promises = this.imageFiles.map(file => this.fileToBase64(file));
     
     Promise.all(promises).then(base64Array => {
-      const mediaArray = base64Array.map(base64 => ({
+      const mediaArray = base64Array.map((base64, index) => ({
         url: base64,
-        mediaType: 'image'
+        mediaType: 'image',
+        caption: this.imageCaptions[index] || ''
       }));
 
       if (this.isListingMode) {

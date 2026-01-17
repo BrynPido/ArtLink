@@ -19,8 +19,11 @@
             class="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-300" (click)="goToAuthorProfile(post.authorId); $event.stopPropagation()">
         </div>
       </div>
-      <div class="cursor-pointer" (click)="goToAuthorProfile(post.authorId); $event.stopPropagation()">
-        <h3 class="font-semibold text-gray-900 dark:text-white text-sm hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-200">{{ post.authorName || 'Unknown' }}</h3>
+      <div class="cursor-pointer flex-1" (click)="goToAuthorProfile(post.authorId); $event.stopPropagation()">
+        <div class="flex items-center gap-2">
+          <h3 class="font-semibold text-gray-900 dark:text-white text-sm hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-200">{{ post.authorName || 'Unknown' }}</h3>
+          <app-admin-badge [isAdmin]="isAdmin(post)" size="xs" variant="solid" [showLabel]="true"></app-admin-badge>
+        </div>
         <p class="text-xs text-gray-500 dark:text-gray-400">&commat;{{ post.authorUsername || 'unknown' }}</p>
       </div>
     </div>
@@ -75,6 +78,11 @@
                  [ngClass]="{'opacity-0': !imageLoaded[post.id + '-' + media.url], 'opacity-100': imageLoaded[post.id + '-' + media.url]}"
                  (load)="onImageLoad(post.id, media.url)"
                  loading="lazy">
+            
+            <!-- Image Caption Overlay -->
+            <div *ngIf="media.caption" class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 pt-8">
+              <p class="text-white text-sm leading-relaxed">{{ media.caption }}</p>
+            </div>
           </div>
         </div>
       </div>
@@ -125,6 +133,11 @@
            [ngClass]="{'opacity-0': !imageLoaded[post.id + '-' + post.media[0].url], 'opacity-100': imageLoaded[post.id + '-' + post.media[0].url]}"
            (load)="onImageLoad(post.id, post.media[0].url)"
            loading="lazy">
+      
+      <!-- Image Caption Overlay -->
+      <div *ngIf="post.media[0].caption" class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 pt-8">
+        <p class="text-white text-sm leading-relaxed">{{ post.media[0].caption }}</p>
+      </div>
     </div>
   </div>
 

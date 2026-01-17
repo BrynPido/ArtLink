@@ -3,6 +3,8 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DataService } from '../../../services/data.service';
 import { TimeAgoPipe } from '../../../utils/time-ago.pipe';
+import { CurrencyFormatPipe } from '../../../pipes/currency-format.pipe';
+import { AdminBadgeComponent } from '../../ui/admin-badge/admin-badge.component';
 import { ToastService } from '../../../services/toast.service';
 import Swal from 'sweetalert2';
 import { FormsModule } from '@angular/forms';
@@ -11,7 +13,7 @@ import { environment } from '../../../../environments/environment';
 @Component({
   selector: 'app-listing-details',
   standalone: true,
-  imports: [CommonModule, TimeAgoPipe, FormsModule],
+  imports: [CommonModule, TimeAgoPipe, CurrencyFormatPipe, AdminBadgeComponent, FormsModule],
   templateUrl: './listing-details.component.html',
   styleUrls: ['./listing-details.component.css']
 })
@@ -267,6 +269,15 @@ export class ListingDetailsComponent implements OnInit {
     if (this.listing?.author?.id) {
       this.router.navigate(['/profile', this.listing.author.id]);
     }
+  }
+
+  // Check if the seller is an admin
+  isAdmin(): boolean {
+    if (!this.listing || !this.listing.author) return false;
+    return this.listing.author.username === 'admin' || 
+           this.listing.authorUsername === 'admin' ||
+           this.listing.author.email === 'admin@artlink.com' ||
+           this.listing.author.role === 'admin';
   }
 
   goBack(): void {

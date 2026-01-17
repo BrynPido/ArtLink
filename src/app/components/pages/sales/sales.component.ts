@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { DataService } from '../../../services/data.service';
 import { TimeAgoPipe } from '../../../utils/time-ago.pipe';
+import { NumberFormatPipe } from '../../../pipes/number-format.pipe';
+import { CurrencyFormatPipe } from '../../../pipes/currency-format.pipe';
 import { environment } from '../../../../environments/environment';
 import { ToastService } from '../../../services/toast.service';
 
@@ -31,7 +33,7 @@ interface Transaction {
 @Component({
   selector: 'app-sales',
   standalone: true,
-  imports: [CommonModule, FormsModule, TimeAgoPipe],
+  imports: [CommonModule, FormsModule, TimeAgoPipe, NumberFormatPipe, CurrencyFormatPipe],
   templateUrl: './sales.component.html',
   styleUrls: ['./sales.component.css']
 })

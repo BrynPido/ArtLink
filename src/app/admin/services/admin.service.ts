@@ -145,6 +145,24 @@ export class AdminService {
     );
   }
 
+  approvePost(postId: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}admin/posts/${postId}/approve`, {}).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  rejectPost(postId: number, reason: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}admin/posts/${postId}/reject`, { reason }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  getPendingPosts(page: number = 1, limit: number = 20): Observable<any> {
+    return this.http.get(`${this.apiUrl}admin/posts/pending?page=${page}&limit=${limit}`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
   // Listing Management
   getAllListings(page: number = 1, limit: number = 20, filter?: string): Observable<any> {
     let url = `${this.apiUrl}admin/listings?page=${page}&limit=${limit}`;

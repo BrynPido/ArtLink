@@ -4,6 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { DataService } from '../../../services/data.service';
 import { TimeAgoPipe } from '../../../utils/time-ago.pipe';
+import { CurrencyFormatPipe } from '../../../pipes/currency-format.pipe';
+import { NumberFormatPipe } from '../../../pipes/number-format.pipe';
+import { LISTING_CATEGORIES, CATEGORY_GROUPS, getCategoryLabel, getCategoryIcon, getCategoryColor } from '../../../constants/listing-categories';
 import { environment } from '../../../../environments/environment';
 import { ToastService } from '../../../services/toast.service';
 import Swal from 'sweetalert2';
@@ -32,7 +35,7 @@ interface Listing {
 @Component({
   selector: 'app-listings',
   standalone: true,
-  imports: [CommonModule, FormsModule, TimeAgoPipe],
+  imports: [CommonModule, FormsModule, TimeAgoPipe, CurrencyFormatPipe, NumberFormatPipe],
   templateUrl: './listings.component.html',
   styleUrls: ['./listings.component.css']
 })
@@ -54,14 +57,14 @@ export class ListingsComponent implements OnInit {
   };
   sortBy = 'newest';
 
-  categories = [
-    { value: '', label: 'All Categories' },
-    { value: 'art', label: 'Art' },
-    { value: 'commission', label: 'Commission' },
-    { value: 'supplies', label: 'Art Supplies' },
-    { value: 'tools', label: 'Tools' },
-    { value: 'other', label: 'Other' }
-  ];
+  // Import categories from constants
+  categories = LISTING_CATEGORIES;
+  categoryGroups = CATEGORY_GROUPS;
+  
+  // Helper methods for category display
+  getCategoryLabel = getCategoryLabel;
+  getCategoryIcon = getCategoryIcon;
+  getCategoryColor = getCategoryColor;
 
   conditions = [
     { value: '', label: 'All Conditions' },

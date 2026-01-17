@@ -67,14 +67,26 @@ router.get('/user/:id', optionalAuth, async (req, res) => {
     const posts = await query(`
       SELECT 
         p.id, p.title, p.content, p."createdAt", p."updatedAt",
-        STRING_AGG(DISTINCT m."mediaUrl", ',') as "mediaUrls",
+        (
+          SELECT COALESCE(
+            json_agg(
+              json_build_object(
+                'url', m."mediaUrl", 
+                'mediaType', m."mediaType",
+                'caption', COALESCE(m.caption, '')
+              ) ORDER BY m.id
+            ),
+            '[]'
+          )
+          FROM media m
+          WHERE m."postId" = p.id
+        ) as media,
         COUNT(DISTINCT l.id) as "likesCount",
         COUNT(DISTINCT c.id) as "commentsCount",
         COUNT(DISTINCT s.id) as "savesCount",
         ${currentUserId ? 'MAX(CASE WHEN l."userId" = $1 THEN 1 ELSE 0 END)' : '0'} as "isLiked",
         ${currentUserId ? 'MAX(CASE WHEN s."userId" = $2 THEN 1 ELSE 0 END)' : '0'} as "isSaved"
       FROM post p
-      LEFT JOIN media m ON p.id = m."postId"
       LEFT JOIN "like" l ON p.id = l."postId"
       LEFT JOIN comment c ON p.id = c."postId"
       LEFT JOIN save s ON p.id = s."postId"
@@ -85,7 +97,7 @@ router.get('/user/:id', optionalAuth, async (req, res) => {
 
     const processedPosts = posts.map(post => ({
       ...post,
-      mediaUrls: post.mediaUrls ? post.mediaUrls.split(',') : [],
+      media: Array.isArray(post.media) ? post.media : [],
       isLiked: Boolean(post.isLiked),
       isSaved: Boolean(post.isSaved)
     }));

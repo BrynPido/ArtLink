@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { DataService } from '../../../services/data.service';
 import { ToastService } from '../../../services/toast.service';
 import { TimeAgoPipe } from '../../../utils/time-ago.pipe';
+import { AdminBadgeComponent } from '../../ui/admin-badge/admin-badge.component';
 import { WebSocketService } from '../../../services/websocket.service';
 import Swal from 'sweetalert2';
 import { NotificationStateService } from '../../../services/notification-state.service';
@@ -16,7 +17,7 @@ import { environment } from '../../../../environments/environment';
   templateUrl: './post.component.html',
   styleUrls: ['./post.component.css'],
   standalone: true,
-  imports: [CommonModule, FormsModule, TimeAgoPipe]
+  imports: [CommonModule, FormsModule, TimeAgoPipe, AdminBadgeComponent]
 })
 export class PostComponent implements OnInit, OnDestroy {
   post?: any;
@@ -87,15 +88,16 @@ export class PostComponent implements OnInit, OnDestroy {
           this.post = response.payload;
           
           // Process media URLs similar to post-card component
-          if (this.post?.mediaUrls && Array.isArray(this.post.mediaUrls)) {
-            this.post.media = this.post.mediaUrls.map((url: string) => ({ 
-              url: this.getFullMediaUrl(url),
-              mediaType: 'image' // Assuming images for now, can be enhanced later
+          if (this.post?.media && Array.isArray(this.post.media)) {
+            this.post.media = this.post.media.map((mediaItem: any) => ({
+              ...mediaItem,
+              url: this.getFullMediaUrl(mediaItem.url),
+              mediaType: mediaItem.mediaType || 'image'
             }));
             console.log('Processed media:', this.post.media);
           } else {
             this.post.media = [];
-            console.log('No mediaUrls found or not an array');
+            console.log('No media found or not an array');
           }
           
           this.loading = false;
@@ -554,6 +556,15 @@ export class PostComponent implements OnInit, OnDestroy {
     if (this.post?.author?.id) {
       this.router.navigate(['/profile', this.post.author.id]);
     }
+  }
+
+  // Check if the post author is an admin
+  isAdmin(): boolean {
+    if (!this.post) return false;
+    return this.post.authorUsername === 'admin' || 
+           this.post.authorEmail === 'admin@artlink.com' ||
+           this.post.authorRole === 'admin' ||
+           this.post.isAdmin === true;
   }
 
   toggleFollow(): void {

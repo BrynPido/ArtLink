@@ -282,7 +282,7 @@
         </div>
         <div class="ml-3">
           <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Sales</p>
-          <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ totalSales }}</p>
+          <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ totalSales | numberFormat }}</p>
         </div>
       </div>
     </div>
@@ -293,8 +293,8 @@
           <span class="material-symbols-rounded text-blue-600 dark:text-blue-400">payments</span>
         </div>
         <div class="ml-3">
-          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Revenue</p>
-          <p class="text-lg font-semibold text-gray-900 dark:text-white">₱{{ totalRevenue | number:'1.2-2' }}</p>
+          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Revenue</p>
+          <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ totalRevenue | currencyFormat }}</p>
         </div>
       </div>
     </div>
@@ -302,11 +302,11 @@
     <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border dark:border-gray-700">
       <div class="flex items-center">
         <div class="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
-          <span class="material-symbols-rounded text-purple-600 dark:text-purple-400">shopping_cart</span>
+          <span class="material-symbols-rounded text-purple-600 dark:text-purple-400">shopping_bag</span>
         </div>
         <div class="ml-3">
-          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Purchases</p>
-          <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ totalPurchases }}</p>
+          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Purchases</p>
+          <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ totalPurchases | numberFormat }}</p>
         </div>
       </div>
     </div>
@@ -318,7 +318,7 @@
         </div>
         <div class="ml-3">
           <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Spent</p>
-          <p class="text-lg font-semibold text-gray-900 dark:text-white">₱{{ totalSpent | number:'1.2-2' }}</p>
+          <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ totalSpent | currencyFormat }}</p>
         </div>
       </div>
     </div>

@@ -12,6 +12,9 @@ interface Post {
   title: string;
   content: string;
   published: boolean;
+  status?: string;
+  rejectionReason?: string;
+  reviewedAt?: string;
   createdAt: string;
   updatedAt: string;
   authorName: string;
@@ -425,6 +428,74 @@ export class PostManagementComponent implements OnInit, OnDestroy {
 
   getPostStatusText(post: Post): string {
     return post.published ? 'Published' : 'Unpublished';
+  }
+
+  getStatusText(status?: string): string {
+    switch (status) {
+      case 'pending': return 'Pending Review';
+      case 'approved': return 'Approved';
+      case 'rejected': return 'Rejected';
+      default: return 'Unknown';
+    }
+  }
+
+  getStatusBadgeClass(status?: string): string {
+    switch (status) {
+      case 'pending': return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300';
+      case 'approved': return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300';
+      case 'rejected': return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300';
+      default: return 'bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300';
+    }
+  }
+
+  approvePost(postId: number) {
+    this.sweetAlert.confirm(
+      'Approve Post',
+      'Are you sure you want to approve this post? It will be visible to all users.',
+      'Yes, approve it'
+    ).then((result) => {
+      if (result.isConfirmed) {
+        this.actionLoading = true;
+        this.adminService.approvePost(postId).subscribe({
+          next: (response) => {
+            this.sweetAlert.success('Post approved successfully!');
+            this.loadPosts();
+            this.actionLoading = false;
+          },
+          error: (error) => {
+            console.error('Error approving post:', error);
+            this.sweetAlert.error('Failed to approve post');
+            this.actionLoading = false;
+          }
+        });
+      }
+    });
+  }
+
+  rejectPost(postId: number) {
+    this.sweetAlert.showRejectionReasonInput({
+      title: 'Reject Post',
+      inputLabel: 'Rejection Reason',
+      inputPlaceholder: 'Enter reason for rejection...',
+      confirmButtonText: 'Reject Post',
+      showCancelButton: true
+    }).then((result) => {
+      if (result.isConfirmed && result.value) {
+        this.actionLoading = true;
+        this.adminService.rejectPost(postId, result.value).subscribe({
+          next: (response) => {
+            this.sweetAlert.success('Post rejected successfully!');
+            this.loadPosts();
+            this.actionLoading = false;
+          },
+          error: (error) => {
+            console.error('Error rejecting post:', error);
+            this.sweetAlert.error('Failed to reject post');
+            this.actionLoading = false;
+          }
+        });
+      }
+    });
   }
 
   truncateText(text: string, length: number): string {

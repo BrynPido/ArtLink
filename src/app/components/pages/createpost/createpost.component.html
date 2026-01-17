@@ -140,24 +140,37 @@
         </div>
       </div>
 
-      <!-- Image Preview Grid -->
-      <div *ngIf="imagePreviewUrls.length > 0" class="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
-        <div *ngFor="let url of imagePreviewUrls; let i = index" class="relative aspect-w-1 aspect-h-1">
-          <img [src]="url" class="object-cover rounded-lg border border-gray-200 dark:border-gray-700" alt="Preview">
-          <button 
-            type="button"
-            (click)="removeImage(i)"
-            class="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 shadow-lg transition-colors"
-          >
-            <span class="material-symbols-outlined">close</span>
-          </button>
-          <button 
-            type="button"
-            (click)="editImage(i)"
-            class="absolute bottom-2 right-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-full p-1 shadow-lg transition-colors"
-          >
-            <span class="material-symbols-outlined">edit</span>
-          </button>
+      <!-- Image Preview Grid with Captions -->
+      <div *ngIf="imagePreviewUrls.length > 0" class="space-y-4 mt-4">
+        <div *ngFor="let url of imagePreviewUrls; let i = index" class="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+          <div class="flex gap-3">
+            <!-- Image Preview -->
+            <div class="relative w-24 h-24 flex-shrink-0">
+              <img [src]="url" class="w-full h-full object-cover rounded-lg" alt="Preview">
+              <button 
+                type="button"
+                (click)="removeImage(i)"
+                class="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 shadow-lg transition-colors z-10"
+              >
+                <span class="material-symbols-outlined text-sm">close</span>
+              </button>
+            </div>
+            
+            <!-- Caption Input -->
+            <div class="flex-1">
+              <label [for]="'caption-' + i" class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Image Caption (Optional)
+              </label>
+              <textarea 
+                [id]="'caption-' + i"
+                [name]="'caption-' + i"
+                [(ngModel)]="imageCaptions[i]"
+                rows="3"
+                placeholder="Add a caption for this image..."
+                class="w-full text-sm rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              ></textarea>
+            </div>
+          </div>
         </div>
       </div>
 

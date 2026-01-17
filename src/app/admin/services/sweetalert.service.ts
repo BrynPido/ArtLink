@@ -222,4 +222,32 @@ export class SweetAlertService {
       title: title
     });
   }
-}
+
+  // Rejection reason input
+  showRejectionReasonInput(options: {
+    title: string;
+    inputLabel: string;
+    inputPlaceholder: string;
+    confirmButtonText: string;
+    showCancelButton: boolean;
+  }): Promise<any> {
+    return Swal.fire({
+      title: options.title,
+      input: 'textarea',
+      inputLabel: options.inputLabel,
+      inputPlaceholder: options.inputPlaceholder,
+      inputAttributes: {
+        'aria-label': options.inputLabel
+      },
+      showCancelButton: options.showCancelButton,
+      confirmButtonText: options.confirmButtonText,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      inputValidator: (value) => {
+        if (!value) {
+          return 'You need to provide a reason!';
+        }
+        return null;
+      }
+    });
+  }}

@@ -1,31 +1,67 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
-// Database configuration for PostgreSQL/Supabase
-const dbConfig = {
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT || 5432,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASS,
-  database: process.env.DB_NAME,
-  ssl: { rejectUnauthorized: false }, // Always use SSL for Supabase
-  max: 20, // Increased pool size
-  min: 2, // Minimum connections
-  idleTimeoutMillis: 60000, // Increased idle timeout
-  connectionTimeoutMillis: 10000, // Reduced connection timeout
-  acquireTimeoutMillis: 60000, // Time to wait for connection
-  createTimeoutMillis: 30000, // Time to wait for connection creation
-  destroyTimeoutMillis: 5000, // Time to wait for connection destruction
-  reapIntervalMillis: 1000, // Cleanup interval
-  createRetryIntervalMillis: 200, // Retry interval for failed connections
-};
+// Support both DATABASE_URL (for platforms like Render) and individual credentials
+let dbConfig;
+
+if (process.env.DATABASE_URL) {
+  // Use connection string if available (common on Render, Heroku, etc.)
+  console.log('📝 Using DATABASE_URL for database connection');
+  dbConfig = {
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false },
+    max: 20,
+    min: 2,
+    idleTimeoutMillis: 60000,
+    connectionTimeoutMillis: 30000,
+    acquireTimeoutMillis: 60000,
+    createTimeoutMillis: 30000,
+    destroyTimeoutMillis: 5000,
+    reapIntervalMillis: 1000,
+    createRetryIntervalMillis: 200,
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 10000
+  };
+} else {
+  // Use individual credentials
+  console.log('📝 Using individual credentials for database connection');
+  dbConfig = {
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT || 5432,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASS,
+    database: process.env.DB_NAME,
+    ssl: { rejectUnauthorized: false },
+    max: 20,
+    min: 2,
+    idleTimeoutMillis: 60000,
+    connectionTimeoutMillis: 30000,
+    acquireTimeoutMillis: 60000,
+    createTimeoutMillis: 30000,
+    destroyTimeoutMillis: 5000,
+    reapIntervalMillis: 1000,
+    createRetryIntervalMillis: 200,
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 10000
+  };
+}
 
 // Create connection pool
 const pool = new Pool(dbConfig);
 
+// Log configuration (without sensitive data) for debugging
+console.log('🔧 Database Configuration:', {
+  usingConnectionString: !!process.env.DATABASE_URL,
+  host: dbConfig.host || 'from connection string',
+  port: dbConfig.port || 'from connection string',
+  database: dbConfig.database || 'from connection string',
+  ssl: !!dbConfig.ssl,
+  maxConnections: dbConfig.max
+});
+
 // Handle pool errors
 pool.on('error', (err) => {
-  console.error('❌ Unexpected database pool error:', err);
+  console.error('❌ Unexpected database pool error:', err.message);
   // Don't exit process, let the pool handle reconnection
 });
 
@@ -37,16 +73,28 @@ pool.on('remove', () => {
   console.log('🔌 Database connection removed from pool');
 });
 
-// Test database connection
-async function testConnection() {
-  try {
-    const client = await pool.connect();
-    console.log('✅ Database connected successfully');
-    client.release();
-  } catch (error) {
-    console.error('❌ Database connection failed:', error.message);
-    process.exit(1);
+// Test database connection with retry logic
+async function testConnection(retries = 5, delay = 5000) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const client = await pool.connect();
+      console.log('✅ Database connected successfully');
+      client.release();
+      return true;
+    } catch (error) {
+      console.error(`❌ Database connection failed (attempt ${attempt}/${retries}):`, error.message);
+      
+      if (attempt < retries) {
+        console.log(`🔄 Retrying database connection in ${delay/1000} seconds...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      } else {
+        console.error('❌ All database connection attempts failed. Server will continue but database operations will fail.');
+        // Don't exit - let the server run and retry connections on actual queries
+        return false;
+      }
+    }
   }
+  return false;
 }
 
 // Initialize database connection

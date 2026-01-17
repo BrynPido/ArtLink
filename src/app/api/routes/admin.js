@@ -446,6 +446,104 @@ router.post('/posts/:id/unhide', async (req, res) => {
   }
 });
 
+// Approve post
+router.post('/posts/:id/approve', async (req, res) => {
+  try {
+    const postId = req.params.id;
+    const adminId = req.user?.id || null;
+    
+    await query(
+      'UPDATE post SET status = $1, "reviewedAt" = CURRENT_TIMESTAMP, "reviewedBy" = $2 WHERE id = $3',
+      ['approved', adminId, postId]
+    );
+    
+    console.log(`Admin ${adminId} approved post ${postId}`);
+    
+    res.json({
+      status: 'success',
+      message: 'Post approved successfully'
+    });
+  } catch (error) {
+    console.error('Error approving post:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Error approving post'
+    });
+  }
+});
+
+// Reject post
+router.post('/posts/:id/reject', async (req, res) => {
+  try {
+    const postId = req.params.id;
+    const adminId = req.user?.id || null;
+    const { reason } = req.body;
+    
+    await query(
+      'UPDATE post SET status = $1, "rejectionReason" = $2, "reviewedAt" = CURRENT_TIMESTAMP, "reviewedBy" = $3 WHERE id = $4',
+      ['rejected', reason || 'Content does not meet community guidelines', adminId, postId]
+    );
+    
+    console.log(`Admin ${adminId} rejected post ${postId}. Reason: ${reason}`);
+    
+    res.json({
+      status: 'success',
+      message: 'Post rejected successfully'
+    });
+  } catch (error) {
+    console.error('Error rejecting post:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Error rejecting post'
+    });
+  }
+});
+
+// Get pending posts
+router.get('/posts/pending', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+
+    const posts = await query(`
+      SELECT 
+        p.id, p.title, p.content, p.status, p."createdAt", p."updatedAt",
+        u.id as "authorId", u.name as "authorName", u.username as "authorUsername",
+        pr."profilePictureUrl" as "authorProfilePicture",
+        STRING_AGG(DISTINCT m."mediaUrl", ',') as "mediaUrls",
+        COUNT(DISTINCT l.id) as "likesCount",
+        COUNT(DISTINCT c.id) as "commentsCount"
+      FROM post p
+      LEFT JOIN "user" u ON p."authorId" = u.id
+      LEFT JOIN profile pr ON u.id = pr."userId"
+      LEFT JOIN media m ON p.id = m."postId"
+      LEFT JOIN "like" l ON p.id = l."postId"
+      LEFT JOIN comment c ON p.id = c."postId"
+      WHERE p.status = 'pending'
+      GROUP BY p.id, u.id, pr."profilePictureUrl"
+      ORDER BY p."createdAt" ASC
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
+
+    const processedPosts = posts.map(post => ({
+      ...post,
+      mediaUrls: post.mediaUrls ? post.mediaUrls.split(',') : []
+    }));
+
+    res.json({
+      status: 'success',
+      payload: { posts: processedPosts }
+    });
+  } catch (error) {
+    console.error('Error fetching pending posts:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Error fetching pending posts'
+    });
+  }
+});
+
 // User Growth Stats
 router.get('/reports/users', async (req, res) => {
   try {

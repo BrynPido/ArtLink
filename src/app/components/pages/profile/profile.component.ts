@@ -114,9 +114,10 @@ export class ProfileComponent implements OnInit {
             this.user.posts = response.payload.posts.map((post: any) => ({
               ...post,
               // Process media URLs for posts if needed
-              media: post.mediaUrls ? post.mediaUrls.map((url: string) => ({
-                url: this.getFullMediaUrl(url),
-                mediaType: 'image'
+              media: post.media ? post.media.map((mediaItem: any) => ({
+                ...mediaItem,
+                url: this.getFullMediaUrl(mediaItem.url),
+                mediaType: mediaItem.mediaType || 'image'
               })) : []
             }));
           }
@@ -235,9 +236,10 @@ export class ProfileComponent implements OnInit {
           // Process media URLs for saved posts
           this.user.savedPosts = response.payload.map((post: any) => ({
             ...post,
-            media: post.mediaUrls ? post.mediaUrls.map((url: string) => ({
-              url: this.getFullMediaUrl(url),
-              mediaType: 'image'
+            media: post.media ? post.media.map((mediaItem: any) => ({
+              ...mediaItem,
+              url: this.getFullMediaUrl(mediaItem.url),
+              mediaType: mediaItem.mediaType || 'image'
             })) : []
           }));
         }
@@ -257,9 +259,10 @@ export class ProfileComponent implements OnInit {
           // Process media URLs for liked posts
           this.user.likedPosts = response.payload.map((post: any) => ({
             ...post,
-            media: post.mediaUrls ? post.mediaUrls.map((url: string) => ({
-              url: this.getFullMediaUrl(url),
-              mediaType: 'image'
+            media: post.media ? post.media.map((mediaItem: any) => ({
+              ...mediaItem,
+              url: this.getFullMediaUrl(mediaItem.url),
+              mediaType: mediaItem.mediaType || 'image'
             })) : []
           }));
         }
