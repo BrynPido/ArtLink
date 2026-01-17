@@ -288,6 +288,100 @@ class EmailService {
   }
 
   /**
+   * Send post approved email
+   * @param {string} email - Recipient email
+   * @param {string} userName - User's name
+   * @param {string} postTitle - Title of approved post
+   */
+  async sendPostApprovedEmail(email, userName = '', postTitle = '') {
+    const subject = 'Your Post Has Been Approved!';
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 30px; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🎉 Post Approved!</h1>
+          </div>
+          <div class="content">
+            <p>Hi ${userName || 'there'},</p>
+            <p>Great news! Your post <strong>"${postTitle}"</strong> has been reviewed and approved by our team.</p>
+            <p>Your post is now visible to everyone on ArtLink and can be discovered by the community.</p>
+            <p>Keep creating amazing content!</p>
+            <a href="${process.env.FRONTEND_URL || 'https://artlink.com'}" class="button">View Your Post</a>
+          </div>
+          <div class="footer">
+            <p>© ${new Date().getFullYear()} ArtLink. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+    
+    return await this.sendEmail(email, subject, html);
+  }
+
+  /**
+   * Send post declined email
+   * @param {string} email - Recipient email
+   * @param {string} userName - User's name
+   * @param {string} postTitle - Title of declined post
+   * @param {string} reason - Reason for declining
+   */
+  async sendPostDeclinedEmail(email, userName = '', postTitle = '', reason = '') {
+    const subject = 'Post Review Update';
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .reason-box { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 4px; }
+          .button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 30px; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Post Review Update</h1>
+          </div>
+          <div class="content">
+            <p>Hi ${userName || 'there'},</p>
+            <p>Thank you for submitting your post <strong>"${postTitle}"</strong> to ArtLink.</p>
+            <p>After review, we're unable to approve this post at this time.</p>
+            <div class="reason-box">
+              <strong>Reason:</strong><br>
+              ${reason || 'Content does not meet community guidelines'}
+            </div>
+            <p>You can edit your post and resubmit it for review. Please ensure your content follows our community guidelines.</p>
+            <a href="${process.env.FRONTEND_URL || 'https://artlink.com'}/guidelines" class="button">View Guidelines</a>
+          </div>
+          <div class="footer">
+            <p>© ${new Date().getFullYear()} ArtLink. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+    
+    return await this.sendEmail(email, subject, html);
+  }
+
+  /**
    * Test email configuration
    */
   async testEmailConfiguration() {

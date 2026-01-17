@@ -13,6 +13,29 @@
 
   <!-- Post Content -->
   <div *ngIf="!loading && post" class="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl overflow-hidden">
+    <!-- Review status banner (only visible to post owner) -->
+    <div *ngIf="currentUser?.id === post?.authorId && post?.review_status && post?.review_status !== 'approved'"
+         class="px-3 sm:px-4 py-2 border-b"
+         [ngClass]="{
+           'bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-700/60': post?.review_status === 'pending',
+           'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-700/60': post?.review_status === 'declined'
+         }">
+      <div class="flex items-start gap-2">
+        <span class="material-symbols-rounded text-base sm:text-lg mt-0.5"
+              [ngClass]="post?.review_status === 'pending' ? 'text-amber-600 dark:text-amber-300' : 'text-red-600 dark:text-red-300'">
+          {{ post?.review_status === 'pending' ? 'schedule' : 'gavel' }}
+        </span>
+        <div class="flex-1">
+          <p class="text-xs sm:text-sm font-medium"
+             [ngClass]="post?.review_status === 'pending' ? 'text-amber-800 dark:text-amber-200' : 'text-red-800 dark:text-red-200'">
+            {{ post?.review_status === 'pending' ? 'This post is pending admin review and is not yet visible to other users.' : 'This post was declined by the admin and is not visible to other users.' }}
+          </p>
+          <p *ngIf="post?.review_status === 'declined' && post?.decline_reason" class="mt-1 text-xs sm:text-sm text-red-700 dark:text-red-200">
+            <span class="font-semibold">Reason:</span> {{ post?.decline_reason }}
+          </p>
+        </div>
+      </div>
+    </div>
     <!-- Author Header - More compact on mobile -->
     <div class="p-3 sm:p-4 flex items-center gap-3 sm:gap-4 border-b border-gray-200 dark:border-gray-700 relative z-30">
       <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">

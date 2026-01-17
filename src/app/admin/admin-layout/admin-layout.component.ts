@@ -9,7 +9,7 @@ import { AdminBadgeComponent } from '../../components/ui/admin-badge/admin-badge
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, ClickOutsideDirective, AdminBadgeComponent],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, ClickOutsideDirective],
   templateUrl: './admin-layout.component.html',
   styleUrls: ['./admin-layout.component.css']
 })
@@ -20,6 +20,7 @@ export class AdminLayoutComponent implements OnInit {
   isNotificationsOpen = false;
   notifications: any[] = [];
   unreadCount = 0;
+  pendingPostsCount = 0;
   // Feature flag to show/hide Settings across UI
   showSettings = false;
 
@@ -41,6 +42,13 @@ export class AdminLayoutComponent implements OnInit {
       icon: 'article',
       route: '/admin/posts',
       active: false
+    },
+    {
+      label: 'Post Review',
+      icon: 'rate_review',
+      route: '/admin/post-review',
+      active: false,
+      badge: true
     },
     {
       label: 'Listings',
@@ -88,6 +96,7 @@ export class AdminLayoutComponent implements OnInit {
       this.menuItems = this.menuItems.filter(item => item.route !== '/admin/settings');
     }
     this.loadNotifications();
+    this.loadPendingPostsCount();
   }
 
   toggleMenu() {
@@ -118,6 +127,19 @@ export class AdminLayoutComponent implements OnInit {
       },
       error: (error: any) => {
         console.error('Error loading notifications:', error);
+      }
+    });
+  }
+
+  loadPendingPostsCount() {
+    this.adminService.getDashboardStats().subscribe({
+      next: (response: any) => {
+        if (response.status === 'success' && response.payload) {
+          this.pendingPostsCount = response.payload.pendingPosts || 0;
+        }
+      },
+      error: (error: any) => {
+        console.error('Error loading pending posts count:', error);
       }
     });
   }

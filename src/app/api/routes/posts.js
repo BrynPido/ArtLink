@@ -183,7 +183,7 @@ router.get('/getPosts', optionalAuth, async (req, res) => {
 
     const posts = await query(`
       SELECT 
-        p.id, p.title, p.content, p."createdAt", p."updatedAt",
+        p.id, p.title, p.content, p.review_status, p.decline_reason, p."createdAt", p."updatedAt",
         u.id as "authorId", u.name as "authorName", u.username as "authorUsername",
         pr."profilePictureUrl" as "authorProfilePicture",
         (
@@ -213,7 +213,7 @@ router.get('/getPosts', optionalAuth, async (req, res) => {
       LEFT JOIN save s ON p.id = s."postId"
       ${userId ? 'LEFT JOIN "like" user_likes ON p.id = user_likes."postId" AND user_likes."userId" = $1' : ''}
       ${userId ? 'LEFT JOIN save user_saves ON p.id = user_saves."postId" AND user_saves."userId" = $2' : ''}
-      WHERE p.published = true
+      WHERE p.published = true AND (p.review_status = 'approved' ${userId ? 'OR p."authorId" = $1' : ''})
       GROUP BY p.id, u.id, pr."profilePictureUrl"${userId ? ', user_likes.id, user_saves.id' : ''}
       ORDER BY p."createdAt" DESC
       LIMIT $${userId ? '3' : '1'} OFFSET $${userId ? '4' : '2'}
@@ -256,7 +256,7 @@ router.get('/post/:id', optionalAuth, async (req, res) => {
 
     const post = await queryOne(`
       SELECT 
-        p.id, p.title, p.content, p."createdAt", p."updatedAt",
+        p.id, p.title, p.content, p.review_status, p.decline_reason, p."createdAt", p."updatedAt",
         u.id as "authorId", u.name as "authorName", u.username as "authorUsername",
         pr."profilePictureUrl" as "authorProfilePicture",
         (
@@ -286,7 +286,7 @@ router.get('/post/:id', optionalAuth, async (req, res) => {
       LEFT JOIN save s ON p.id = s."postId"
       ${userId ? 'LEFT JOIN "like" user_likes ON p.id = user_likes."postId" AND user_likes."userId" = $1' : ''}
       ${userId ? 'LEFT JOIN save user_saves ON p.id = user_saves."postId" AND user_saves."userId" = $2' : ''}
-      WHERE p.id = $${userId ? '3' : '1'} AND p.published = true
+      WHERE p.id = $${userId ? '3' : '1'} AND p.published = true AND (p.review_status = 'approved' ${userId ? 'OR p."authorId" = $1' : ''})
       GROUP BY p.id, u.id, pr."profilePictureUrl"${userId ? ', user_likes.id, user_saves.id' : ''}
     `, userId ? [userId, userId, postId] : [postId]);
 

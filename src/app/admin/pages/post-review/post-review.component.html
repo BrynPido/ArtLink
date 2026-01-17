@@ -1,0 +1,248 @@
+<!-- Header -->
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Post Review Queue</h1>
+      <p class="text-gray-600 dark:text-gray-400">Review and approve posts before they're visible to the public</p>
+    </div>
+    <div class="text-right">
+      <div class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">{{ totalPending }}</div>
+      <div class="text-sm text-gray-600 dark:text-gray-400">Pending Review</div>
+    </div>
+  </div>
+</div>
+
+<!-- Loading State -->
+@if (loading) {
+  <div class="flex justify-center items-center py-20">
+    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+  </div>
+}
+
+<!-- Empty State -->
+@if (!loading && pendingPosts.length === 0) {
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-12 text-center">
+    <span class="material-icons text-6xl text-gray-300 dark:text-gray-600 mb-4">check_circle</span>
+    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">All Caught Up!</h3>
+    <p class="text-gray-600 dark:text-gray-400">No posts pending review at the moment.</p>
+  </div>
+}
+
+<!-- Posts Grid -->
+@if (!loading && pendingPosts.length > 0) {
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+    @for (post of pendingPosts; track post.id) {
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+        <!-- Post Image -->
+        @if (post.media && post.media.length > 0) {
+          <div class="relative h-48 bg-gray-100 dark:bg-gray-700 cursor-pointer" (click)="openImageViewer(post, 0)">
+            <img 
+              [src]="post.media[0].url" 
+              [alt]="post.title"
+              class="w-full h-full object-cover"
+            />
+            @if (post.media.length > 1) {
+              <div class="absolute top-2 right-2 bg-black bg-opacity-60 text-white px-2 py-1 rounded-full text-xs">
+                <span class="material-icons text-sm align-middle">collections</span>
+                {{ post.media.length }}
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Post Content -->
+        <div class="p-4">
+          <!-- Author Info -->
+          <div class="flex items-center mb-3">
+            @if (post.authorProfilePicture) {
+              <img 
+                [src]="post.authorProfilePicture" 
+                [alt]="post.authorName"
+                class="w-8 h-8 rounded-full mr-2"
+              />
+            } @else {
+              <div class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center mr-2">
+                <span class="text-indigo-600 dark:text-indigo-400 text-sm font-semibold">
+                  {{ post.authorName.charAt(0).toUpperCase() }}
+                </span>
+              </div>
+            }
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ post.authorName }}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">{{'@' + post.authorUsername}}</div>
+            </div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">{{ getTimeAgo(post.createdAt) }}</div>
+          </div>
+
+          <!-- Post Title -->
+          <h3 class="font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">{{ post.title }}</h3>
+
+          <!-- Post Content -->
+          @if (post.content) {
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-3">
+              {{ truncateContent(post.content, 120) }}
+            </p>
+          }
+
+          <!-- Action Buttons -->
+          <div class="flex gap-2">
+            <button
+              (click)="approvePost(post)"
+              [disabled]="actionLoading"
+              class="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+            >
+              <span class="material-icons text-sm">check_circle</span>
+              Approve
+            </button>
+            <button
+              (click)="openDeclineModal(post)"
+              [disabled]="actionLoading"
+              class="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+            >
+              <span class="material-icons text-sm">cancel</span>
+              Decline
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Pagination -->
+  @if (totalPages > 1) {
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+      <div class="flex items-center justify-between">
+        <div class="text-sm text-gray-600 dark:text-gray-400">
+          Showing page {{ currentPage }} of {{ totalPages }} ({{ totalPending }} total)
+        </div>
+        <div class="flex gap-2">
+          <button
+            (click)="changePage(currentPage - 1)"
+            [disabled]="currentPage === 1"
+            class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <span class="material-icons text-sm">chevron_left</span>
+          </button>
+          <button
+            (click)="changePage(currentPage + 1)"
+            [disabled]="currentPage === totalPages"
+            class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <span class="material-icons text-sm">chevron_right</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+}
+
+<!-- Decline Modal -->
+@if (showDeclineModal && selectedPost) {
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" (click)="closeDeclineModal()">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full" (click)="$event.stopPropagation()">
+      <div class="p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Decline Post</h3>
+          <button
+            (click)="closeDeclineModal()"
+            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          >
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+
+        <div class="mb-4">
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+            You're about to decline: <strong>"{{ selectedPost.title }}"</strong>
+          </p>
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            The author will be notified with your reason.
+          </p>
+        </div>
+
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Reason for Declining <span class="text-red-500">*</span>
+          </label>
+          <textarea
+            [(ngModel)]="declineReason"
+            rows="4"
+            placeholder="E.g., Contains copyrighted material, violates community guidelines..."
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white"
+          ></textarea>
+        </div>
+
+        <div class="flex gap-3">
+          <button
+            (click)="closeDeclineModal()"
+            [disabled]="actionLoading"
+            class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            (click)="confirmDecline()"
+            [disabled]="actionLoading || !declineReason.trim()"
+            class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            @if (actionLoading) {
+              <span class="flex items-center justify-center gap-2">
+                <span class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+                Declining...
+              </span>
+            } @else {
+              Decline Post
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Image Viewer Modal -->
+@if (showImageViewer && currentPostImages.length > 0) {
+  <div class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50" (click)="closeImageViewer()">
+    <button
+      (click)="closeImageViewer()"
+      class="absolute top-4 right-4 text-white hover:text-gray-300 z-10"
+    >
+      <span class="material-icons text-4xl">close</span>
+    </button>
+
+    <div class="relative w-full h-full flex items-center justify-center p-4" (click)="$event.stopPropagation()">
+      <img
+        [src]="currentPostImages[currentImageIndex].url"
+        [alt]="currentPostImages[currentImageIndex].caption || 'Post image'"
+        class="max-w-full max-h-full object-contain"
+      />
+
+      @if (currentPostImages.length > 1) {
+        <button
+          (click)="previousImage()"
+          [disabled]="currentImageIndex === 0"
+          class="absolute left-4 top-1/2 -translate-y-1/2 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-75 disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          <span class="material-icons text-3xl">chevron_left</span>
+        </button>
+        <button
+          (click)="nextImage()"
+          [disabled]="currentImageIndex === currentPostImages.length - 1"
+          class="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-75 disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          <span class="material-icons text-3xl">chevron_right</span>
+        </button>
+
+        <div class="absolute bottom-4 left-1/2 -translate-x-1/2 text-white bg-black bg-opacity-50 px-3 py-1 rounded-full text-sm">
+          {{ currentImageIndex + 1 }} / {{ currentPostImages.length }}
+        </div>
+      }
+
+      @if (currentPostImages[currentImageIndex].caption) {
+        <div class="absolute bottom-16 left-1/2 -translate-x-1/2 max-w-2xl text-white bg-black bg-opacity-75 px-4 py-2 rounded-lg text-sm text-center">
+          {{ currentPostImages[currentImageIndex].caption }}
+        </div>
+      }
+    </div>
+  </div>
+}

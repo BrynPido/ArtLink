@@ -26,6 +26,10 @@ export const adminRoutes: Routes = [
         loadComponent: () => import('./pages/post-management/post-management.component').then(m => m.PostManagementComponent) 
       },
       { 
+        path: 'post-review', 
+        loadComponent: () => import('./pages/post-review/post-review.component').then(m => m.PostReviewComponent) 
+      },
+      { 
         path: 'listings', 
         loadComponent: () => import('./pages/listing-management/listing-management.component').then(m => m.ListingManagementComponent) 
       },

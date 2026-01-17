@@ -7,6 +7,7 @@ import { environment } from '../../../environments/environment';
 export interface AdminStats {
   totalUsers: number;
   totalPosts: number;
+  pendingPosts: number;
   totalListings: number;
   totalMessages: number;
   activeUsers: number;
@@ -154,13 +155,13 @@ export class AdminService {
   }
 
   approvePost(postId: number): Observable<any> {
-    return this.http.post(`${this.apiUrl}admin/posts/${postId}/approve`, {}).pipe(
+    return this.http.post(`${this.apiUrl}admin/posts/review/${postId}/approve`, {}).pipe(
       catchError(this.handleError)
     );
   }
 
-  rejectPost(postId: number, reason: string): Observable<any> {
-    return this.http.post(`${this.apiUrl}admin/posts/${postId}/reject`, { reason }).pipe(
+  declinePost(postId: number, reason: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}admin/posts/review/${postId}/decline`, { reason }).pipe(
       catchError(this.handleError)
     );
   }

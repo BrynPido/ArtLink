@@ -45,7 +45,7 @@ router.get('/user/:id', optionalAuth, async (req, res) => {
         p.bio, p."profilePictureUrl",
         (SELECT COUNT(*) FROM follow WHERE "followingId" = u.id) as "followersCount",
         (SELECT COUNT(*) FROM follow WHERE "followerId" = u.id) as "followingCount",
-        (SELECT COUNT(*) FROM post WHERE "authorId" = u.id AND published = true) as "postsCount",
+        (SELECT COUNT(*) FROM post WHERE "authorId" = u.id AND published = true AND review_status = 'approved') as "postsCount",
         (SELECT COUNT(*) FROM listing WHERE "authorId" = u.id) as "listingsCount",
         ${currentUserId ? 
           '(SELECT COUNT(*) FROM follow WHERE "followerId" = $1 AND "followingId" = u.id) as "isFollowing"' : 
@@ -66,7 +66,7 @@ router.get('/user/:id', optionalAuth, async (req, res) => {
     // Get user's posts
     const posts = await query(`
       SELECT 
-        p.id, p.title, p.content, p."createdAt", p."updatedAt",
+        p.id, p.title, p.content, p.review_status, p.decline_reason, p."createdAt", p."updatedAt",
         (
           SELECT COALESCE(
             json_agg(
@@ -90,7 +90,7 @@ router.get('/user/:id', optionalAuth, async (req, res) => {
       LEFT JOIN "like" l ON p.id = l."postId"
       LEFT JOIN comment c ON p.id = c."postId"
       LEFT JOIN save s ON p.id = s."postId"
-      WHERE p."authorId" = $${currentUserId ? '3' : '1'} AND p.published = true
+      WHERE p.\"authorId\" = $${currentUserId ? '3' : '1'} AND p.published = true AND (p.review_status = 'approved' ${currentUserId ? 'OR $1 = $3' : ''})
       GROUP BY p.id
       ORDER BY p."createdAt" DESC
     `, currentUserId ? [currentUserId, currentUserId, userId] : [userId]);
@@ -477,7 +477,7 @@ router.get('/search', optionalAuth, async (req, res) => {
         u.id, u.name, u.username,
         p."profilePictureUrl",
         (SELECT COUNT(*) FROM follow WHERE "followingId" = u.id) as "followersCount",
-        (SELECT COUNT(*) FROM post WHERE "authorId" = u.id AND published = true) as "postsCount"
+        (SELECT COUNT(*) FROM post WHERE \"authorId\" = u.id AND published = true AND review_status = 'approved') as \"postsCount\"
       FROM "user" u
       LEFT JOIN profile p ON u.id = p."userId"
       WHERE (u.name ILIKE $1 OR u.username ILIKE $2)

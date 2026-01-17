@@ -482,7 +482,7 @@ export class PostManagementComponent implements OnInit, OnDestroy {
     }).then((result) => {
       if (result.isConfirmed && result.value) {
         this.actionLoading = true;
-        this.adminService.rejectPost(postId, result.value).subscribe({
+        this.adminService.declinePost(postId, result.value).subscribe({
           next: (response) => {
             this.sweetAlert.success('Post rejected successfully!');
             this.loadPosts();

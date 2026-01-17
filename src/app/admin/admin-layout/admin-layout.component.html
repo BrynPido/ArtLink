@@ -115,11 +115,16 @@
         <a 
           [routerLink]="item.route" 
           routerLinkActive="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300"
-          class="flex items-center p-2 text-gray-900 dark:text-gray-100 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 group transition-colors">
-          <span class="material-icons w-5 h-5 text-gray-500 dark:text-gray-400 transition duration-75 group-hover:text-gray-900 dark:group-hover:text-gray-100">
-            {{item.icon}}
+          class="flex items-center justify-between p-2 text-gray-900 dark:text-gray-100 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 group transition-colors">
+          <div class="flex items-center">
+            <span class="material-icons w-5 h-5 text-gray-500 dark:text-gray-400 transition duration-75 group-hover:text-gray-900 dark:group-hover:text-gray-100">
+              {{item.icon}}
+            </span>
+            <span class="ml-3">{{item.label}}</span>
+          </div>
+          <span *ngIf="item.badge && pendingPostsCount > 0" class="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+            {{pendingPostsCount}}
           </span>
-          <span class="ml-3">{{item.label}}</span>
         </a>
       </li>
     </ul>

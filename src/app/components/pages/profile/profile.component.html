@@ -248,6 +248,20 @@
               
               <!-- Post info footer -->
               <div class="p-3">
+                <!-- Review status chip (only on own profile and non-approved posts) -->
+                <div *ngIf="isOwnProfile && post.review_status && post.review_status !== 'approved'" class="mb-1">
+                  <span
+                    class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium"
+                    [ngClass]="{
+                      'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300': post.review_status === 'pending',
+                      'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300': post.review_status === 'declined'
+                    }">
+                    <span class="material-symbols-rounded text-xs mr-1">
+                      {{ post.review_status === 'pending' ? 'schedule' : 'gavel' }}
+                    </span>
+                    {{ post.review_status === 'pending' ? 'Pending Review' : 'Declined' }}
+                  </span>
+                </div>
                 <p *ngIf="post.caption" class="text-gray-900 dark:text-gray-100 text-sm line-clamp-2 mb-2">
                   {{ post.caption }}
                 </p>

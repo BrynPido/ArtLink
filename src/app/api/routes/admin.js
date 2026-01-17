@@ -112,6 +112,10 @@ router.get('/dashboard/stats', async (req, res) => {
     const totalPostsResult = await queryOne('SELECT COUNT(*) as count FROM post WHERE published = true');
     stats.totalPosts = parseInt(totalPostsResult.count) || 0;
     
+    // Get pending posts count
+    const pendingPostsResult = await queryOne('SELECT COUNT(*) as count FROM post WHERE review_status = \'pending\' AND \"deletedAt\" IS NULL');
+    stats.pendingPosts = parseInt(pendingPostsResult.count) || 0;
+    
     // Get total listings
     const totalListingsResult = await queryOne('SELECT COUNT(*) as count FROM listing WHERE published = true');
     stats.totalListings = parseInt(totalListingsResult.count) || 0;
@@ -276,6 +280,177 @@ router.get('/dashboard/sales-stats', async (req, res) => {
     res.status(500).json({
       status: 'error',
       message: 'Error fetching sales statistics'
+    });
+  }
+});
+
+// Get pending posts for review
+router.get('/posts/pending', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+
+    const posts = await query(`
+      SELECT 
+        p.id, p.title, p.content, p."createdAt", p.review_status, p.decline_reason,
+        u.id as "authorId", u.name as "authorName", u.username as "authorUsername", u.email as "authorEmail",
+        pr."profilePictureUrl" as "authorProfilePicture",
+        (
+          SELECT COALESCE(
+            json_agg(
+              json_build_object(
+                'url', m."mediaUrl", 
+                'mediaType', m."mediaType",
+                'caption', COALESCE(m.caption, '')
+              ) ORDER BY m.id
+            ),
+            '[]'
+          )
+          FROM media m
+          WHERE m."postId" = p.id
+        ) as media
+      FROM post p
+      LEFT JOIN "user" u ON p."authorId" = u.id
+      LEFT JOIN profile pr ON u.id = pr."userId"
+      WHERE p.review_status = 'pending' AND p."deletedAt" IS NULL
+      ORDER BY p."createdAt" ASC
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
+
+    const countResult = await queryOne(
+      'SELECT COUNT(*) as count FROM post WHERE review_status = \'pending\' AND "deletedAt" IS NULL'
+    );
+
+    const processedPosts = posts.map(post => ({
+      ...post,
+      media: Array.isArray(post.media) ? post.media : []
+    }));
+
+    res.json({
+      status: 'success',
+      payload: {
+        posts: processedPosts,
+        pagination: {
+          page,
+          limit,
+          total: parseInt(countResult.count),
+          hasMore: offset + posts.length < parseInt(countResult.count)
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching pending posts:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Error fetching pending posts'
+    });
+  }
+});
+
+// Approve a post
+router.post('/posts/review/:id/approve', async (req, res) => {
+  try {
+    const postId = req.params.id;
+    const adminId = req.user.id;
+
+    const post = await queryOne('SELECT id, \"authorId\", title FROM post WHERE id = $1', [postId]);
+    if (!post) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Post not found'
+      });
+    }
+
+    await query(
+      'UPDATE post SET review_status = $1, reviewed_by = $2, reviewed_at = CURRENT_TIMESTAMP WHERE id = $3',
+      ['approved', adminId, postId]
+    );
+
+    // Log admin action
+    await softDeleteService.logAdminAction(
+      adminId,
+      'approve_post',
+      'post',
+      parseInt(postId),
+      'Post approved for publication'
+    );
+
+    // Create notification for post author
+    try {
+      await createNotification({
+        type: 'post_approved',
+        content: `Your post "${post.title}" has been approved and is now visible to others!`,
+        recipientId: post.authorId,
+        senderId: adminId
+      });
+    } catch (notifError) {
+      console.error('Error creating approval notification:', notifError);
+    }
+
+    res.json({
+      status: 'success',
+      message: 'Post approved successfully'
+    });
+  } catch (error) {
+    console.error('Error approving post:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Error approving post'
+    });
+  }
+});
+
+// Decline a post
+router.post('/posts/review/:id/decline', async (req, res) => {
+  try {
+    const postId = req.params.id;
+    const adminId = req.user.id;
+    const { reason = 'Post does not meet community guidelines' } = req.body;
+
+    const post = await queryOne('SELECT id, \"authorId\", title FROM post WHERE id = $1', [postId]);
+    if (!post) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Post not found'
+      });
+    }
+
+    await query(
+      'UPDATE post SET review_status = $1, reviewed_by = $2, reviewed_at = CURRENT_TIMESTAMP, decline_reason = $3 WHERE id = $4',
+      ['declined', adminId, reason, postId]
+    );
+
+    // Log admin action
+    await softDeleteService.logAdminAction(
+      adminId,
+      'decline_post',
+      'post',
+      parseInt(postId),
+      reason
+    );
+
+    // Create notification for post author
+    try {
+      await createNotification({
+        type: 'post_declined',
+        content: `Your post "${post.title}" was declined. Reason: ${reason}`,
+        recipientId: post.authorId,
+        senderId: adminId
+      });
+    } catch (notifError) {
+      console.error('Error creating decline notification:', notifError);
+    }
+
+    res.json({
+      status: 'success',
+      message: 'Post declined successfully'
+    });
+  } catch (error) {
+    console.error('Error declining post:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Error declining post'
     });
   }
 });
