@@ -74,7 +74,7 @@
           <option value="all">All Reports</option>
           <option value="pending">Pending</option>
           <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
+          <option value="rejected">Declined</option>
           <option value="resolved">Resolved</option>
         </select>
       </div>
@@ -150,7 +150,7 @@
                       'bg-green-100 dark:bg-green-500/20 text-green-800 dark:text-green-400': report.status === 'approved' || report.status === 'resolved',
                       'bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-400': report.status === 'rejected'
                     }">
-                {{ report.status | titlecase }}
+                {{ formatStatus(report.status) }}
               </span>
             </td>
             
@@ -188,7 +188,7 @@
                     <span class="material-icons text-sm">cancel</span>
                   </button>
                   <div class="absolute bottom-full right-0 mb-2 w-14 bg-black dark:bg-gray-900 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-                    Reject
+                    Decline
                     <div class="absolute top-full right-2 -mt-1 border-4 border-transparent border-t-black dark:border-t-gray-900"></div>
                   </div>
                 </div>
@@ -294,7 +294,7 @@
                         'bg-green-100 dark:bg-green-500/20 text-green-800 dark:text-green-400': selectedReport.status === 'approved' || selectedReport.status === 'resolved',
                         'bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-400': selectedReport.status === 'rejected'
                       }">
-                  {{ selectedReport.status | titlecase }}
+                  {{ formatStatus(selectedReport.status) }}
                 </span>
               </dd>
             </div>
@@ -360,7 +360,7 @@
           <button *ngIf="selectedReport.status === 'pending'" 
                   (click)="updateReportStatus(selectedReport.id, 'rejected')"
                   class="px-4 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white rounded-lg transition-colors">
-            Reject Report
+            Decline Report
           </button>
           <button *ngIf="selectedReport.status !== 'resolved'" 
                   (click)="updateReportStatus(selectedReport.id, 'resolved')"

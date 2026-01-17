@@ -16,11 +16,15 @@ export class AdminDashboardComponent implements OnInit {
   recentActivity: any[] = [];
   loading = true;
   userGrowthChart: Chart | null = null;
-  contentChart: Chart | null = null;
+  salesChart: Chart | null = null;
   selectedGrowthPeriod: string = '30days';
+  selectedSalesPeriod: string = '30days';
   showCumulative: boolean = false;
   growthLoading: boolean = false;
   growthError: string | null = null;
+  salesLoading: boolean = false;
+  salesError: string | null = null;
+  topSellers: any[] = [];
 
   constructor(private adminService: AdminService) {
     Chart.register(...registerables);
@@ -63,18 +67,7 @@ export class AdminDashboardComponent implements OnInit {
 
   loadCharts() {
     this.loadUserGrowthChart();
-
-    // Content Stats Chart
-    this.adminService.getContentStats('30days').subscribe({
-      next: (response: any) => {
-        if (response.status === 'success') {
-          this.createContentChart(response.payload);
-        }
-      },
-      error: (error: any) => {
-        console.error('Error loading content stats:', error);
-      }
-    });
+    this.loadSalesChart();
   }
 
   loadUserGrowthChart() {
@@ -226,7 +219,7 @@ export class AdminDashboardComponent implements OnInit {
   createContentChart(data: any) {
     const ctx = document.getElementById('contentChart') as HTMLCanvasElement;
     if (ctx) {
-      this.contentChart = new Chart(ctx, {
+      new Chart(ctx, {
         type: 'doughnut',
         data: {
           labels: ['Posts', 'Listings', 'Comments'],
@@ -293,6 +286,159 @@ export class AdminDashboardComponent implements OnInit {
     this.loadCharts();
   }
 
+  loadSalesChart() {
+    this.salesLoading = true;
+    this.salesError = null;
+    if (this.salesChart) {
+      this.salesChart.destroy();
+      this.salesChart = null;
+    }
+    
+    this.adminService.getSalesStats(this.selectedSalesPeriod).subscribe({
+      next: (response: any) => {
+        if (response.status === 'success') {
+          const payload = response.payload || {};
+          this.topSellers = payload.topSellers || [];
+          this.createSalesChart({
+            labels: payload.labels || [],
+            sales: payload.sales || [],
+            revenue: payload.revenue || []
+          });
+        }
+        this.salesLoading = false;
+      },
+      error: (error: any) => {
+        console.error('Error loading sales stats:', error);
+        const errorMsg = error?.error?.message || error?.message || 'Failed to load sales data.';
+        this.salesError = errorMsg;
+        this.salesLoading = false;
+      }
+    });
+  }
+
+  onSalesPeriodChange(period: string) {
+    this.selectedSalesPeriod = period;
+    this.loadSalesChart();
+  }
+
+  createSalesChart(data: any) {
+    const ctx = document.getElementById('salesChart') as HTMLCanvasElement;
+    if (ctx) {
+      this.salesChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: data.labels,
+          datasets: [
+            {
+              label: 'Number of Sales',
+              data: data.sales,
+              backgroundColor: 'rgba(99, 102, 241, 0.7)',
+              borderColor: 'rgb(99, 102, 241)',
+              borderWidth: 2,
+              yAxisID: 'y'
+            },
+            {
+              label: 'Revenue (₱)',
+              data: data.revenue,
+              backgroundColor: 'rgba(16, 185, 129, 0.7)',
+              borderColor: 'rgb(16, 185, 129)',
+              borderWidth: 2,
+              yAxisID: 'y1',
+              type: 'line',
+              tension: 0.2,
+              fill: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          plugins: {
+            title: {
+              display: true,
+              text: this.getSalesTitle()
+            },
+            legend: {
+              position: 'bottom'
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context: any) {
+                  let label = context.dataset.label || '';
+                  if (label) {
+                    label += ': ';
+                  }
+                  if (context.parsed.y !== null) {
+                    if (context.datasetIndex === 1) {
+                      label += '₱' + context.parsed.y.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    } else {
+                      label += context.parsed.y;
+                    }
+                  }
+                  return label;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              type: 'linear',
+              display: true,
+              position: 'left',
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Number of Sales'
+              },
+              ticks: {
+                precision: 0
+              }
+            },
+            y1: {
+              type: 'linear',
+              display: true,
+              position: 'right',
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Revenue (₱)'
+              },
+              grid: {
+                drawOnChartArea: false
+              },
+              ticks: {
+                callback: function(value: any) {
+                  return '₱' + value.toLocaleString();
+                }
+              }
+            },
+            x: {
+              ticks: {
+                maxRotation: 45,
+                minRotation: 0
+              }
+            }
+          }
+        }
+      });
+    }
+  }
+
+  private getSalesTitle(): string {
+    const map: any = {
+      '7days': 'Last 7 Days',
+      '30days': 'Last 30 Days',
+      '90days': 'Last 90 Days',
+      '6months': 'Last 6 Months',
+      '1year': 'Last 1 Year'
+    };
+    return `Successful Sales & Revenue (${map[this.selectedSalesPeriod] || this.selectedSalesPeriod})`;
+  }
+
   // Add missing Math property for template
   // Add missing Math property for template
   Math = Math;
@@ -306,8 +452,8 @@ export class AdminDashboardComponent implements OnInit {
     if (this.userGrowthChart) {
       this.userGrowthChart.destroy();
     }
-    if (this.contentChart) {
-      this.contentChart.destroy();
+    if (this.salesChart) {
+      this.salesChart.destroy();
     }
   }
 }

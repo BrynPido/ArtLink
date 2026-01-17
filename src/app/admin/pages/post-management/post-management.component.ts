@@ -434,7 +434,7 @@ export class PostManagementComponent implements OnInit, OnDestroy {
     switch (status) {
       case 'pending': return 'Pending Review';
       case 'approved': return 'Approved';
-      case 'rejected': return 'Rejected';
+      case 'rejected': return 'Declined';
       default: return 'Unknown';
     }
   }

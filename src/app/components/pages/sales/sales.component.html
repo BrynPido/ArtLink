@@ -275,51 +275,74 @@
 
   <!-- Summary Cards -->
   <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-    <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border dark:border-gray-700">
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border dark:border-gray-700 hover:shadow-md transition-shadow">
       <div class="flex items-center">
-        <div class="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+        <div class="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
           <span class="material-symbols-rounded text-green-600 dark:text-green-400">sell</span>
         </div>
         <div class="ml-3">
           <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Sales</p>
-          <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ totalSales | numberFormat }}</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ totalSales | numberFormat }}</p>
         </div>
       </div>
     </div>
 
-    <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border dark:border-gray-700">
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border dark:border-gray-700 hover:shadow-md transition-shadow">
       <div class="flex items-center">
-        <div class="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+        <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
           <span class="material-symbols-rounded text-blue-600 dark:text-blue-400">payments</span>
         </div>
         <div class="ml-3">
           <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Revenue</p>
-          <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ totalRevenue | currencyFormat }}</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ totalRevenue | currencyFormat }}</p>
         </div>
       </div>
     </div>
 
-    <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border dark:border-gray-700">
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border dark:border-gray-700 hover:shadow-md transition-shadow">
       <div class="flex items-center">
-        <div class="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
+        <div class="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
           <span class="material-symbols-rounded text-purple-600 dark:text-purple-400">shopping_bag</span>
         </div>
         <div class="ml-3">
           <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Purchases</p>
-          <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ totalPurchases | numberFormat }}</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ totalPurchases | numberFormat }}</p>
         </div>
       </div>
     </div>
 
-    <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border dark:border-gray-700">
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border dark:border-gray-700 hover:shadow-md transition-shadow">
       <div class="flex items-center">
-        <div class="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
+        <div class="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
           <span class="material-symbols-rounded text-orange-600 dark:text-orange-400">account_balance_wallet</span>
         </div>
         <div class="ml-3">
           <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Spent</p>
-          <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ totalSpent | currencyFormat }}</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ totalSpent | currencyFormat }}</p>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart Section -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700 mb-6 overflow-hidden">
+    <div class="px-6 py-4 flex items-center justify-between border-b dark:border-gray-700">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ activeTab === 'sales' ? 'Sales' : 'Purchase' }} Analytics</h3>
+      <button
+        (click)="toggleChart()"
+        class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 flex items-center text-sm font-medium transition-colors"
+      >
+        <span class="material-symbols-rounded mr-1 text-base">{{ showChart ? 'visibility_off' : 'visibility' }}</span>
+        {{ showChart ? 'Hide Chart' : 'Show Chart' }}
+      </button>
+    </div>
+    <div *ngIf="showChart" class="p-6">
+      <div *ngIf="filteredTransactions.length === 0" class="text-center py-12">
+        <span class="material-symbols-rounded text-gray-400 dark:text-gray-500 text-6xl">show_chart</span>
+        <p class="mt-4 text-gray-600 dark:text-gray-400">No data available to display chart</p>
+      </div>
+      <div *ngIf="filteredTransactions.length > 0" class="relative" style="height: 400px;">
+        <canvas id="salesChart"></canvas>
       </div>
     </div>
   </div>

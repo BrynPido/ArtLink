@@ -10,6 +10,8 @@ export interface AdminStats {
   totalListings: number;
   totalMessages: number;
   activeUsers: number;
+  totalTransactions?: number;
+  totalRevenue?: number;
   recentActivity: any[];
 }
 
@@ -63,6 +65,12 @@ export class AdminService {
 
   getRecentActivity(): Observable<any> {
     return this.getWithCache(`${this.apiUrl}admin/dashboard/activity`, 15000);
+  }
+
+  getSalesStats(period: string = '30days'): Observable<any> {
+    return this.http.get(`${this.apiUrl}admin/dashboard/sales-stats?period=${period}`).pipe(
+      catchError(this.handleError)
+    );
   }
 
   // User Management

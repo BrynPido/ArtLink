@@ -75,7 +75,7 @@
         <option value="published">Published Only</option>
         <option value="pending">Pending Review</option>
         <option value="approved">Approved</option>
-        <option value="rejected">Rejected</option>
+        <option value="rejected">Declined</option>
       </select>
     </div>
 
@@ -216,7 +216,7 @@
           </td>
           <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
             <div class="flex flex-wrap gap-2">
-              <!-- Approve/Reject buttons for pending posts -->
+              <!-- Approve/Decline buttons for pending posts -->
               <button
                 *ngIf="post.status === 'pending'"
                 (click)="approvePost(post.id)"
@@ -230,7 +230,7 @@
                 (click)="rejectPost(post.id)"
                 [disabled]="actionLoading"
                 class="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/50 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-1 rounded-full text-xs font-medium transition-colors">
-                Reject
+                Decline
               </button>
               
               <button

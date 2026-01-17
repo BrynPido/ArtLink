@@ -126,6 +126,27 @@ router.get('/dashboard/stats', async (req, res) => {
     );
     stats.activeUsers = activeUsersResult.count;
     
+    // Get total successful transactions
+    try {
+      const totalTransactionsResult = await queryOne(`
+        SELECT COUNT(*) as count 
+        FROM listing_transaction 
+        WHERE status = 'completed'
+      `);
+      stats.totalTransactions = parseInt(totalTransactionsResult.count) || 0;
+      
+      const totalRevenueResult = await queryOne(`
+        SELECT COALESCE(SUM(finalprice), 0) as total 
+        FROM listing_transaction 
+        WHERE status = 'completed'
+      `);
+      stats.totalRevenue = parseFloat(totalRevenueResult.total) || 0;
+    } catch (err) {
+      console.log('Transaction table not yet created:', err.message);
+      stats.totalTransactions = 0;
+      stats.totalRevenue = 0;
+    }
+    
     res.json({
       status: 'success',
       payload: stats
@@ -135,6 +156,126 @@ router.get('/dashboard/stats', async (req, res) => {
     res.status(500).json({
       status: 'error',
       message: 'Error fetching dashboard statistics'
+    });
+  }
+});
+
+// Sales statistics for admin dashboard graph
+router.get('/dashboard/sales-stats', async (req, res) => {
+  try {
+    const { period = '30days' } = req.query;
+    
+    let interval, dateFormat, groupByFormat;
+    let numDays = 30;
+    
+    switch (period) {
+      case '7days':
+        interval = '7 days';
+        dateFormat = 'YYYY-MM-DD';
+        groupByFormat = 'YYYY-MM-DD';
+        numDays = 7;
+        break;
+      case '30days':
+        interval = '30 days';
+        dateFormat = 'YYYY-MM-DD';
+        groupByFormat = 'YYYY-MM-DD';
+        numDays = 30;
+        break;
+      case '90days':
+        interval = '90 days';
+        dateFormat = 'YYYY-MM-DD';
+        groupByFormat = 'YYYY-MM-DD';
+        numDays = 90;
+        break;
+      case '6months':
+        interval = '6 months';
+        dateFormat = 'YYYY-MM';
+        groupByFormat = 'YYYY-MM';
+        numDays = 180;
+        break;
+      case '1year':
+        interval = '1 year';
+        dateFormat = 'YYYY-MM';
+        groupByFormat = 'YYYY-MM';
+        numDays = 365;
+        break;
+      default:
+        interval = '30 days';
+        dateFormat = 'YYYY-MM-DD';
+        groupByFormat = 'YYYY-MM-DD';
+        numDays = 30;
+    }
+    
+    // Check if table exists
+    const tableCheck = await queryOne(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_name = 'listing_transaction'
+      ) as exists
+    `);
+    
+    if (!tableCheck.exists) {
+      return res.json({
+        status: 'success',
+        payload: {
+          labels: [],
+          sales: [],
+          revenue: [],
+          topSellers: []
+        }
+      });
+    }
+    
+    // Get sales data grouped by date
+    const salesData = await query(`
+      SELECT 
+        TO_CHAR(DATE_TRUNC('day', createdat), '${dateFormat}') as date,
+        COUNT(*) as sales_count,
+        COALESCE(SUM(finalprice), 0) as revenue
+      FROM listing_transaction
+      WHERE status = 'completed'
+        AND createdat >= CURRENT_DATE - INTERVAL '${interval}'
+      GROUP BY DATE_TRUNC('day', createdat)
+      ORDER BY date ASC
+    `);
+    
+    // Get top sellers
+    const topSellers = await query(`
+      SELECT 
+        u.id,
+        u.name,
+        u.username,
+        COUNT(lt.id) as total_sales,
+        COALESCE(SUM(lt.finalprice), 0) as total_revenue
+      FROM listing_transaction lt
+      JOIN "user" u ON lt.sellerid = u.id
+      WHERE lt.status = 'completed'
+        AND lt.createdat >= CURRENT_DATE - INTERVAL '${interval}'
+      GROUP BY u.id, u.name, u.username
+      ORDER BY total_sales DESC
+      LIMIT 5
+    `);
+    
+    res.json({
+      status: 'success',
+      payload: {
+        labels: salesData.map(d => d.date),
+        sales: salesData.map(d => parseInt(d.sales_count) || 0),
+        revenue: salesData.map(d => parseFloat(d.revenue) || 0),
+        topSellers: topSellers.map(seller => ({
+          id: seller.id,
+          name: seller.name,
+          username: seller.username,
+          totalSales: parseInt(seller.total_sales) || 0,
+          totalRevenue: parseFloat(seller.total_revenue) || 0
+        }))
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching sales stats:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Error fetching sales statistics'
     });
   }
 });

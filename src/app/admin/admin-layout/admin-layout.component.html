@@ -19,12 +19,12 @@
       </div>
       
       <!-- Right side items -->
-      <div class="flex items-center">
+      <div class="flex items-center gap-3">
         <!-- Notifications -->
-        <div class="relative mr-3" clickOutside (clickOutside)="isNotificationsOpen = false">
+        <div class="relative" clickOutside (clickOutside)="isNotificationsOpen = false">
           <button 
             (click)="toggleNotifications()" 
-            class="flex mx-3 text-sm bg-gray-100 dark:bg-gray-700 rounded-full md:mr-0 focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 relative p-2 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+            class="flex text-sm bg-gray-100 dark:bg-gray-700 rounded-full focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 relative p-2 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
             <span class="sr-only">Open notifications</span>
             <span class="material-icons text-gray-500 dark:text-gray-400">notifications</span>
             <span *ngIf="unreadCount > 0" class="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
@@ -58,16 +58,20 @@
           </div>
         </div>
         
-        <!-- User menu -->
-        <div class="flex items-center ml-3 relative" clickOutside (clickOutside)="isUserDropdownOpen = false">
+        <!-- User menu with name and badge -->
+        <div class="flex items-center relative" clickOutside (clickOutside)="isUserDropdownOpen = false">
           <button 
             (click)="toggleUserDropdown()" 
-            class="flex text-sm bg-gray-200 dark:bg-gray-700 rounded-full focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors p-1">
-            <span class="sr-only">Open user menu</span>
+            class="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-700 rounded-lg focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
             <img 
-              class="w-8 h-8 rounded-full" 
+              class="w-8 h-8 rounded-full ring-2 ring-indigo-500 dark:ring-indigo-400" 
               [src]="currentUser?.profileImage || '/assets/images/default-avatar.svg'" 
               [alt]="currentUser?.name">
+            <div class="hidden md:flex flex-col items-start">
+              <span class="text-sm font-semibold text-gray-900 dark:text-white">{{currentUser?.name}}</span>
+              <span class="text-xs text-gray-500 dark:text-gray-400">&commat;{{currentUser?.username}}</span>
+            </div>
+            <span class="material-icons text-gray-500 dark:text-gray-400 text-sm hidden md:block">expand_more</span>
           </button>
           
           <!-- User dropdown -->

@@ -206,13 +206,12 @@ router.get('/transactions', authenticateToken, async (req, res) => {
           seller.username as seller_username,
           buyer.name as buyer_name,
           buyer.username as buyer_username,
-          m."mediaUrl" as listing_image,
+          (SELECT m."mediaUrl" FROM media m WHERE m."listingId" = l.id LIMIT 1) as listing_image,
           'transaction' as source_type
         FROM listing_transaction lt
         JOIN listing l ON lt.listingid = l.id
         JOIN "user" seller ON lt.sellerid = seller.id
         JOIN "user" buyer ON lt.buyerid = buyer.id
-        LEFT JOIN media m ON l.id = m."listingId"
         WHERE lt.sellerid = $1
         ORDER BY lt.createdat DESC
       `, [userId]);
@@ -238,12 +237,11 @@ router.get('/transactions', authenticateToken, async (req, res) => {
           seller.username as seller_username,
           'Unknown Buyer' as buyer_name,
           'unknown' as buyer_username,
-          m."mediaUrl" as listing_image,
+          (SELECT m."mediaUrl" FROM media m WHERE m."listingId" = l.id LIMIT 1) as listing_image,
           'sold_listing' as source_type
         FROM listing l
         JOIN "user" seller ON l."authorId" = seller.id
         LEFT JOIN listing_details ld ON l.id = ld."listingId"
-        LEFT JOIN media m ON l.id = m."listingId"
         WHERE l."authorId" = $1 
         AND l.status = 'sold'
         AND l.id NOT IN (
@@ -266,13 +264,12 @@ router.get('/transactions', authenticateToken, async (req, res) => {
           seller.username as seller_username,
           buyer.name as buyer_name,
           buyer.username as buyer_username,
-          m."mediaUrl" as listing_image,
+          (SELECT m."mediaUrl" FROM media m WHERE m."listingId" = l.id LIMIT 1) as listing_image,
           'transaction' as source_type
         FROM listing_transaction lt
         JOIN listing l ON lt.listingid = l.id
         JOIN "user" seller ON lt.sellerid = seller.id
         JOIN "user" buyer ON lt.buyerid = buyer.id
-        LEFT JOIN media m ON l.id = m."listingId"
         WHERE lt.buyerid = $1
         ORDER BY lt.createdat DESC
       `, [userId]);
@@ -291,13 +288,12 @@ router.get('/transactions', authenticateToken, async (req, res) => {
           seller.username as seller_username,
           buyer.name as buyer_name,
           buyer.username as buyer_username,
-          m."mediaUrl" as listing_image,
+          (SELECT m."mediaUrl" FROM media m WHERE m."listingId" = l.id LIMIT 1) as listing_image,
           'transaction' as source_type
         FROM listing_transaction lt
         JOIN listing l ON lt.listingid = l.id
         JOIN "user" seller ON lt.sellerid = seller.id
         JOIN "user" buyer ON lt.buyerid = buyer.id
-        LEFT JOIN media m ON l.id = m."listingId"
         WHERE (lt.sellerid = $1 OR lt.buyerid = $1)
         ORDER BY lt.createdat DESC
       `, [userId]);

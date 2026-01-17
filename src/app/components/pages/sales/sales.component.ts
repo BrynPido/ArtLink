@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, HostListener } from '@angular/core';
+import { Component, OnInit, HostListener, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { DataService } from '../../../services/data.service';
@@ -8,6 +8,9 @@ import { NumberFormatPipe } from '../../../pipes/number-format.pipe';
 import { CurrencyFormatPipe } from '../../../pipes/currency-format.pipe';
 import { environment } from '../../../../environments/environment';
 import { ToastService } from '../../../services/toast.service';
+import { Chart, ChartConfiguration, registerables } from 'chart.js';
+
+Chart.register(...registerables);
 
 interface Transaction {
   id: number;
@@ -37,7 +40,7 @@ interface Transaction {
   templateUrl: './sales.component.html',
   styleUrls: ['./sales.component.css']
 })
-export class SalesComponent implements OnInit {
+export class SalesComponent implements OnInit, OnDestroy {
   transactions: Transaction[] = [];
   filteredTransactions: Transaction[] = [];
   loading = true;
@@ -45,6 +48,8 @@ export class SalesComponent implements OnInit {
   activeTab: 'sales' | 'purchases' = 'sales';
   showExportMenu = false;
   showFilters = false;
+  salesChart: Chart | null = null;
+  showChart = true;
   
   // Filter properties
   filters = {
@@ -169,6 +174,193 @@ export class SalesComponent implements OnInit {
       this.totalRevenue = 0;
       this.totalPurchases = this.filteredTransactions.length;
       this.totalSpent = this.filteredTransactions.reduce((sum, t) => sum + (t.finalprice || 0), 0);
+    }
+    
+    // Update chart after calculating summary
+    this.updateChart();
+  }
+
+  updateChart() {
+    setTimeout(() => this.createChart(), 100);
+  }
+
+  private isDarkMode(): boolean {
+    // Check multiple sources to ensure we get the correct theme
+    return document.documentElement.classList.contains('dark') || 
+           document.body.classList.contains('dark') ||
+           window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+
+  private getChartColors() {
+    const isDark = this.isDarkMode();
+    return {
+      text: isDark ? '#e5e7eb' : '#374151',
+      title: isDark ? '#ffffff' : '#111827',
+      grid: isDark ? '#374151' : '#e5e7eb',
+      ticksText: isDark ? '#9ca3af' : '#6b7280'
+    };
+  }
+
+  createChart() {
+    if (!this.showChart) return;
+    
+    const canvas = document.getElementById('salesChart') as HTMLCanvasElement;
+    if (!canvas) return;
+
+    // Destroy existing chart
+    if (this.salesChart) {
+      this.salesChart.destroy();
+      this.salesChart = null;
+    }
+
+    // Group transactions by date
+    const transactionsByDate = new Map<string, { count: number; total: number }>();
+    
+    this.filteredTransactions.forEach(t => {
+      const date = new Date(t.createdat).toLocaleDateString();
+      const existing = transactionsByDate.get(date) || { count: 0, total: 0 };
+      transactionsByDate.set(date, {
+        count: existing.count + 1,
+        total: existing.total + (t.finalprice || 0)
+      });
+    });
+
+    // Sort by date
+    const sortedDates = Array.from(transactionsByDate.keys()).sort((a, b) => 
+      new Date(a).getTime() - new Date(b).getTime()
+    );
+
+    const labels = sortedDates.slice(-30); // Last 30 dates
+    const counts = labels.map(date => transactionsByDate.get(date)?.count || 0);
+    const totals = labels.map(date => transactionsByDate.get(date)?.total || 0);
+
+    const colors = this.getChartColors();
+
+    const config: ChartConfiguration = {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: `Number of ${this.activeTab === 'sales' ? 'Sales' : 'Purchases'}`,
+            data: counts,
+            backgroundColor: 'rgba(99, 102, 241, 0.7)',
+            borderColor: 'rgb(99, 102, 241)',
+            borderWidth: 2,
+            yAxisID: 'y'
+          },
+          {
+            label: `${this.activeTab === 'sales' ? 'Revenue' : 'Spent'} (₱)`,
+            data: totals,
+            type: 'line',
+            borderColor: 'rgb(34, 197, 94)',
+            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.4,
+            yAxisID: 'y1'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            labels: {
+              color: colors.text,
+              font: {
+                size: 12
+              }
+            }
+          },
+          title: {
+            display: true,
+            text: `${this.activeTab === 'sales' ? 'Sales' : 'Purchase'} History (Last 30 Days)`,
+            color: colors.title,
+            font: {
+              size: 16,
+              weight: 'bold'
+            },
+            padding: {
+              top: 10,
+              bottom: 20
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: {
+              color: colors.grid
+            },
+            ticks: {
+              color: colors.ticksText,
+              maxRotation: 45,
+              minRotation: 45
+            }
+          },
+          y: {
+            type: 'linear',
+            display: true,
+            position: 'left',
+            grid: {
+              color: colors.grid
+            },
+            ticks: {
+              color: colors.ticksText
+            },
+            title: {
+              display: true,
+              text: 'Count',
+              color: colors.ticksText
+            }
+          },
+          y1: {
+            type: 'linear',
+            display: true,
+            position: 'right',
+            grid: {
+              drawOnChartArea: false,
+            },
+            ticks: {
+              color: colors.ticksText,
+              callback: function(value) {
+                return '₱' + value.toLocaleString();
+              }
+            },
+            title: {
+              display: true,
+              text: 'Amount (₱)',
+              color: colors.ticksText
+            }
+          }
+        }
+      }
+    };
+
+    this.salesChart = new Chart(canvas, config);
+  }
+
+  toggleChart() {
+    this.showChart = !this.showChart;
+    if (this.showChart) {
+      this.updateChart();
+    } else if (this.salesChart) {
+      this.salesChart.destroy();
+      this.salesChart = null;
+    }
+  }
+
+  ngOnDestroy() {
+    if (this.salesChart) {
+      this.salesChart.destroy();
+      this.salesChart = null;
     }
   }
 
@@ -452,7 +644,25 @@ export class SalesComponent implements OnInit {
       headers.map(header => `"${this.escapeCSV(row[header] || '')}"`).join(',')
     );
     
-    return [csvHeaders, ...csvRows].join('\n');
+    // Calculate totals
+    const totalCount = data.length;
+    const totalAmount = data.reduce((sum, row) => {
+      const price = parseFloat(row['Price (₱)']) || 0;
+      return sum + price;
+    }, 0);
+    
+    // Add empty row and totals
+    const emptyRow = headers.map(() => '').join(',');
+    const totalRow = [
+      '',
+      `"Total ${this.activeTab === 'sales' ? 'Sales' : 'Purchases'}: ${totalCount}"`,
+      '',
+      '',
+      `"₱${totalAmount.toFixed(2)}"`,
+      ...Array(headers.length - 5).fill('')
+    ].join(',');
+    
+    return [csvHeaders, ...csvRows, emptyRow, totalRow].join('\n');
   }
 
   private escapeCSV(value: any): string {

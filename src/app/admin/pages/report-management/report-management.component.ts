@@ -314,6 +314,17 @@ export class ReportManagementComponent implements OnInit {
     return reasonMap[reason] || reason;
   }
 
+  formatStatus(status: string): string {
+    const statusMap: { [key: string]: string } = {
+      'pending': 'Pending',
+      'approved': 'Approved',
+      'rejected': 'Declined',
+      'resolved': 'Resolved'
+    };
+    
+    return statusMap[status] || status;
+  }
+
   getPendingCount(): number {
     if (!this.stats || !this.stats.statusBreakdown) return 0;
     const pendingStatus = this.stats.statusBreakdown.find((s: any) => s.status === 'pending');

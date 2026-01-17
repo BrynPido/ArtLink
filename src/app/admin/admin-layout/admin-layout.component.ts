@@ -4,11 +4,12 @@ import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/rou
 import { DataService } from '../../services/data.service';
 import { AdminService } from '../services/admin.service';
 import { ClickOutsideDirective } from '../../directives/click-outside.directive';
+import { AdminBadgeComponent } from '../../components/ui/admin-badge/admin-badge.component';
 
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, ClickOutsideDirective],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, ClickOutsideDirective, AdminBadgeComponent],
   templateUrl: './admin-layout.component.html',
   styleUrls: ['./admin-layout.component.css']
 })
@@ -133,5 +134,12 @@ export class AdminLayoutComponent implements OnInit {
         this.loadNotifications();
       }
     });
+  }
+
+  isAdmin(): boolean {
+    if (!this.currentUser) return false;
+    return this.currentUser.username === 'admin' || 
+           this.currentUser.email === 'admin@artlink.com' || 
+           this.currentUser.role === 'admin';
   }
 }

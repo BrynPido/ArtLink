@@ -59,7 +59,7 @@ export class ExploreComponent implements OnInit {
       if (postsResponse?.payload) {
         this.trendingPosts = postsResponse.payload.slice(0, 6).map((post: any) => ({
           ...post,
-          mediaUrls: (post.mediaUrls || []).map((url: string) => this.getFullMediaUrl(url)),
+          mediaUrls: (post.media || []).map((mediaItem: any) => this.getFullMediaUrl(mediaItem.url)),
           authorProfilePicture: post.authorProfilePicture ? this.getFullMediaUrl(post.authorProfilePicture) : null,
           likesCount: post.likesCount || 0,
           commentsCount: post.commentsCount || 0
@@ -103,7 +103,7 @@ export class ExploreComponent implements OnInit {
           this.postResults = response.payload.posts.map((post: any) => ({
             ...post,
             type: 'post',
-            mediaUrls: (post.mediaUrls || []).map((url: string) => this.getFullMediaUrl(url)),
+            mediaUrls: (post.media || []).map((mediaItem: any) => this.getFullMediaUrl(mediaItem.url)),
             likesCount: post.likesCount || 0,
             commentsCount: post.commentsCount || 0
           }));
