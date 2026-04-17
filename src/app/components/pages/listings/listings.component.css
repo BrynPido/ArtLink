@@ -1,5 +1,32 @@
 /* Custom hover effects and animations */
 
+:host {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+@media (max-width: 1023px) {
+  .container {
+    padding-left: 0.6rem;
+    padding-right: 0.6rem;
+  }
+
+  .listings-grid {
+    gap: 0.85rem;
+  }
+
+  .listing-card {
+    border-radius: 1rem;
+    box-shadow: 0 10px 20px -16px rgba(15, 23, 42, 0.6);
+  }
+
+  .listing-card .p-4 {
+    padding: 0.8rem;
+  }
+}
+
 /* Grid card hover effects */
 .group:hover .hover-actions {
   transform: translateY(0);
@@ -121,6 +148,37 @@
 
 /* Mobile responsiveness for actions */
 @media (max-width: 640px) {
+  .container {
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .container .mb-6 > .flex.flex-col {
+    gap: 0.6rem;
+  }
+
+  .container .mb-6 .w-full.md\:w-48 {
+    width: 100%;
+  }
+
+  .container .mb-6 button {
+    width: 100%;
+  }
+
+  .container .mb-6 .flex.flex-wrap.gap-2 {
+    gap: 0.4rem;
+  }
+
+  .container .mb-6 .grid.grid-cols-1.md\:grid-cols-4 {
+    gap: 0.6rem;
+  }
+
+  .container .mb-6 .grid.grid-cols-1.md\:grid-cols-4 select,
+  .container .mb-6 .grid.grid-cols-1.md\:grid-cols-4 input {
+    font-size: 0.85rem;
+  }
+
   .action-group {
     flex-direction: column;
     gap: 0.25rem;
@@ -133,6 +191,36 @@
   }
 }
 
+@media (max-width: 1023px) {
+  .listings-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 0.9rem;
+  }
+
+  .listings-grid > * {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .listing-image-wrap {
+    padding-bottom: 0 !important;
+    height: auto;
+    min-height: 0;
+    background: rgba(15, 23, 42, 0.45);
+  }
+
+  .listing-image {
+    position: relative !important;
+    inset: auto !important;
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 72vh;
+    object-fit: contain !important;
+  }
+}
+
 /* Table cell content protection */
 .table-cell-content {
   min-width: 0; /* Allow flex children to shrink */
@@ -140,4 +228,10 @@
 
 .truncate-table {
   max-width: 0; /* Force truncation in table cells */
+}
+
+@media (max-width: 640px) {
+  .container {
+    max-width: 34%;
+  }
 }

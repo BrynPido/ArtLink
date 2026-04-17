@@ -104,7 +104,10 @@
 
 @media (max-width: 768px) {
 	.home-stage {
-		padding-top: 0.85rem;
+		padding: 0.85rem 0.35rem 0;
+		overflow-x: hidden;
+		max-width: 48%;
+		box-sizing: border-box;
 	}
 
 	.gallery-hero {

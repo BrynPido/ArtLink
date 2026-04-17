@@ -75,7 +75,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
   }
 
   @HostListener('window:resize', ['$event'])
-  onResize() {
+  onResize(_event: Event) {
     this.adjustSidebarWidth(window.innerWidth);
     this.checkIfMobileView(window.innerWidth);
   }
@@ -215,17 +215,15 @@ export class LayoutComponent implements OnInit, OnDestroy {
     } else if (screenWidth >= 1024) {
       // Large screen (lg)
       this.sidebarWidth = '16rem';  // 64px
-    } else if (screenWidth >= 768) {
-      // Medium screen (md)
-      this.sidebarWidth = '14rem';  // 56px
     } else {
-      // Small screen (default)
+      // Mobile/tablet compact mode
       this.sidebarWidth = '0px';
     }
   }
 
   checkIfMobileView(screenWidth: number) {
-    this.isMobileView = screenWidth < 768; // Set mobile view if the screen is smaller than 768px
+    // Treat tablet widths as mobile-nav layout for consistent UX in responsive views
+    this.isMobileView = screenWidth < 1024;
   }
 
   logout() {

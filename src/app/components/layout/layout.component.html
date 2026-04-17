@@ -1,9 +1,9 @@
 <div class="flex h-screen bg-gray-50 dark:bg-gray-900">
   <!-- Modern Sidebar -->
-  <div
+  <aside
+    *ngIf="!isMobileView"
     class="fixed top-0 left-0 h-full bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300 z-20 shadow-sm dark:shadow-gray-900/20"
     [ngClass]="{
-      'hidden': isMobileView,
       'w-20': !isMobileView,
       'md:w-64': !isMobileView, 
       'lg:w-72': !isMobileView,
@@ -121,20 +121,20 @@
         <span class="hidden md:inline ml-3">Logout</span>
       </button>
     </div>
-  </div>
+  </aside>
 
   <!-- Main Content Area -->
   <div class="flex-grow transition-all duration-300 bg-gray-50 dark:bg-gray-900" 
-       [ngStyle]="{'margin-left': sidebarWidth}">
+       [ngStyle]="{'margin-left': isMobileView ? '0px' : sidebarWidth}">
     <main class="h-full overflow-auto">
-      <div class="w-full max-w-[1600px] mr-auto p-3 md:p-5 lg:p-6 xl:px-8 2xl:px-10 pb-20 md:pb-8">
+      <div class="content-shell max-w-6xl mx-auto p-3 md:p-6 lg:p-8">
         <router-outlet></router-outlet>
       </div>
     </main>
   </div>
 
   <!-- Modern Bottom Navigation -->
-  <div class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-3 flex justify-around md:hidden z-50 shadow-lg dark:shadow-gray-900/20">
+  <nav *ngIf="isMobileView" class="mobile-bottom-nav fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-2 py-2 flex justify-around z-50 shadow-lg dark:shadow-gray-900/20">
     <a routerLink="/home" 
        routerLinkActive="text-indigo-600 dark:text-indigo-400" 
        class="flex flex-col items-center justify-center min-w-0 text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
@@ -177,5 +177,5 @@
       <span class="material-symbols-rounded text-2xl mb-1">person</span>
       <span class="text-xs font-medium">Profile</span>
     </a>
-  </div>
+  </nav>
 </div>

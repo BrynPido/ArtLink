@@ -1,0 +1,26 @@
+.mobile-bottom-nav {
+	display: flex;
+	position: fixed;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+.content-shell {
+	padding-bottom: 2rem;
+}
+
+@media (max-width: 767px) {
+	:host {
+		display: block;
+		width: 100%;
+		overflow-x: hidden;
+	}
+}
+
+@media (max-width: 1023px) {
+	.content-shell {
+		padding-bottom: calc(7.2rem + env(safe-area-inset-bottom, 0px));
+	}
+}

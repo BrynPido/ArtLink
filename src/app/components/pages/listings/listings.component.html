@@ -1,9 +1,9 @@
-<div class="container mx-auto px-4 py-6">
+<div class="container mx-auto px-2 sm:px-4 py-4 sm:py-6 overflow-x-hidden">
   <!-- Header with improved spacing and alignment -->
-  <div class="flex items-center justify-between mb-4">
-    <div>
+  <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
+    <div class="min-w-0 w-full md:w-auto">
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Listings</h1>
-      <div class="flex mt-2">
+      <div class="flex flex-wrap items-center gap-2 mt-2">
         <div class="inline-flex rounded-md shadow-sm" role="group">
           <button 
             (click)="setViewMode('all')" 
@@ -22,7 +22,7 @@
         </div>
 
         <!-- Display Mode Toggle (only show for My Listings) -->
-        <div *ngIf="viewMode === 'my'" class="inline-flex rounded-md shadow-sm ml-3" role="group">
+        <div *ngIf="viewMode === 'my'" class="inline-flex rounded-md shadow-sm" role="group">
           <button 
             (click)="setDisplayMode('grid')" 
             class="px-3 py-1.5 text-sm font-medium rounded-l-lg border border-gray-300 dark:border-gray-600 transition-colors focus:z-10 focus:outline-none flex items-center gap-1"
@@ -42,16 +42,16 @@
         </div>
       </div>
     </div>
-    <div class="flex space-x-3">
+    <div class="flex flex-wrap gap-2 w-full md:w-auto md:justify-end">
       <button 
         *ngIf="viewMode === 'my'" 
         (click)="goToSales()" 
-        class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center whitespace-nowrap"
+        class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center justify-center w-full sm:w-auto"
       >
         <span class="material-symbols-rounded mr-1">trending_up</span>
         View Sales
       </button>
-      <button (click)="createListing()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center whitespace-nowrap">
+      <button (click)="createListing()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center justify-center w-full sm:w-auto">
         <span class="material-symbols-rounded mr-1">add</span>
         Create Listing
       </button>
@@ -229,7 +229,7 @@
   <div *ngIf="!loading && !error">
     
     <!-- GRID VIEW -->
-    <div *ngIf="displayMode === 'grid' || viewMode === 'all'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div *ngIf="displayMode === 'grid' || viewMode === 'all'" class="listings-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       <!-- Enhanced Listing Card with Hover Effects -->
       <div 
         *ngFor="let listing of listings"
@@ -243,11 +243,11 @@
         </div>
 
         <!-- Listing Image -->
-        <div class="relative w-full" style="padding-bottom: 60%;" (click)="viewListing(listing.id)">
+        <div class="listing-image-wrap relative w-full" style="padding-bottom: 60%;" (click)="viewListing(listing.id)">
           <img 
             [src]="listing.media && listing.media.length > 0 ? listing.media[0].url : 'assets/images/default-avatar.svg'"
             [alt]="listing.title"
-            class="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            class="listing-image absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
             [class.opacity-50]="listing.status === 'sold' || listing.status === 'reserved'"
             [class.grayscale]="listing.status === 'sold' || listing.status === 'reserved'"
             loading="lazy"
