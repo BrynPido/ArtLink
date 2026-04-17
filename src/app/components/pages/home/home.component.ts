@@ -9,5 +9,15 @@ import { PostCardComponent } from '../../ui/post-card/post-card.component';
   styleUrl: './home.component.css'
 })
 export class HomeComponent {
-
+  readonly artCategories: string[] = [
+    'All',
+    'Sketch',
+    'Painting',
+    'Digital Art',
+    'Character Design',
+    'Concept Art',
+    'Ink',
+    'Comics',
+    'Fantasy'
+  ];
 }

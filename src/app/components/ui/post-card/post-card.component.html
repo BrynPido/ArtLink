@@ -9,9 +9,10 @@
   <p class="text-gray-500 dark:text-gray-400 text-center">Be the first to share something amazing!</p>
 </div>
 
-<div *ngFor="let post of posts" class="post-card group flex flex-col w-full max-w-md mx-auto sm:max-w-lg md:max-w-xl lg:max-w-2xl mb-6 border border-gray-200/60 dark:border-gray-700/60 rounded-2xl bg-white dark:bg-gray-800 hover:shadow-xl hover:border-gray-300/80 dark:hover:border-gray-600/80 transition-all duration-300 ease-in-out cursor-pointer" (click)="navigateToPost(post.id)">
+<section *ngIf="!loading && posts.length > 0" class="feed-gallery" aria-label="Art feed gallery">
+<article *ngFor="let post of posts; let i = index" class="post-card gallery-item group flex flex-col w-full border border-gray-200/60 dark:border-gray-700/60 rounded-2xl bg-white dark:bg-gray-800 hover:shadow-xl hover:border-gray-300/80 dark:hover:border-gray-600/80 transition-all duration-300 ease-in-out cursor-pointer" [ngClass]="{'has-media': post.media && post.media.length > 0}" [style.animationDelay]="(i * 45) + 'ms'" (click)="navigateToPost(post.id)">
   <!-- Header Section -->
-  <div class="flex items-center justify-between p-4 pb-3 relative z-30">
+  <div class="post-header flex items-center justify-between p-4 pb-3 relative z-30">
     <div class="flex items-center gap-3">
       <div class="relative">
         <div class="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden ring-2 ring-transparent group-hover:ring-indigo-100 dark:group-hover:ring-indigo-900/50 transition-all duration-300">
@@ -29,6 +30,32 @@
     </div>
     <!-- Right side: review status badge + menu (burger comes last) -->
     <div class="flex items-center gap-3">
+      <div *ngIf="post.media && post.media.length > 0" class="header-actions flex items-center rounded-full border border-slate-500/40 bg-slate-900/70 p-1 backdrop-blur-md">
+        <button class="p-1.5 rounded-full hover:bg-slate-700/50 transition-all duration-200 group flex items-center justify-center"
+          (click)="toggleLike(post.id, post.authorId); $event.stopPropagation()">
+          <span class="material-symbols-rounded text-lg leading-none transition-all duration-200 select-none group-hover:scale-110"
+            [ngClass]="{'animate-pop': isLiked(post.id)}" [ngStyle]="{
+              'font-variation-settings': '\'FILL\' ' + (isLiked(post.id) ? 1 : 0),
+              'color': isLiked(post.id) ? '#ef4444' : '#d1d5db'
+            }">
+            favorite
+          </span>
+        </button>
+
+        <div class="w-px h-6 bg-slate-500/40"></div>
+
+        <button class="p-1.5 rounded-full hover:bg-slate-700/50 transition-all duration-200 group flex items-center justify-center"
+          (click)="toggleSave(post.id); $event.stopPropagation()">
+          <span class="material-symbols-rounded text-lg leading-none transition-all duration-200 select-none group-hover:scale-110"
+            [ngClass]="{'animate-pop': isSaved(post.id)}" [ngStyle]="{
+              'font-variation-settings': '\'FILL\' ' + (isSaved(post.id) ? 1 : 0),
+              'color': isSaved(post.id) ? '#6366f1' : '#d1d5db'
+            }">
+            bookmark
+          </span>
+        </button>
+      </div>
+
       <!-- Review status badge (only visible to post owner) -->
       <div *ngIf="currentUser?.id === post.authorId && post.review_status && post.review_status !== 'approved'">
         <span
@@ -68,126 +95,55 @@
   </div>
 
   <!-- Media Section -->
-  <div class="relative mx-4 mb-4" *ngIf="post.media && post.media.length > 0">
-    <div class="w-full bg-gray-50 dark:bg-gray-900 rounded-xl overflow-hidden shadow-inner">
-      <!-- Carousel container with improved aspect ratio and loading -->
-    <div *ngIf="post.media && post.media.length > 1" class="w-full relative" style="height: 0; padding-bottom: 75%;">
-      <!-- Image Counter Badge -->
-      <div class="absolute top-3 right-3 bg-black/50 text-white text-xs px-2 py-1 rounded-full z-10">
+  <div class="post-media-shell relative mx-4 mb-4" *ngIf="post.media && post.media.length > 0">
+    <div class="masonry-media-frame w-full bg-gray-50 dark:bg-gray-900 rounded-xl overflow-hidden shadow-inner">
+      <div *ngIf="post.media.length > 1" class="absolute top-3 right-3 bg-black/55 text-white text-xs px-2 py-1 rounded-full z-20">
         {{ currentImageIndex[post.id] + 1 }}/{{ post.media.length }}
       </div>
-      
-      <!-- Improved carousel with fade effect -->
-      <div class="flex absolute inset-0 transition-all duration-300 ease-in-out"
-        [ngStyle]="{'width': post.media.length * 100 + '%', 'transform': 'translateX(-' + (currentImageIndex[post.id] * (100/post.media.length)) + '%)'}">
-        <div *ngFor="let media of post.media" class="flex-shrink-0"
-          [ngStyle]="{'width': 'calc(100% / ' + post.media.length + ')'}" (click)="openModal(media.url)">
-          <div class="relative w-full h-full bg-black">
-            <!-- Blurred background that fills the container -->
-            <div class="absolute inset-0 bg-cover bg-center blur-md opacity-50 scale-105" 
-                [ngStyle]="{'background-image': 'url(' + media.url + ')'}"
-                *ngIf="imageLoaded[post.id + '-' + media.url]"></div>
-            
-            <!-- Actual image with maintained aspect ratio -->
-            <img [src]="media.url" 
-                 alt="Post image" 
-                 class="w-full h-full object-contain transition-opacity duration-300"
-                 [ngClass]="{'opacity-0': !imageLoaded[post.id + '-' + media.url], 'opacity-100': imageLoaded[post.id + '-' + media.url]}"
-                 (load)="onImageLoad(post.id, media.url)"
-                 loading="lazy">
-            
-            <!-- Image Caption Overlay -->
-            <div *ngIf="media.caption" class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 pt-8">
-              <p class="text-white text-sm leading-relaxed">{{ media.caption }}</p>
-            </div>
+
+      <ng-container *ngFor="let media of post.media; let i = index">
+        <div *ngIf="currentImageIndex[post.id] === i" class="media-panel relative cursor-pointer" (click)="openModal(media.url)">
+          <div class="absolute inset-0 flex items-center justify-center" *ngIf="!imageLoaded[post.id + '-' + media.url]">
+            <div class="w-6 h-6 border-2 border-gray-200 dark:border-gray-700 border-t-indigo-600 dark:border-t-indigo-400 rounded-full animate-spin"></div>
+          </div>
+
+          <img [src]="media.url"
+               alt="Post image"
+               class="masonry-image w-full h-auto transition-opacity duration-300"
+               [ngClass]="{'opacity-0': !imageLoaded[post.id + '-' + media.url], 'opacity-100': imageLoaded[post.id + '-' + media.url]}"
+               (load)="onImageLoad(post.id, media.url)"
+               loading="lazy">
+
+          <div *ngIf="media.caption" class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 pt-8">
+            <p class="text-white text-sm leading-relaxed">{{ media.caption }}</p>
           </div>
         </div>
-      </div>
+      </ng-container>
 
-      <!-- Modern Navigation Controls - Left and Right Side -->
-      <button *ngIf="currentImageIndex[post.id] > 0"
+      <button *ngIf="post.media.length > 1 && currentImageIndex[post.id] > 0"
         class="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/95 dark:bg-gray-800/95 backdrop-blur-md hover:bg-white dark:hover:bg-gray-800 shadow-xl rounded-full z-20 flex items-center justify-center cursor-pointer transition-all duration-200 hover:scale-110 active:scale-95 border border-gray-200/50 dark:border-gray-700/50"
         (click)="prevImage(post.id); $event.stopPropagation();">
         <span class="material-symbols-rounded text-gray-800 dark:text-gray-200 text-2xl leading-none">chevron_left</span>
       </button>
-      
-      <button *ngIf="currentImageIndex[post.id] < post.media.length - 1"
+
+      <button *ngIf="post.media.length > 1 && currentImageIndex[post.id] < post.media.length - 1"
         class="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/95 dark:bg-gray-800/95 backdrop-blur-md hover:bg-white dark:hover:bg-gray-800 shadow-xl rounded-full z-20 flex items-center justify-center cursor-pointer transition-all duration-200 hover:scale-110 active:scale-95 border border-gray-200/50 dark:border-gray-700/50"
         (click)="nextImage(post.id, post.media.length); $event.stopPropagation();">
         <span class="material-symbols-rounded text-gray-800 dark:text-gray-200 text-2xl leading-none">chevron_right</span>
       </button>
-      
-      <!-- Modern Image indicators/dots -->
-      <div class="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
-        <div *ngFor="let media of post.media; let i = index" 
+
+      <div *ngIf="post.media.length > 1" class="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
+        <div *ngFor="let media of post.media; let i = index"
              class="w-2 h-2 rounded-full transition-all duration-300 cursor-pointer hover:scale-125"
              [ngClass]="{'bg-white shadow-lg': currentImageIndex[post.id] === i, 'bg-white/50 backdrop-blur-sm': currentImageIndex[post.id] !== i}"
              (click)="setCurrentImage(post.id, i); $event.stopPropagation();"></div>
       </div>
     </div>
 
-    <!-- Single image display with improved loading -->
-    <div *ngIf="post.media && post.media.length === 1" 
-         class="relative cursor-pointer bg-black"
-         style="height: 0; padding-bottom: 75%;"
-         (click)="openModal(post.media[0].url)">
-      
-      <!-- Blurred background version that fills the entire container -->
-      <div class="absolute inset-0 bg-cover bg-center blur-md opacity-50 scale-105" 
-          [ngStyle]="{'background-image': 'url(' + post.media[0].url + ')'}"
-          *ngIf="imageLoaded[post.id + '-' + post.media[0].url]"></div>
-          
-      <!-- Loading spinner -->
-      <div class="absolute inset-0 flex items-center justify-center" 
-           *ngIf="!imageLoaded[post.id + '-' + post.media[0].url]">
-        <div class="w-6 h-6 border-2 border-gray-200 dark:border-gray-700 border-t-indigo-600 dark:border-t-indigo-400 rounded-full animate-spin"></div>
-      </div>
-      
-      <!-- Main image with maintain aspect ratio -->
-      <img [src]="post.media[0].url" 
-           alt="Post image"
-           class="absolute inset-0 w-full h-full object-contain transition-opacity duration-300"
-           [ngClass]="{'opacity-0': !imageLoaded[post.id + '-' + post.media[0].url], 'opacity-100': imageLoaded[post.id + '-' + post.media[0].url]}"
-           (load)="onImageLoad(post.id, post.media[0].url)"
-           loading="lazy">
-      
-      <!-- Image Caption Overlay -->
-      <div *ngIf="post.media[0].caption" class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 pt-8">
-        <p class="text-white text-sm leading-relaxed">{{ post.media[0].caption }}</p>
-      </div>
     </div>
-  </div>
-
-  <!-- Modern Like and save controls -->
-    <div class="absolute -bottom-5 right-6 flex items-center bg-white dark:bg-gray-800 rounded-full shadow-lg border border-gray-100 dark:border-gray-700 p-1">
-      <button class="p-1.5 rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 group flex items-center justify-center"
-        (click)="toggleLike(post.id, post.authorId); $event.stopPropagation()">
-        <span class="material-symbols-rounded text-lg leading-none transition-all duration-200 select-none group-hover:scale-110"
-          [ngClass]="{'animate-pop': isLiked(post.id)}" [ngStyle]="{
-            'font-variation-settings': '\'FILL\' ' + (isLiked(post.id) ? 1 : 0),
-            'color': isLiked(post.id) ? '#ef4444' : '#6b7280'
-          }">
-          favorite
-        </span>
-      </button>
-
-      <div class="w-px h-6 bg-gray-200 dark:bg-gray-600"></div>
-
-      <button class="p-1.5 rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 group flex items-center justify-center"
-        (click)="toggleSave(post.id); $event.stopPropagation()">
-        <span class="material-symbols-rounded text-lg leading-none transition-all duration-200 select-none group-hover:scale-110"
-          [ngClass]="{'animate-pop': isSaved(post.id)}" [ngStyle]="{
-            'font-variation-settings': '\'FILL\' ' + (isSaved(post.id) ? 1 : 0),
-            'color': isSaved(post.id) ? '#6366f1' : '#6b7280'
-          }">
-          bookmark
-        </span>
-      </button>
-    </div>
-  </div>
 
   <!-- Content Section -->
-  <div class="px-4 pb-4 pt-6" [ngClass]="{'text-only-post': !post.media || post.media.length === 0}">
+  <div class="post-details px-4 pb-4 pt-6" [ngClass]="{'text-only-post': !post.media || post.media.length === 0}">
     <!-- Likes Counter (for posts WITH media - shown at top) -->
     <div *ngIf="post.media && post.media.length > 0" class="flex items-center gap-1 mb-3">
       <span class="material-symbols-rounded text-red-500 text-sm">favorite</span>
@@ -252,7 +208,8 @@
       </button>
     </div>
   </div>
-</div>
+</article>
+</section>
 
 <!-- Improved Image Modal -->
 <div *ngIf="showModal"
@@ -358,4 +315,3 @@
       </div>
     </div>
   </div>
-</div>

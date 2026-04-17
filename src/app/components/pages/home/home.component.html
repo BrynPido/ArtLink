@@ -1,3 +1,22 @@
-<div class="my-6 pb-20 sm:pb-14 md:pb-10">
+<section class="home-stage pb-20 sm:pb-14 md:pb-10">
+    <header class="gallery-hero">
+        <div class="hero-copy">
+            <p class="hero-kicker">ArtLink Gallery</p>
+            <h1>Where sketches, paints, and ideas become a living wall of art.</h1>
+            <p class="hero-subtitle">
+                Discover fresh works from the community, react to pieces you love, and save the ones you want to revisit.
+            </p>
+        </div>
+        <div class="hero-orb hero-orb-a"></div>
+        <div class="hero-orb hero-orb-b"></div>
+    </header>
+
+    <nav class="category-strip" aria-label="Art categories">
+        <button type="button" class="category-pill active">All</button>
+        <button *ngFor="let category of artCategories.slice(1)" type="button" class="category-pill">
+            {{ category }}
+        </button>
+    </nav>
+
     <app-post-card />
-</div>
+</section>
