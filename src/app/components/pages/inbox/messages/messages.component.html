@@ -1,6 +1,6 @@
-<div class="messaging-container h-full">
+<div class="messaging-container h-full" [class.mobile-conversation-open]="isMobileViewport && mobileShowConversation">
   <!-- Conversations sidebar -->
-  <div class="conversations-sidebar">
+  <div class="conversations-sidebar" *ngIf="showSidebarPane">
     <div class="search-box">
       <input 
         type="text" 
@@ -70,23 +70,23 @@
             </div>
             
             <div class="conversation-info">
-              <div class="conversation-header">
-                <h4 class="conversation-name" [class.font-bold]="conversation.unreadCount && conversation.unreadCount > 0" [class.text-gray-900]="conversation.unreadCount && conversation.unreadCount > 0">{{ getConversationName(conversation) }}</h4>
+                <div class="conversation-row-header">
+                  <h4 class="conversation-name" [class.font-bold]="hasUnread(conversation)" [class.text-gray-900]="hasUnread(conversation)">{{ getConversationName(conversation) }}</h4>
                 <span class="conversation-time text-xs text-gray-500" *ngIf="conversation.updatedAt">
                   {{ conversation.updatedAt | timeAgo }}
                 </span>
               </div>
               
               <div class="conversation-preview">
-                <p class="text-sm truncate max-w-[180px]" [class.text-gray-900]="conversation.unreadCount && conversation.unreadCount > 0" [class.font-medium]="conversation.unreadCount && conversation.unreadCount > 0" [class.text-gray-600]="!conversation.unreadCount || conversation.unreadCount === 0">
+                  <p class="text-sm truncate max-w-[180px]" [class.text-gray-900]="hasUnread(conversation)" [class.font-medium]="hasUnread(conversation)" [class.text-gray-600]="!hasUnread(conversation)">
                   <span *ngIf="conversation.listingId" 
                         class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full mr-1">
                     Listing
                   </span>
                   {{ conversation.lastMessage || 'No messages yet' }}
                 </p>
-                <div *ngIf="conversation.unreadCount" class="unread-badge">
-                  {{ conversation.unreadCount }}
+                <div *ngIf="hasUnread(conversation)" class="unread-badge">
+                  {{ getUnreadCount(conversation) }}
                 </div>
               </div>
             </div>
@@ -111,9 +111,9 @@
             >
               <span class="material-symbols-outlined text-sm mr-1.5">chat</span>
               Direct Messages
-              <span *ngIf="regularConversations.length > 0" 
+              <span *ngIf="getDirectUnreadTotal() > 0" 
                     class="ml-1.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 text-xs font-semibold px-2 py-0.5 rounded-full">
-                {{regularConversations.length}}
+                {{ getDirectUnreadTotal() }}
               </span>
             </button>
 
@@ -131,9 +131,9 @@
             >
               <span class="material-symbols-outlined text-sm mr-1.5">sell</span>
               Listing Messages
-              <span *ngIf="listingConversations.length > 0" 
+              <span *ngIf="getListingUnreadTotal() > 0" 
                     class="ml-1.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 text-xs font-semibold px-2 py-0.5 rounded-full">
-                {{listingConversations.length}}
+                {{ getListingUnreadTotal() }}
               </span>
             </button>
           </div>
@@ -156,22 +156,22 @@
               </div>
               
               <div class="conversation-info">
-                <div class="conversation-header">
-                  <h4 class="conversation-name" [class.font-bold]="conversation.unreadCount && conversation.unreadCount > 0" [class.text-gray-900]="conversation.unreadCount && conversation.unreadCount > 0" [class.dark:text-white]="conversation.unreadCount && conversation.unreadCount > 0">{{ getConversationName(conversation) }}</h4>
+                <div class="conversation-row-header">
+                  <h4 class="conversation-name" [class.font-bold]="hasUnread(conversation)" [class.text-gray-900]="hasUnread(conversation)" [class.dark:text-white]="hasUnread(conversation)">{{ getConversationName(conversation) }}</h4>
                   <span class="conversation-time text-xs text-gray-500 dark:text-gray-400" *ngIf="conversation.updatedAt">
                     {{ conversation.updatedAt | timeAgo }}
                   </span>
                 </div>
                 
                 <div class="conversation-preview">
-                  <p class="text-sm truncate max-w-[180px]" [class.text-gray-900]="conversation.unreadCount && conversation.unreadCount > 0" [class.dark:text-white]="conversation.unreadCount && conversation.unreadCount > 0" [class.font-medium]="conversation.unreadCount && conversation.unreadCount > 0" [class.text-gray-600]="!conversation.unreadCount || conversation.unreadCount === 0" [class.dark:text-gray-300]="!conversation.unreadCount || conversation.unreadCount === 0">
+                  <p class="text-sm truncate max-w-[180px]" [class.text-gray-900]="hasUnread(conversation)" [class.dark:text-white]="hasUnread(conversation)" [class.font-medium]="hasUnread(conversation)" [class.text-gray-600]="!hasUnread(conversation)" [class.dark:text-gray-300]="!hasUnread(conversation)">
                     <span class="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 text-xs px-2 py-0.5 rounded-full mr-1">
                       Listing
                     </span>
                     {{ conversation.lastMessage || 'No messages yet' }}
                   </p>
-                  <div *ngIf="conversation.unreadCount" class="unread-badge">
-                    {{ conversation.unreadCount }}
+                  <div *ngIf="hasUnread(conversation)" class="unread-badge">
+                    {{ getUnreadCount(conversation) }}
                   </div>
                 </div>
               </div>
@@ -196,19 +196,19 @@
               </div>
               
               <div class="conversation-info">
-                <div class="conversation-header">
-                  <h4 class="conversation-name" [class.font-bold]="conversation.unreadCount && conversation.unreadCount > 0" [class.text-gray-900]="conversation.unreadCount && conversation.unreadCount > 0" [class.dark:text-white]="conversation.unreadCount && conversation.unreadCount > 0">{{ getConversationName(conversation) }}</h4>
+                <div class="conversation-row-header">
+                  <h4 class="conversation-name" [class.font-bold]="hasUnread(conversation)" [class.text-gray-900]="hasUnread(conversation)" [class.dark:text-white]="hasUnread(conversation)">{{ getConversationName(conversation) }}</h4>
                   <span class="conversation-time text-xs text-gray-500 dark:text-gray-400" *ngIf="conversation.updatedAt">
                     {{ conversation.updatedAt | timeAgo }}
                   </span>
                 </div>
                 
                 <div class="conversation-preview">
-                  <p class="text-sm truncate max-w-[180px]" [class.text-gray-900]="conversation.unreadCount && conversation.unreadCount > 0" [class.dark:text-white]="conversation.unreadCount && conversation.unreadCount > 0" [class.font-medium]="conversation.unreadCount && conversation.unreadCount > 0" [class.text-gray-600]="!conversation.unreadCount || conversation.unreadCount === 0" [class.dark:text-gray-300]="!conversation.unreadCount || conversation.unreadCount === 0">
+                  <p class="text-sm truncate max-w-[180px]" [class.text-gray-900]="hasUnread(conversation)" [class.dark:text-white]="hasUnread(conversation)" [class.font-medium]="hasUnread(conversation)" [class.text-gray-600]="!hasUnread(conversation)" [class.dark:text-gray-300]="!hasUnread(conversation)">
                     {{ conversation.lastMessage || 'No messages yet' }}
                   </p>
-                  <div *ngIf="conversation.unreadCount" class="unread-badge">
-                    {{ conversation.unreadCount }}
+                  <div *ngIf="hasUnread(conversation)" class="unread-badge">
+                    {{ getUnreadCount(conversation) }}
                   </div>
                 </div>
               </div>
@@ -220,7 +220,7 @@
   </div>
   
   <!-- Messages area -->
-  <div class="messages-area">
+  <div class="messages-area" *ngIf="showMessagesPane">
     <ng-container *ngIf="!activeConversation">
       <div class="no-conversation-selected">
         <div class="content">
@@ -234,21 +234,34 @@
     <ng-container *ngIf="activeConversation">
       <!-- Conversation header -->
       <div class="conversation-header">
-        <div class="conversation-info">
-          <div class="conversation-avatar">
-            <img [src]="getConversationImage(activeConversation)" alt="Profile">
-          </div>
-          <div class="conversation-details">
-            <h3>{{ getConversationName(activeConversation) }}</h3>
+        <div class="conversation-header-top">
+          <button
+            *ngIf="isMobileViewport"
+            type="button"
+            class="mobile-back-btn"
+            (click)="backToConversationList()"
+            aria-label="Back to chats"
+          >
+            <span class="material-symbols-outlined text-base">arrow_back</span>
+            Chats
+          </button>
+
+          <div class="conversation-info min-w-0">
+            <div class="conversation-avatar">
+              <img [src]="getConversationImage(activeConversation)" alt="Profile">
+            </div>
+            <div class="conversation-details min-w-0">
+              <h3 class="truncate">{{ getConversationName(activeConversation) }}</h3>
+            </div>
           </div>
         </div>
         
         <!-- Add listing info banner -->
-        <div *ngIf="listingDetails" class="listing-info-banner mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex items-center">
-          <span class="material-symbols-outlined text-blue-600 dark:text-blue-400 mr-2">storefront</span>
-          <div class="flex-1">
+        <div *ngIf="listingDetails" class="listing-info-banner mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex items-center gap-2 min-w-0">
+          <span class="material-symbols-outlined text-blue-600 dark:text-blue-400 shrink-0">storefront</span>
+          <div class="flex-1 min-w-0">
             <p class="text-sm text-blue-800 dark:text-blue-200 font-medium">Discussion about:</p>
-            <p class="text-sm truncate">{{ listingDetails.title }}</p>
+            <p class="text-sm listing-title" [title]="listingDetails.title">{{ listingDetails.title }}</p>
             <p *ngIf="listingDetails.status" class="text-xs mt-1">
               Status: 
               <span [class]="getStatusClass(listingDetails.status)">
@@ -257,7 +270,7 @@
             </p>
           </div>
           <a [routerLink]="['/listing', listingDetails.id]" 
-             class="text-blue-600 dark:text-blue-400 ml-2 px-2 py-1 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800 text-sm">
+             class="text-blue-600 dark:text-blue-400 ml-1 px-2 py-1 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800 text-sm shrink-0">
             View
           </a>
         </div>

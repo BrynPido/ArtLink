@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { MatTabsModule } from '@angular/material/tabs';
 import { NotificationsComponent } from './notifications/notifications.component';
 import { MessagesComponent } from './messages/messages.component';
@@ -19,6 +19,8 @@ export class InboxComponent implements OnInit, OnDestroy {
   activeTab = 'messages'; // Set default tab
   unreadNotifications = 0;
   unreadMessages = 0;
+  isMobileView = false;
+  isMobileConversationOpen = false;
   private notificationSubscription?: Subscription;
   private messageSubscription?: Subscription;
 
@@ -30,6 +32,8 @@ export class InboxComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.updateViewportState();
+
     // Get query parameters and set the active tab based on the URL
     this.route.queryParams.subscribe(params => {
       if (params['tab']) {
@@ -67,6 +71,9 @@ export class InboxComponent implements OnInit, OnDestroy {
   // Method to change tabs
   setActiveTab(tab: string): void {
     this.activeTab = tab;
+    if (tab !== 'messages') {
+      this.isMobileConversationOpen = false;
+    }
     
     // Update URL without reloading the page
     this.router.navigate([], {
@@ -74,5 +81,25 @@ export class InboxComponent implements OnInit, OnDestroy {
       queryParams: { tab: tab },
       queryParamsHandling: 'merge'
     });
+  }
+
+  onMobileConversationModeChange(isOpen: boolean): void {
+    this.isMobileConversationOpen = isOpen;
+  }
+
+  get shouldHideTabs(): boolean {
+    return this.isMobileView && this.activeTab === 'messages' && this.isMobileConversationOpen;
+  }
+
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    this.updateViewportState();
+  }
+
+  private updateViewportState(): void {
+    this.isMobileView = window.innerWidth <= 768;
+    if (!this.isMobileView) {
+      this.isMobileConversationOpen = false;
+    }
   }
 }

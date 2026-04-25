@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, AfterViewChecked, ViewChild, ElementRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewChecked, ViewChild, ElementRef, ChangeDetectionStrategy, ChangeDetectorRef, HostListener, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MessagingService, Conversation, Message } from '../../../../services/messaging.service';
@@ -19,6 +19,7 @@ import { ToastService } from '../../../../services/toast.service';
 })
 export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
   @ViewChild('messageContainer') private messageContainer?: ElementRef;
+  @Output() mobileConversationModeChange = new EventEmitter<boolean>();
 
   currentUser: any;
   conversations: Conversation[] = [];
@@ -36,8 +37,11 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
   // Separated conversation lists
   listingConversations: Conversation[] = [];
   regularConversations: Conversation[] = [];
+  isMobileViewport: boolean = false;
+  mobileShowConversation: boolean = false;
 
   private subscriptions: Subscription[] = [];
+  private pendingAutoSelectConversationId: number | null = null;
 
   activeTab: 'listings' | 'direct' = 'direct'; // Default to direct messages tab
 
@@ -57,11 +61,23 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
   ) {}
 
   ngOnInit(): void {
+    this.updateViewportState();
+
     this.currentUser = this.dataService.getCurrentUser();
     
     if (!this.currentUser) {
       this.router.navigate(['/login']);
       return;
+    }
+
+    const selectedConversationId = Number((window as any).selectedConversationId);
+    this.pendingAutoSelectConversationId = Number.isFinite(selectedConversationId) && selectedConversationId > 0
+      ? selectedConversationId
+      : null;
+
+    // Avoid carrying old selected chats into a fresh inbox open.
+    if (!this.pendingAutoSelectConversationId) {
+      this.messagingService.clearActiveConversation();
     }
 
     // Fetch the list of users the current user is following
@@ -96,16 +112,18 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
         this.cdr.markForCheck();
         
         // Check if there's a conversation ID to auto-select
-        const selectedConversationId = (window as any).selectedConversationId;
-        if (selectedConversationId && conversations.length > 0) {
-          const conversation = conversations.find(c => c.id == selectedConversationId);
+        if (this.pendingAutoSelectConversationId && conversations.length > 0) {
+          const conversation = conversations.find(c => c.id === this.pendingAutoSelectConversationId);
           if (conversation) {
             console.log('Auto-selecting conversation:', conversation);
             this.selectConversation(conversation);
             // Clear the stored ID so it doesn't interfere later
             delete (window as any).selectedConversationId;
+            this.pendingAutoSelectConversationId = null;
           }
         }
+
+        this.syncActiveConversationForCurrentTab();
       })
     );
     
@@ -122,6 +140,10 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.subscriptions.push(
       this.messagingService.activeConversation$.subscribe(conversation => {
         this.activeConversation = conversation;
+        if (!conversation) {
+          this.mobileShowConversation = false;
+        }
+        this.emitMobileConversationState();
         this.cdr.markForCheck();
       })
     );
@@ -149,13 +171,23 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.scrollToBottom();
   }
 
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    this.updateViewportState();
+  }
+
   ngOnDestroy(): void {
     this.subscriptions.forEach(sub => sub.unsubscribe());
     this.messagingService.cleanup();
   }
 
   selectConversation(conversation: Conversation): void {
+    this.activeTab = conversation.listingId ? 'listings' : 'direct';
     this.messagingService.setActiveConversation(conversation);
+    if (this.isMobileViewport) {
+      this.mobileShowConversation = true;
+    }
+    this.emitMobileConversationState();
 
     // // Log selection and type
     // if (conversation.listingId) {
@@ -326,6 +358,7 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
     try {
       if (this.messageContainer) {
         this.messageContainer.nativeElement.scrollTop = this.messageContainer.nativeElement.scrollHeight;
+        this.messageContainer.nativeElement.scrollLeft = 0;
       }
     } catch (err) {
       console.error('Error scrolling to bottom:', err);
@@ -344,8 +377,72 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
     return message.id || index;
   }
 
+  getUnreadCount(conversation: Conversation): number {
+    const count = Number(conversation?.unreadCount ?? 0);
+    return Number.isFinite(count) && count > 0 ? count : 0;
+  }
+
+  hasUnread(conversation: Conversation): boolean {
+    return this.getUnreadCount(conversation) > 0;
+  }
+
+  getDirectUnreadTotal(): number {
+    return this.regularConversations.reduce((total, conversation) => {
+      return total + this.getUnreadCount(conversation);
+    }, 0);
+  }
+
+  getListingUnreadTotal(): number {
+    return this.listingConversations.reduce((total, conversation) => {
+      return total + this.getUnreadCount(conversation);
+    }, 0);
+  }
+
   setActiveTab(tab: 'listings' | 'direct'): void {
     this.activeTab = tab;
+    this.syncActiveConversationForCurrentTab();
+  }
+
+  get showSidebarPane(): boolean {
+    return !this.isMobileViewport || !this.mobileShowConversation;
+  }
+
+  get showMessagesPane(): boolean {
+    return !this.isMobileViewport || this.mobileShowConversation;
+  }
+
+  backToConversationList(): void {
+    this.mobileShowConversation = false;
+    this.emitMobileConversationState();
+  }
+
+  private updateViewportState(): void {
+    this.isMobileViewport = window.innerWidth <= 768;
+    if (!this.isMobileViewport) {
+      this.mobileShowConversation = false;
+    }
+    this.emitMobileConversationState();
+  }
+
+  private syncActiveConversationForCurrentTab(): void {
+    if (!this.activeConversation) {
+      return;
+    }
+
+    const isListingConversation = !!this.activeConversation.listingId;
+    const matchesTab = this.activeTab === 'listings' ? isListingConversation : !isListingConversation;
+
+    if (!matchesTab) {
+      this.listingDetails = null;
+      this.mobileShowConversation = false;
+      this.messagingService.clearActiveConversation();
+      this.emitMobileConversationState();
+    }
+  }
+
+  private emitMobileConversationState(): void {
+    const isConversationOpen = !!this.activeConversation && this.isMobileViewport && this.mobileShowConversation;
+    this.mobileConversationModeChange.emit(isConversationOpen);
   }
 
   // Seller control methods

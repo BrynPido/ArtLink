@@ -43,6 +43,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
   private userSubscription?: Subscription;
   unreadNotificationsCount: number = 0;
   unreadMessagesCount: number = 0;
+  showMobileAccountMenu: boolean = false;
 
   constructor(
     private router: Router, 
@@ -78,6 +79,14 @@ export class LayoutComponent implements OnInit, OnDestroy {
   onResize(_event: Event) {
     this.adjustSidebarWidth(window.innerWidth);
     this.checkIfMobileView(window.innerWidth);
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.mobile-account-menu')) {
+      this.showMobileAccountMenu = false;
+    }
   }
 
   ngOnInit(): void {
@@ -224,6 +233,15 @@ export class LayoutComponent implements OnInit, OnDestroy {
   checkIfMobileView(screenWidth: number) {
     // Treat tablet widths as mobile-nav layout for consistent UX in responsive views
     this.isMobileView = screenWidth < 1024;
+    if (!this.isMobileView) {
+      this.showMobileAccountMenu = false;
+    }
+  }
+
+  isInboxRoute(): boolean {
+    return this.router.url.startsWith('/inbox'),
+    this.router.url.startsWith('/create'),
+    this.router.url.startsWith('/home');
   }
 
   logout() {
@@ -266,6 +284,21 @@ export class LayoutComponent implements OnInit, OnDestroy {
     if (this.currentUser) {
       this.router.navigate(['/profile', this.currentUser.id]);
     }
+  }
+
+  toggleMobileAccountMenu(event: MouseEvent): void {
+    event.stopPropagation();
+    this.showMobileAccountMenu = !this.showMobileAccountMenu;
+  }
+
+  goToProfileFromMenu(): void {
+    this.showMobileAccountMenu = false;
+    this.navigateToMyProfile();
+  }
+
+  logoutFromMenu(): void {
+    this.showMobileAccountMenu = false;
+    this.logout();
   }
 
   isAdmin(): boolean {

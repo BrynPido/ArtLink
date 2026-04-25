@@ -140,11 +140,13 @@ export class MessagingService {
   private loadMessagesForConversation(conversationId: number): void {
     this.dataService.getConversationMessages(conversationId).subscribe({
       next: (response: any) => {
-        if (response && response.payload) {
-          this.messagesSubject.next(response.payload);
-        } else {
-          this.messagesSubject.next([]);
-        }
+        const payload = response?.payload;
+        const messages = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.messages)
+            ? payload.messages
+            : [];
+        this.messagesSubject.next(messages);
       },
       error: (error) => {
         console.error('Error loading messages for conversation:', error);
@@ -182,6 +184,12 @@ export class MessagingService {
         }
       });
     }
+  }
+
+  // Clear current conversation state (used when changing tabs/views)
+  clearActiveConversation(): void {
+    this.activeConversationSubject.next(null);
+    this.messagesSubject.next([]);
   }
 
   // Start a new conversation with another user

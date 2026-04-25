@@ -1,4 +1,4 @@
-<div class="tabs flex items-center border-b border-gray-200 dark:border-gray-700 mb-4">
+<div *ngIf="!shouldHideTabs" class="tabs flex items-center border-b border-gray-200 dark:border-gray-700 mb-4">
   <button 
     (click)="setActiveTab('messages')" 
     [class.active]="activeTab === 'messages'"
@@ -24,7 +24,7 @@
 <div class="tab-content">
   <div *ngIf="activeTab === 'messages'">
     <!-- Messages component -->
-    <app-messages></app-messages>
+    <app-messages (mobileConversationModeChange)="onMobileConversationModeChange($event)"></app-messages>
   </div>
   <div *ngIf="activeTab === 'notifications'">
     <!-- Notifications component -->

@@ -1,5 +1,5 @@
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
-  <div class="container mx-auto px-4 py-8 max-w-7xl">
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200 overflow-x-hidden">
+  <div class="w-full max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8 pb-[calc(10rem+env(safe-area-inset-bottom,0px))] sm:pb-10">
     <!-- Loading State -->
     <div *ngIf="loading" class="flex flex-col items-center justify-center py-20">
       <div class="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 dark:border-gray-700 border-t-indigo-600 dark:border-t-indigo-400"></div>
@@ -24,29 +24,29 @@
       <!-- Back Button -->
       <button 
         (click)="goBack()"
-        class="mb-8 flex items-center text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all duration-200 px-4 py-3 rounded-xl hover:bg-white dark:hover:bg-gray-800 shadow-sm"
+        class="mb-4 sm:mb-8 flex items-center text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all duration-200 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl hover:bg-white dark:hover:bg-gray-800 shadow-sm"
       >
         <span class="material-symbols-outlined mr-2">arrow_back</span>
         Back to Listings
       </button>
 
       <!-- Main Content Layout -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 max-w-full">
         
         <!-- Left Column: Image Gallery + Product Details -->
-        <div class="lg:col-span-2 space-y-8">
+        <div class="lg:col-span-2 min-w-0 space-y-4 sm:space-y-8">
           
           <!-- Image Gallery -->
-          <div class="space-y-6">
+          <div class="space-y-3 sm:space-y-6 min-w-0">
             <!-- Main Image Container -->
-            <div class="relative w-full overflow-hidden rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 bg-white dark:bg-gray-800">
-              <div class="pb-[60%] relative">
+            <div class="relative w-full overflow-hidden rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 bg-white dark:bg-gray-800">
+              <div class="pb-[110%] sm:pb-[75%] lg:pb-[60%] relative">
                 <!-- Main Image -->
                 <img
                   *ngIf="listing.media && listing.media.length > 0"
                   [src]="listing.media[currentMediaIndex].url"
                   [alt]="listing.title"
-                  class="absolute inset-0 w-full h-full object-contain bg-gray-50 dark:bg-gray-800 transition-opacity duration-300"
+                  class="absolute inset-0 w-full h-full object-cover sm:object-contain bg-gray-50 dark:bg-gray-800 transition-opacity duration-300"
                 >
                 
                 <!-- Fallback for no images -->
@@ -61,13 +61,13 @@
                 </div>
                 
                 <!-- Navigation Controls -->
-                <div *ngIf="listing.media && listing.media.length > 1" class="absolute inset-0 flex justify-between items-center px-6">
+                <div *ngIf="listing.media && listing.media.length > 1" class="absolute inset-0 flex justify-between items-center px-3 sm:px-6">
                   <button
                     *ngIf="currentMediaIndex > 0"
                     (click)="previousMedia()"
-                    class="bg-black/60 hover:bg-black/80 text-white rounded-full p-3 transition-all duration-200 backdrop-blur-sm shadow-lg"
+                    class="bg-black/60 hover:bg-black/80 text-white rounded-full p-2 sm:p-3 transition-all duration-200 backdrop-blur-sm shadow-lg"
                   >
-                    <span class="material-symbols-outlined text-xl">chevron_left</span>
+                    <span class="material-symbols-outlined text-lg sm:text-xl">chevron_left</span>
                   </button>
                   
                   <div *ngIf="currentMediaIndex === 0"></div>
@@ -75,17 +75,17 @@
                   <button
                     *ngIf="listing.media && currentMediaIndex < listing.media.length - 1"
                     (click)="nextMedia()"
-                    class="bg-black/60 hover:bg-black/80 text-white rounded-full p-3 transition-all duration-200 backdrop-blur-sm shadow-lg"
+                    class="bg-black/60 hover:bg-black/80 text-white rounded-full p-2 sm:p-3 transition-all duration-200 backdrop-blur-sm shadow-lg"
                   >
-                    <span class="material-symbols-outlined text-xl">chevron_right</span>
+                    <span class="material-symbols-outlined text-lg sm:text-xl">chevron_right</span>
                   </button>
                   
                   <div *ngIf="!listing.media || currentMediaIndex >= listing.media.length - 1"></div>
                 </div>
                 
                 <!-- Image Counter Badge -->
-                <div *ngIf="listing.media && listing.media.length > 0" class="absolute bottom-6 right-6">
-                  <div class="bg-black/70 text-white text-sm px-3 py-2 rounded-full backdrop-blur-sm font-medium">
+                <div *ngIf="listing.media && listing.media.length > 0" class="absolute bottom-3 right-3 sm:bottom-6 sm:right-6">
+                  <div class="bg-black/70 text-white text-xs sm:text-sm px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full backdrop-blur-sm font-medium">
                     {{ currentMediaIndex + 1 }} / {{ listing.media?.length }}
                   </div>
                 </div>
@@ -93,11 +93,11 @@
             </div>
           
             <!-- Thumbnail Strip -->
-            <div *ngIf="listing.media && listing.media.length > 1" class="flex space-x-3 overflow-x-auto pb-3 snap-x scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+            <div *ngIf="listing.media && listing.media.length > 1" class="flex space-x-2 sm:space-x-3 overflow-x-auto pb-2 sm:pb-3 pr-3 snap-x scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
               <div
                 *ngFor="let media of listing.media; let i = index"
                 (click)="currentMediaIndex = i"
-                class="flex-shrink-0 w-24 h-24 cursor-pointer rounded-xl overflow-hidden snap-start transition-all duration-200 shadow-sm hover:shadow-md"
+                class="flex-shrink-0 w-20 h-20 sm:w-24 sm:h-24 cursor-pointer rounded-lg sm:rounded-xl overflow-hidden snap-start transition-all duration-200 shadow-sm hover:shadow-md"
                 [ngClass]="{
                   'ring-3 ring-indigo-500 opacity-100 shadow-lg': currentMediaIndex === i,
                   'opacity-70 hover:opacity-90': currentMediaIndex !== i
@@ -113,46 +113,46 @@
           </div>
 
           <!-- Product Details Section -->
-          <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg border border-gray-200 dark:border-gray-700">
-            <h2 class="text-2xl font-semibold text-gray-900 dark:text-white flex items-center mb-8">
-              <span class="material-symbols-outlined mr-3 text-indigo-600 dark:text-indigo-400 text-2xl">info</span>
+          <div class="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-8 shadow-lg border border-gray-200 dark:border-gray-700 min-w-0">
+            <h2 class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white flex items-center mb-4 sm:mb-8">
+              <span class="material-symbols-outlined mr-2 sm:mr-3 text-indigo-600 dark:text-indigo-400 text-xl sm:text-2xl">info</span>
               Product Details
             </h2>
             
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <div class="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-900/30 dark:to-blue-900/30 p-6 rounded-xl border border-indigo-100 dark:border-indigo-800">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-6 mb-4 sm:mb-8">
+              <div class="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-900/30 dark:to-blue-900/30 p-4 sm:p-6 rounded-xl border border-indigo-100 dark:border-indigo-800">
                 <div class="flex items-center mb-3">
                   <span class="material-symbols-outlined text-indigo-600 dark:text-indigo-400 mr-3 text-xl">category</span>
                   <p class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Category</p>
                 </div>
-                <p class="font-bold text-gray-900 dark:text-white text-xl">{{ listing.listingDetails.category | titlecase }}</p>
+                <p class="font-bold text-gray-900 dark:text-white text-lg sm:text-xl">{{ listing.listingDetails.category | titlecase }}</p>
               </div>
               
-              <div class="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30 p-6 rounded-xl border border-green-100 dark:border-green-800">
+              <div class="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30 p-4 sm:p-6 rounded-xl border border-green-100 dark:border-green-800">
                 <div class="flex items-center mb-3">
                   <span class="material-symbols-outlined text-green-600 dark:text-green-400 mr-3 text-xl">grade</span>
                   <p class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Condition</p>
                 </div>
-                <p class="font-bold text-gray-900 dark:text-white text-xl">{{ listing.listingDetails.condition | titlecase }}</p>
+                <p class="font-bold text-gray-900 dark:text-white text-lg sm:text-xl">{{ listing.listingDetails.condition | titlecase }}</p>
               </div>
               
-              <div class="bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-900/30 dark:to-violet-900/30 p-6 rounded-xl border border-purple-100 dark:border-purple-800">
+              <div class="bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-900/30 dark:to-violet-900/30 p-4 sm:p-6 rounded-xl border border-purple-100 dark:border-purple-800">
                 <div class="flex items-center mb-3">
                   <span class="material-symbols-outlined text-purple-600 dark:text-purple-400 mr-3 text-xl">location_on</span>
                   <p class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Location</p>
                 </div>
-                <p class="font-bold text-gray-900 dark:text-white text-xl">{{ listing.listingDetails.location }}</p>
+                <p class="font-bold text-gray-900 dark:text-white text-lg sm:text-xl">{{ listing.listingDetails.location }}</p>
               </div>
             </div>
 
             <!-- Description Section -->
             <div>
-              <h3 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center mb-6">
-                <span class="material-symbols-outlined mr-3 text-indigo-600 dark:text-indigo-400 text-xl">description</span>
+              <h3 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white flex items-center mb-3 sm:mb-6">
+                <span class="material-symbols-outlined mr-2 sm:mr-3 text-indigo-600 dark:text-indigo-400 text-lg sm:text-xl">description</span>
                 Description
               </h3>
-              <div class="bg-gray-50 dark:bg-gray-700/50 p-8 rounded-xl border border-gray-200 dark:border-gray-600">
-                <p class="text-gray-700 dark:text-gray-300 whitespace-pre-line leading-relaxed text-lg">
+              <div class="bg-gray-50 dark:bg-gray-700/50 p-4 sm:p-8 rounded-xl border border-gray-200 dark:border-gray-600">
+                <p class="text-gray-700 dark:text-gray-300 whitespace-pre-line leading-relaxed text-base sm:text-lg">
                   {{ listing.content }}
                 </p>
               </div>
@@ -161,12 +161,12 @@
         </div>
 
         <!-- Right Column: Title, Price, Seller Info, Actions -->
-        <div class="lg:col-span-1 space-y-6">
+        <div class="lg:col-span-1 min-w-0 space-y-4 sm:space-y-6">
           
           <!-- Title & Actions Card -->
-          <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 sticky top-8">
-            <div class="flex justify-between items-start mb-6">
-              <h1 class="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white leading-tight pr-4">{{ listing.title }}</h1>
+          <div class="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg border border-gray-200 dark:border-gray-700 sticky top-8 min-w-0">
+            <div class="flex justify-between items-start mb-4 sm:mb-6">
+              <h1 class="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white leading-tight pr-3 sm:pr-4 break-words">{{ listing.title }}</h1>
               <div *ngIf="currentUser?.id === listing.author?.id" class="relative flex-shrink-0">
                 <button 
                   (click)="toggleActionMenu()"
@@ -176,7 +176,7 @@
                 </button>
                 
                 <div *ngIf="showActionMenu" 
-                     class="absolute z-20 right-0 mt-2 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 w-52 overflow-hidden">
+                     class="absolute z-20 right-0 mt-2 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 w-48 sm:w-52 overflow-hidden">
                   <button
                     (click)="editListing()"
                     class="w-full text-left px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 flex items-center"
@@ -196,9 +196,9 @@
             </div>
 
             <!-- Price Section -->
-            <div class="bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/30 dark:to-blue-900/30 p-6 rounded-xl border border-indigo-100 dark:border-indigo-800 mb-6">
+            <div class="bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/30 dark:to-blue-900/30 p-4 sm:p-6 rounded-xl border border-indigo-100 dark:border-indigo-800 mb-4 sm:mb-6">
               <div class="text-center">
-                <p class="text-4xl lg:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-blue-600 dark:from-indigo-400 dark:to-blue-400 mb-3">
+                <p class="text-3xl sm:text-4xl lg:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-blue-600 dark:from-indigo-400 dark:to-blue-400 mb-3 break-words">
                   {{ listing.listingDetails.price | currencyFormat }}
                 </p>
                 <div class="flex items-center justify-center text-gray-600 dark:text-gray-300 mb-3">
@@ -213,8 +213,8 @@
             </div>
 
             <!-- Seller Info -->
-            <div *ngIf="listing.author" class="mb-6">
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+            <div *ngIf="listing.author" class="mb-4 sm:mb-6">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4 flex items-center">
                 <span class="material-symbols-outlined mr-2 text-indigo-600 dark:text-indigo-400">person</span>
                 Seller
               </h3>
@@ -222,12 +222,12 @@
                 <img
                   [src]="listing.author.profileImage || 'assets/images/default-avatar.svg'"
                   [alt]="listing.author.name"
-                  class="w-16 h-16 rounded-full object-cover cursor-pointer border-2 border-indigo-200 dark:border-indigo-800 shadow-md"
+                  class="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover cursor-pointer border-2 border-indigo-200 dark:border-indigo-800 shadow-md"
                   (click)="goToAuthorProfile()"
                 >
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-2">
-                    <p class="font-semibold text-gray-900 dark:text-white cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-all truncate text-lg" (click)="goToAuthorProfile()">
+                    <p class="font-semibold text-gray-900 dark:text-white cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-all truncate text-base sm:text-lg" (click)="goToAuthorProfile()">
                       {{ listing.author.name }}
                     </p>
                     <app-admin-badge [isAdmin]="isAdmin()" size="xs" variant="solid" [showLabel]="true"></app-admin-badge>
@@ -250,7 +250,7 @@
             <!-- Contact Actions -->
             <div *ngIf="currentUser?.id !== listing.author?.id" class="space-y-4">
               <div *ngIf="existingConversation">
-                <div class="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                <div class="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-4 p-3 sm:p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
                   <span class="material-symbols-outlined text-blue-600 dark:text-blue-400 mr-2">chat</span>
                   You have an active conversation
                 </div>
@@ -314,6 +314,9 @@
           </div>
         </div>
       </div>
+
+      <!-- Mobile spacer so final content is never covered by fixed bottom nav -->
+      <div class="h-20 sm:h-0"></div>
     </div>
   </div>
 </div>

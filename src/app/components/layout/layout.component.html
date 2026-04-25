@@ -127,55 +127,93 @@
   <div class="flex-grow transition-all duration-300 bg-gray-50 dark:bg-gray-900" 
        [ngStyle]="{'margin-left': isMobileView ? '0px' : sidebarWidth}">
     <main class="h-full overflow-auto">
-      <div class="content-shell max-w-6xl mx-auto p-3 md:p-6 lg:p-8">
+      <div class="content-shell max-w-6xl mx-auto p-3 md:p-6 lg:p-8" [class.inbox-shell]="isInboxRoute()">
         <router-outlet></router-outlet>
       </div>
     </main>
   </div>
 
   <!-- Modern Bottom Navigation -->
-  <nav *ngIf="isMobileView" class="mobile-bottom-nav fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-2 py-2 flex justify-around z-50 shadow-lg dark:shadow-gray-900/20">
+  <nav *ngIf="isMobileView" class="mobile-bottom-nav fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-1.5 py-2 flex justify-between items-end z-50 shadow-lg dark:shadow-gray-900/20">
     <a routerLink="/home" 
        routerLinkActive="text-indigo-600 dark:text-indigo-400" 
-       class="flex flex-col items-center justify-center min-w-0 text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
-      <span class="material-symbols-rounded text-2xl mb-1">home</span>
+       class="mobile-nav-item flex flex-col items-center justify-end min-w-0 text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+      <span class="mobile-nav-icon-wrap">
+        <span class="material-symbols-rounded mobile-nav-icon">home</span>
+      </span>
       <span class="text-xs font-medium">Home</span>
     </a>
     <a routerLink="/explore" 
        routerLinkActive="text-indigo-600 dark:text-indigo-400" 
-       class="flex flex-col items-center justify-center min-w-0 text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
-      <span class="material-symbols-rounded text-2xl mb-1">explore</span>
+       class="mobile-nav-item flex flex-col items-center justify-end min-w-0 text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+      <span class="mobile-nav-icon-wrap">
+        <span class="material-symbols-rounded mobile-nav-icon">explore</span>
+      </span>
       <span class="text-xs font-medium">Explore</span>
     </a>
     <a routerLink="/listings" 
        routerLinkActive="text-indigo-600 dark:text-indigo-400" 
-       class="flex flex-col items-center justify-center min-w-0 text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
-      <span class="material-symbols-rounded text-2xl mb-1">storefront</span>
+       class="mobile-nav-item flex flex-col items-center justify-end min-w-0 text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+      <span class="mobile-nav-icon-wrap">
+        <span class="material-symbols-rounded mobile-nav-icon">storefront</span>
+      </span>
       <span class="text-xs font-medium">Market</span>
     </a>
     <a routerLink="/inbox" 
        routerLinkActive="text-indigo-600 dark:text-indigo-400" 
-       class="flex flex-col items-center justify-center min-w-0 text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors relative">
-      <div class="relative">
-        <span class="material-symbols-rounded text-2xl mb-1">inbox</span>
+       class="mobile-nav-item flex flex-col items-center justify-end min-w-0 text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+      <span class="mobile-nav-icon-wrap relative">
+        <span class="material-symbols-rounded mobile-nav-icon">inbox</span>
         <span *ngIf="unreadNotificationsCount > 0" 
-          class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium">
+          class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full h-4 min-w-4 px-1 flex items-center justify-center font-medium leading-none">
           {{unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount}}
         </span>
-      </div>
+      </span>
       <span class="text-xs font-medium">Inbox</span>
     </a>
     <a routerLink="/create" 
        routerLinkActive="text-indigo-600 dark:text-indigo-400" 
-       class="flex flex-col items-center justify-center min-w-0 text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
-      <span class="material-symbols-rounded text-2xl mb-1">add_circle</span>
+       class="mobile-nav-item flex flex-col items-center justify-end min-w-0 text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+      <span class="mobile-nav-icon-wrap">
+        <span class="material-symbols-rounded mobile-nav-icon">add_circle</span>
+      </span>
       <span class="text-xs font-medium">Create</span>
     </a>
-    <a [routerLink]="['/profile', currentUser?.id]" 
-       routerLinkActive="text-indigo-600 dark:text-indigo-400" 
-       class="flex flex-col items-center justify-center min-w-0 text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
-      <span class="material-symbols-rounded text-2xl mb-1">person</span>
-      <span class="text-xs font-medium">Profile</span>
-    </a>
+    <div class="mobile-nav-item relative mobile-account-menu">
+      <button
+        type="button"
+        (click)="toggleMobileAccountMenu($event)"
+        class="w-full flex flex-col items-center justify-end text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors bg-transparent border-none p-0"
+        [attr.aria-expanded]="showMobileAccountMenu"
+        aria-label="Account menu"
+      >
+        <span class="mobile-nav-icon-wrap">
+          <span class="material-symbols-rounded mobile-nav-icon">account_circle</span>
+        </span>
+        <span class="text-xs font-medium">Account</span>
+      </button>
+
+      <div
+        *ngIf="showMobileAccountMenu"
+        class="mobile-account-popup absolute right-1 bottom-full mb-2 w-36 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl overflow-hidden"
+      >
+        <button
+          type="button"
+          (click)="goToProfileFromMenu()"
+          class="w-full text-left px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+        >
+          <span class="material-symbols-rounded text-base">person</span>
+          Profile
+        </button>
+        <button
+          type="button"
+          (click)="logoutFromMenu()"
+          class="w-full text-left px-3 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 border-t border-gray-200 dark:border-gray-700 flex items-center gap-2"
+        >
+          <span class="material-symbols-rounded text-base">logout</span>
+          Logout
+        </button>
+      </div>
+    </div>
   </nav>
 </div>
