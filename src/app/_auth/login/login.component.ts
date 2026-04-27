@@ -34,6 +34,10 @@ export class LoginComponent {
     this.passwordFieldType = 'password';
   }
 
+  togglePasswordVisibility(): void {
+    this.passwordFieldType = this.passwordFieldType === 'password' ? 'text' : 'password';
+  }
+
   onSubmit() {
     if (this.loginForm.valid) {
       this.isSubmitting = true;

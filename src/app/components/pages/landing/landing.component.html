@@ -33,29 +33,41 @@
         </div>
 
         <!-- Mobile Menu Button -->
-        <button (click)="toggleMobileMenu()" class="md:hidden p-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+        <button (click)="toggleMobileMenu()" aria-label="Toggle mobile menu" class="md:hidden p-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
           <span class="material-icons">{{ isMobileMenuOpen ? 'close' : 'menu' }}</span>
-        </button>
-      </div>
-
-      <!-- Mobile Navigation -->
-      <div *ngIf="isMobileMenuOpen" class="md:hidden py-4 space-y-2 border-t border-gray-200 dark:border-gray-700">
-        <button (click)="scrollToSection('features')" class="block w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
-          Features
-        </button>
-
-        <button (click)="scrollToSection('about')" class="block w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
-          About
-        </button>
-        <button (click)="navigateToLogin()" class="block w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
-          Sign In
-        </button>
-        <button (click)="navigateToRegister()" class="block w-full px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors text-center">
-          Get Started
         </button>
       </div>
     </div>
   </nav>
+
+  <!-- Mobile Navigation Overlay -->
+  <div
+    *ngIf="isMobileMenuOpen"
+    class="mobile-menu-overlay md:hidden fixed inset-0 top-16 z-40 bg-black/35"
+    (click)="closeMobileMenu()"
+  >
+    <div
+      class="mobile-menu-panel mx-3 mt-3 rounded-2xl border border-white/10 bg-slate-950/95 p-4 shadow-2xl backdrop-blur-xl"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="space-y-2">
+        <button (click)="scrollToSection('features')" class="block w-full text-left px-4 py-3 text-gray-100 hover:bg-white/10 rounded-xl transition-colors font-medium">
+          Features
+        </button>
+        <button (click)="scrollToSection('about')" class="block w-full text-left px-4 py-3 text-gray-100 hover:bg-white/10 rounded-xl transition-colors font-medium">
+          About
+        </button>
+        <button (click)="navigateToLogin()" class="block w-full text-left px-4 py-3 text-gray-100 hover:bg-white/10 rounded-xl transition-colors font-medium">
+          Sign In
+        </button>
+      </div>
+      <div class="mt-4 border-t border-white/10 pt-4">
+        <button (click)="navigateToRegister()" class="block w-full px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition-colors text-center font-semibold">
+          Get Started
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- Hero Section -->
   <section class="relative pt-32 pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden">

@@ -17,6 +17,7 @@ export class LandingComponent implements OnInit {
   currentYear = new Date().getFullYear();
   siteStats: SiteStats | null = null;
   isLoadingStats = true;
+  private readonly onScrollBound = this.onScroll.bind(this);
 
   features = [
     {
@@ -71,7 +72,7 @@ export class LandingComponent implements OnInit {
     this.trackPageVisit();
 
     // Listen to scroll events
-    window.addEventListener('scroll', this.onScroll.bind(this));
+    window.addEventListener('scroll', this.onScrollBound);
   }
 
   trackPageVisit(): void {
@@ -114,7 +115,7 @@ export class LandingComponent implements OnInit {
   }
 
   ngOnDestroy(): void {
-    window.removeEventListener('scroll', this.onScroll.bind(this));
+    window.removeEventListener('scroll', this.onScrollBound);
   }
 
   onScroll(): void {
@@ -123,6 +124,10 @@ export class LandingComponent implements OnInit {
 
   toggleMobileMenu(): void {
     this.isMobileMenuOpen = !this.isMobileMenuOpen;
+  }
+
+  closeMobileMenu(): void {
+    this.isMobileMenuOpen = false;
   }
 
   scrollToSection(sectionId: string): void {
@@ -134,10 +139,12 @@ export class LandingComponent implements OnInit {
   }
 
   navigateToLogin(): void {
+    this.closeMobileMenu();
     this.router.navigate(['/auth/login']);
   }
 
   navigateToRegister(): void {
+    this.closeMobileMenu();
     this.router.navigate(['/auth/register']);
   }
 }

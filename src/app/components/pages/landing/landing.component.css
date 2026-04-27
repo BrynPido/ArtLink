@@ -235,3 +235,34 @@ html {
 .stats-item div:has(+ p) {
   min-width: 80px;
 }
+
+/* Mobile menu overlay */
+.mobile-menu-overlay {
+  animation: fadeOverlay 0.18s ease-out;
+}
+
+.mobile-menu-panel {
+  max-height: calc(100vh - 5.75rem);
+  overflow-y: auto;
+  animation: menuDropIn 0.2s ease-out;
+}
+
+@keyframes fadeOverlay {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes menuDropIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
