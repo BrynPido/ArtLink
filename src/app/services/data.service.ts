@@ -409,7 +409,7 @@ export class DataService {
   }
 
   // Send a message (this is a fallback for when WebSocket is not available)
-  sendMessage(receiverId: number, content: string, conversationId?: number): Observable<any> {
+  sendMessage(receiverId: number, content: string, conversationId?: number, attachments?: string[]): Observable<any> {
     const currentUser = this.getCurrentUser();
     if (!currentUser) {
       return throwError(() => new Error('User is not logged in'));
@@ -421,8 +421,21 @@ export class DataService {
       content: content,
       conversationId: conversationId // Add this parameter
     };
+    // Include optional attachments array
+    if (attachments && Array.isArray(attachments) && attachments.length > 0) {
+      (data as any).attachmentUrls = attachments;
+    }
     
     return this.http.post(`${this.apiUrl}messages/send`, data).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // Upload a message attachment (image)
+  uploadMessageAttachment(file: File): Observable<any> {
+    const form = new FormData();
+    form.append('file', file);
+    return this.http.post(`${this.apiUrl}messages/upload`, form).pipe(
       catchError(this.handleError)
     );
   }

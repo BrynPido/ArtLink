@@ -4,9 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { MessagingService, Conversation, Message } from '../../../../services/messaging.service';
 import { DataService } from '../../../../services/data.service';
 import { Router, RouterModule } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, forkJoin } from 'rxjs';
 import { TimeAgoPipe } from '../../../../utils/time-ago.pipe';
 import { ToastService } from '../../../../services/toast.service';
+import { SweetAlertService } from '../../../../admin/services/sweetalert.service';
 
 
 @Component({
@@ -26,6 +27,7 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
   messages: Message[] = [];
   activeConversation: Conversation | null = null;
   newMessage: string = '';
+  uploadingAttachment: boolean = false;
   
   loading: boolean = true;
   connectionStatus: boolean = false;
@@ -51,13 +53,16 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
   reportDescription: string = '';
   reportTargetMessageId: number | null = null;
   submittingReport: boolean = false;
+  selectedAttachmentUrls: string[] = [];
+  selectedAttachmentIndex: number = 0;
 
   constructor(
     private messagingService: MessagingService,
     private dataService: DataService,
     private router: Router,
     private cdr: ChangeDetectorRef,
-    private toast: ToastService
+    private toast: ToastService,
+    private sweetAlert: SweetAlertService
   ) {}
 
   ngOnInit(): void {
@@ -176,6 +181,19 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.updateViewportState();
   }
 
+  @HostListener('window:keydown', ['$event'])
+  onWindowKeydown(event: KeyboardEvent): void {
+    if (!this.selectedAttachmentUrls.length) return;
+
+    if (event.key === 'Escape') {
+      this.closeAttachmentPreview();
+    } else if (event.key === 'ArrowLeft') {
+      this.showPreviousAttachment();
+    } else if (event.key === 'ArrowRight') {
+      this.showNextAttachment();
+    }
+  }
+
   ngOnDestroy(): void {
     this.subscriptions.forEach(sub => sub.unsubscribe());
     this.messagingService.cleanup();
@@ -266,7 +284,16 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
         this.newMessage,
         this.activeConversation.id,
         this.activeConversation.listingId // Pass the listingId
-      );
+      ).subscribe({
+        next: () => {
+          this.newMessage = '';
+          this.cdr.markForCheck();
+        },
+        error: (err: any) => {
+          console.error('Failed to send message', err);
+          this.toast.showToast('Failed to send message', 'error');
+        }
+      });
     } else {
       // console.log(
       //   `[MESSAGES] Sending message in REGULAR conversation (conversationId=${this.activeConversation.id}): "${this.newMessage}"`
@@ -277,12 +304,234 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
         otherUserId,
         this.newMessage,
         this.activeConversation.id
-      );
+      ).subscribe({
+        next: () => {
+          this.newMessage = '';
+          this.cdr.markForCheck();
+        },
+        error: (err: any) => {
+          console.error('Failed to send message', err);
+          this.toast.showToast('Failed to send message', 'error');
+        }
+      });
     }
 
     // Clear the input - the messaging service will handle adding the message to the UI
+    this.cdr.markForCheck();
+  }
+
+  // Handle file selection and upload
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0 || !this.activeConversation) return;
+
+    const files = Array.from(input.files);
+    // Validate
+    const nonImages = files.filter(f => !f.type.startsWith('image/'));
+    if (nonImages.length > 0) {
+      this.toast.showToast('Only image files are allowed', 'warning');
+      return;
+    }
+
+    // Create a temporary pending message showing previews
+    const tempId = -(Date.now());
+    const previewUrls = files.map(f => URL.createObjectURL(f));
+    const tempMessage: any = {
+      id: tempId,
+      content: JSON.stringify({ text: this.newMessage || null, attachments: previewUrls }),
+      conversationId: this.activeConversation.id,
+      authorId: this.currentUser.id,
+      receiverId: this.activeConversation.user1Id === this.currentUser.id ? this.activeConversation.user2Id : this.activeConversation.user1Id,
+      createdAt: new Date().toISOString(),
+      pending: true
+    };
+
+    // Show temp message immediately
+    this.messages = [...this.messages, tempMessage];
+    this.scrollToBottom();
+    this.cdr.markForCheck();
+
+    this.uploadingAttachment = true;
+
+    // Upload all files in parallel
+    const uploads = files.map(f => this.dataService.uploadMessageAttachment(f));
+    forkJoin(uploads).subscribe({
+      next: (results: any[]) => {
+        // Collect URLs
+        const uploadedUrls = results.map(r => r?.payload?.url || r?.url || (r && r.payload && r.payload.url)).filter(Boolean);
+
+        // Send a single message with all attachments
+        const otherUserId = this.currentUser.id === this.activeConversation!.user1Id
+          ? this.activeConversation!.user2Id
+          : this.activeConversation!.user1Id;
+
+        this.messagingService.sendChatMessage(otherUserId, this.newMessage || '', this.activeConversation!.id, this.activeConversation!.listingId, uploadedUrls).subscribe({
+          next: () => {
+            // Revoke preview object URLs
+            previewUrls.forEach(u => { try { URL.revokeObjectURL(u); } catch {} });
+            // Remove temp message after server returns (messagingService will push the real message)
+            this.messages = this.messages.filter(m => m.id !== tempId);
+            this.newMessage = '';
+            this.uploadingAttachment = false;
+            this.cdr.markForCheck();
+          },
+          error: (err: any) => {
+            console.error('Sending message failed', err);
+            this.toast.showToast('Failed to send message with attachments', 'error');
+            this.uploadingAttachment = false;
+            // Keep temp message so user can retry or see failure
+            this.cdr.markForCheck();
+          }
+        });
+      },
+      error: (err: any) => {
+        console.error('Upload failed', err);
+        this.toast.showToast('Failed to upload images', 'error');
+        this.uploadingAttachment = false;
+        // Remove temp previews and revoke object URLs
+        previewUrls.forEach(u => { try { URL.revokeObjectURL(u); } catch {} });
+        this.messages = this.messages.filter(m => m.id !== tempId);
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  private sendMessageWithAttachment(attachmentUrl: string): void {
+    if (!this.activeConversation) return;
+
+    const otherUserId = this.currentUser.id === this.activeConversation.user1Id 
+      ? this.activeConversation.user2Id 
+      : this.activeConversation.user1Id;
+
+    this.messagingService.sendChatMessage(
+      otherUserId,
+      this.newMessage || '',
+      this.activeConversation.id,
+      this.activeConversation.listingId,
+      [attachmentUrl]
+    ).subscribe({
+      next: () => {
+        this.newMessage = '';
+        this.cdr.markForCheck();
+      },
+      error: (err: any) => {
+        console.error('Failed to send attachment message', err);
+        this.toast.showToast('Failed to send image', 'error');
+      }
+    });
+
+    // Clear text input after sending
     this.newMessage = '';
     this.cdr.markForCheck();
+  }
+
+  // Parse message content - supports plain text, JSON {text, attachment} and {text, attachments: []}
+  parseMessageContent(message: any): { text?: string | null, attachment?: string | null, attachments?: string[] | null } {
+    if (!message || !message.content) return { text: null, attachment: null, attachments: null };
+    try {
+      const parsed = JSON.parse(message.content);
+      if (parsed) {
+        if (Array.isArray(parsed.attachments)) {
+          return { text: parsed.text || null, attachments: parsed.attachments };
+        }
+        if (parsed.attachment || parsed.text !== undefined) {
+          return { text: parsed.text || null, attachment: parsed.attachment || null };
+        }
+      }
+    } catch (e) {
+      // Not JSON, fall through
+    }
+    // If content is a URL only
+    if (typeof message.content === 'string' && message.content.startsWith('http')) {
+      return { text: null, attachment: message.content, attachments: null };
+    }
+    return { text: message.content, attachment: null, attachments: null };
+  }
+
+  getAttachmentPreviewMode(attachments: string[] | null | undefined): 'single' | 'two' | 'three' | 'four-plus' {
+    const count = attachments?.length || 0;
+    if (count <= 1) return 'single';
+    if (count === 2) return 'two';
+    if (count === 3) return 'three';
+    return 'four-plus';
+  }
+
+  getAttachmentPreviewItems(attachments: string[] | null | undefined): string[] {
+    return Array.isArray(attachments) ? attachments.slice(0, 4) : [];
+  }
+
+  getAttachmentOverflowCount(attachments: string[] | null | undefined): number {
+    return Math.max(0, (attachments?.length || 0) - 4);
+  }
+
+  openAttachmentPreview(urls: string[] | string, index = 0): void {
+    const attachmentUrls = Array.isArray(urls) ? urls : [urls];
+    if (!attachmentUrls.length) return;
+
+    this.selectedAttachmentUrls = attachmentUrls;
+    this.selectedAttachmentIndex = Math.min(Math.max(index, 0), attachmentUrls.length - 1);
+    this.cdr.markForCheck();
+  }
+
+  closeAttachmentPreview(): void {
+    this.selectedAttachmentUrls = [];
+    this.selectedAttachmentIndex = 0;
+    this.cdr.markForCheck();
+  }
+
+  showPreviousAttachment(): void {
+    if (!this.selectedAttachmentUrls.length) return;
+    this.selectedAttachmentIndex = (this.selectedAttachmentIndex - 1 + this.selectedAttachmentUrls.length) % this.selectedAttachmentUrls.length;
+    this.cdr.markForCheck();
+  }
+
+  showNextAttachment(): void {
+    if (!this.selectedAttachmentUrls.length) return;
+    this.selectedAttachmentIndex = (this.selectedAttachmentIndex + 1) % this.selectedAttachmentUrls.length;
+    this.cdr.markForCheck();
+  }
+
+  get selectedAttachmentUrl(): string | null {
+    return this.selectedAttachmentUrls[this.selectedAttachmentIndex] || null;
+  }
+
+  canDeleteAttachmentMessage(message: Message): boolean {
+    if (!message || !this.isOwnMessage(message) || !message.id) {
+      return false;
+    }
+
+    const parsed = this.parseMessageContent(message);
+    return !!(parsed.attachment || (parsed.attachments && parsed.attachments.length));
+  }
+
+  deleteAttachmentMessage(message: Message, event?: Event): void {
+    event?.stopPropagation();
+
+    if (!message.id) {
+      return;
+    }
+
+    this.sweetAlert.confirmDelete('image message', 'Delete this image message?').then((result) => {
+      if (!result.isConfirmed) {
+        return;
+      }
+
+      this.dataService.deleteMessage(Number(message.id)).subscribe({
+        next: () => {
+          this.messages = this.messages.filter(m => m.id !== message.id);
+          if (this.selectedAttachmentUrls.length) {
+            this.closeAttachmentPreview();
+          }
+          this.messagingService.refreshActiveConversationMessages();
+          this.messagingService.refreshConversations();
+          this.cdr.markForCheck();
+        },
+        error: (err: any) => {
+          console.error('Failed to delete message', err);
+          this.toast.showToast('Failed to delete image', 'error');
+        }
+      });
+    });
   }
 
   startNewConversation(userId: number): void {

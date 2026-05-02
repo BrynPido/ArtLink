@@ -268,8 +268,12 @@ wss.on('connection', (ws) => {
           if (recipient && recipient.readyState === WebSocket.OPEN) {
             recipient.send(JSON.stringify({
               type: 'message',
-              from: data.from,
+              from: data.from || ws.userId || null,
               content: data.content,
+              conversationId: data.conversationId,
+              listingId: data.listingId || null,
+              attachmentUrl: data.attachmentUrl || (Array.isArray(data.attachmentUrls) && data.attachmentUrls.length ? data.attachmentUrls[0] : null),
+              attachmentUrls: Array.isArray(data.attachmentUrls) ? data.attachmentUrls : null,
               timestamp: new Date().toISOString()
             }));
             

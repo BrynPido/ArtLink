@@ -127,13 +127,21 @@ export class MessagingService {
     this.dataService.getConversations().subscribe({
       next: (response: any) => {
         if (response && response.payload) {
-          this.conversationsSubject.next(response.payload);
+          const conversations = response.payload.map((conversation: Conversation) => ({
+            ...conversation,
+            lastMessage: this.formatConversationPreview(conversation.lastMessage)
+          }));
+          this.conversationsSubject.next(conversations);
         }
       },
       error: (error) => {
         console.error('Error loading conversations:', error);
       }
     });
+  }
+
+  refreshConversations(): void {
+    this.loadConversations();
   }
 
   // Load messages for a specific conversation
@@ -153,6 +161,13 @@ export class MessagingService {
         this.messagesSubject.next([]);
       }
     });
+  }
+
+  refreshActiveConversationMessages(): void {
+    const activeConversation = this.activeConversationSubject.value;
+    if (activeConversation) {
+      this.loadMessagesForConversation(activeConversation.id);
+    }
   }
 
   // Set the active conversation and load its messages
@@ -228,55 +243,42 @@ export class MessagingService {
     );
   }
 
-  // Send a message via WebSocket
-  // sendChatMessage(toUserId: number, content: string, conversationId?: number, listingId?: number): void {
-  //   console.log('[FRONTEND SEND]', { toUserId, content, conversationId, listingId });
-  //   if (!content.trim()) {
-  //     return;
-  //   }
+  // Send a message and mirror it to the WebSocket channel for live delivery.
+  sendChatMessage(toUserId: number, content: string, conversationId?: number, listingId?: number, attachments?: string[]): Observable<any> {
+    const payloadContent = (attachments && attachments.length > 0)
+      ? content
+      : content;
 
-  //   const messageData = {
-  //     type: 'message',
-  //     to: toUserId,
-  //     content: content,
-  //     conversationId: conversationId, // Add this parameter
-  //     listingId: listingId
-  //   };
+    return this.dataService.sendMessage(toUserId, payloadContent, conversationId, attachments).pipe(
+      tap((response: any) => {
+        const message = response?.payload;
 
-  //   if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-  //     // Send via WebSocket
-  //     this.socket.send(JSON.stringify(messageData));
-  //   } else {
-  //     // Fallback to HTTP API
-  //     const activeConversation = this.activeConversationSubject.value;
-      
-  //     if (!activeConversation) {
-  //       console.error('No active conversation to send message to');
-  //       return;
-  //     }
+        if (message) {
+          const currentMessages = this.messagesSubject.value;
+          if (!currentMessages.find(existing => existing.id === message.id)) {
+            this.messagesSubject.next([...currentMessages, message]);
+          }
 
-  //     // Use the conversation ID parameter or active conversation ID
-  //     const targetConversationId = conversationId || activeConversation.id;
+          this.updateConversationWithLastMessage(conversationId || message.conversationId, message.content || content, false);
+        }
 
-  //     this.dataService.sendMessage(toUserId, content, targetConversationId).subscribe({
-  //       next: (response: any) => {
-  //         if (response && response.payload) {
-  //           const message = response.payload;
-            
-  //           // Add message to the current message list
-  //           const currentMessages = this.messagesSubject.value;
-  //           this.messagesSubject.next([...currentMessages, message]);
-            
-  //           // Update conversation in the list with the last message
-  //           this.updateConversationWithLastMessage(targetConversationId, content);
-  //         }
-  //       },
-  //       error: (error) => {
-  //         console.error('Error sending message via HTTP:', error);
-  //       }
-  //     });
-  //   }
-  // }
+        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+          this.socket.send(JSON.stringify({
+            type: 'message',
+            to: toUserId,
+            content: content,
+            conversationId: conversationId,
+            listingId: listingId,
+            attachmentUrls: attachments || null
+          }));
+        }
+      }),
+      catchError(error => {
+        console.error('Error sending message:', error);
+        return throwError(() => error);
+      })
+    );
+  }
 
   // Handle incoming WebSocket messages
   private handleWebSocketMessage(event: MessageEvent): void {
@@ -309,9 +311,13 @@ export class MessagingService {
   private handleIncomingMessage(data: any): void {
     const activeConversation = this.activeConversationSubject.value;
     
+    const messageContent = (Array.isArray(data.attachmentUrls) && data.attachmentUrls.length > 0)
+      ? JSON.stringify({ text: data.content || null, attachments: data.attachmentUrls })
+      : (data.attachmentUrl ? JSON.stringify({ text: data.content || null, attachment: data.attachmentUrl }) : data.content);
+
     const message: Message = {
       id: data.id,
-      content: data.content,
+      content: messageContent,
       conversationId: data.conversationId,
       authorId: data.from,
       receiverId: this.userId!,
@@ -363,7 +369,7 @@ export class MessagingService {
     const updatedConversations = currentConversations.map(conversation => {
       if (conversation.id === conversationId) {
         const updates: any = {
-          lastMessage,
+          lastMessage: this.formatConversationPreview(lastMessage),
           updatedAt: new Date().toISOString()
         };
         
@@ -385,6 +391,35 @@ export class MessagingService {
     } else {
       this.conversationsSubject.next(updatedConversations);
     }
+  }
+
+  private formatConversationPreview(content?: string): string {
+    if (!content) return 'No messages yet';
+
+    try {
+      const parsed = JSON.parse(content);
+      const hasAttachments = Array.isArray(parsed?.attachments) && parsed.attachments.length > 0;
+      const hasSingleAttachment = !!parsed?.attachment;
+      const text = typeof parsed?.text === 'string' ? parsed.text.trim() : '';
+
+      if (text) {
+        return text;
+      }
+
+      if (hasAttachments || hasSingleAttachment) {
+        const attachmentCount = Array.isArray(parsed.attachments) ? parsed.attachments.length : 1;
+        if (attachmentCount <= 1) {
+          return 'Sent a photo';
+        }
+
+        return `Sent ${attachmentCount} photos`;
+      }
+    } catch {
+      // Not JSON, fall through.
+    }
+
+    const trimmed = content.trim();
+    return trimmed ? trimmed : 'No messages yet';
   }
 
   // Cleanup resources when service is no longer needed
@@ -414,48 +449,6 @@ export class MessagingService {
   
     console.log('Sending message with data:', messageData);
     this.socket.send(JSON.stringify(messageData));
-  }
-
-  sendChatMessage(receiverId: number, content: string, conversationId: number, listingId?: number): void {
-    // First, send via HTTP API to ensure it's saved to the database
-    this.dataService.sendMessage(receiverId, content, conversationId).subscribe({
-      next: (response) => {
-        console.log('Message saved to database:', response);
-        
-        // Add message to the current message list immediately
-        if (response && response.payload) {
-          const currentMessages = this.messagesSubject.value;
-          this.messagesSubject.next([...currentMessages, response.payload]);
-        }
-        
-        // Don't increment unread count for sender - only receivers get unread badges
-        // The unread count will be updated for the receiver when they receive the message via WebSocket
-        
-        // Then send via WebSocket for real-time delivery (if connected)
-        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-          console.log('Sending WebSocket message:', {
-            type: 'message',
-            to: receiverId,
-            content: content,
-            conversationId: conversationId,
-            listingId: listingId
-          });
-        
-          this.socket.send(JSON.stringify({
-            type: 'message',
-            to: receiverId,
-            content: content,
-            conversationId: conversationId,
-            listingId: listingId
-          }));
-        } else {
-          console.log('WebSocket not connected, message saved to database only');
-        }
-      },
-      error: (error) => {
-        console.error('Failed to send message via HTTP:', error);
-      }
-    });
   }
 
   // Refresh unread count from server

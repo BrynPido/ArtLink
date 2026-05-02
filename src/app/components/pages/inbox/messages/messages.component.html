@@ -319,13 +319,37 @@
             [class.own-message]="isOwnMessage(message)"
             [class.other-message]="!isOwnMessage(message)"
           >
-            <div class="message-content">
-              <p>{{ message.content }}</p>
-              <span class="message-time">{{ message.createdAt | timeAgo }}</span>
-              <button *ngIf="canReport(message)" (click)="openReportModal(message)" class="report-btn" title="Report message" aria-label="Report message">
-                <span class="material-symbols-outlined text-xs">flag</span>
-              </button>
-            </div>
+            <ng-container *ngIf="parseMessageContent(message) as parsed">
+              <div class="message-content" [class.message-content--no-bg]="parsed.attachments && !parsed.text">
+                <p *ngIf="parsed.text">{{ parsed.text }}</p>
+
+                <div *ngIf="parsed.attachments && parsed.attachments.length" class="attachment-preview mt-2" [ngClass]="'attachment-preview--' + getAttachmentPreviewMode(parsed.attachments)">
+                  <button *ngIf="canDeleteAttachmentMessage(message)" type="button" class="attachment-delete-btn" (click)="deleteAttachmentMessage(message, $event)" aria-label="Delete image message">
+                    <span class="material-symbols-outlined">delete</span>
+                  </button>
+                  <button *ngFor="let a of getAttachmentPreviewItems(parsed.attachments); let i = index" type="button" class="attachment-thumb-btn" [ngClass]="'attachment-thumb-btn--' + getAttachmentPreviewMode(parsed.attachments) + '-' + (i + 1)" (click)="openAttachmentPreview(parsed.attachments || [], i)">
+                    <img [src]="a" alt="attachment" class="attachment-thumb">
+                    <span *ngIf="getAttachmentPreviewMode(parsed.attachments) === 'four-plus' && i === 3 && getAttachmentOverflowCount(parsed.attachments) > 0" class="attachment-thumb-overlay">
+                      +{{ getAttachmentOverflowCount(parsed.attachments) }}
+                    </span>
+                  </button>
+                </div>
+
+                <div *ngIf="parsed.attachment && !parsed.attachments" class="attachment-preview mt-2">
+                  <button *ngIf="canDeleteAttachmentMessage(message)" type="button" class="attachment-delete-btn" (click)="deleteAttachmentMessage(message, $event)" aria-label="Delete image message">
+                    <span class="material-symbols-outlined">delete</span>
+                  </button>
+                  <button type="button" class="attachment-thumb-btn single" (click)="openAttachmentPreview(parsed.attachment || '')">
+                    <img [src]="parsed.attachment" alt="attachment" class="attachment-thumb">
+                  </button>
+                </div>
+
+                <span class="message-time">{{ message.createdAt | timeAgo }}</span>
+                <button *ngIf="canReport(message)" (click)="openReportModal(message)" class="report-btn" title="Report message" aria-label="Report message">
+                  <span class="material-symbols-outlined text-xs">flag</span>
+                </button>
+              </div>
+            </ng-container>
           </div>
         </div>
       </div>
@@ -339,6 +363,15 @@
             [(ngModel)]="newMessage" 
             (keyup.enter)="sendMessage()"
           >
+          <input #fileInput type="file" accept="image/*" (change)="onFileSelected($event)" hidden multiple>
+          <button type="button" class="attach-icon-btn" (click)="fileInput.click()" title="Attach image" aria-label="Attach image" [disabled]="uploadingAttachment">
+            <ng-container *ngIf="!uploadingAttachment">
+              <span class="material-symbols-outlined">attach_file</span>
+            </ng-container>
+            <ng-container *ngIf="uploadingAttachment">
+              <span class="loader small" aria-hidden="true"></span>
+            </ng-container>
+          </button>
           <button 
             class="send-button" 
             [disabled]="!newMessage.trim()" 
@@ -352,6 +385,28 @@
         </div>
       </div>
     </ng-container>
+  </div>
+</div>
+
+<!-- Attachment Preview Modal -->
+<div *ngIf="selectedAttachmentUrls.length && selectedAttachmentUrl" class="attachment-preview-backdrop" (click)="closeAttachmentPreview()">
+  <div class="attachment-preview-modal" (click)="$event.stopPropagation()">
+    <div class="attachment-preview-header">
+      <span class="attachment-preview-counter">{{ selectedAttachmentIndex + 1 }} / {{ selectedAttachmentUrls.length }}</span>
+      <button type="button" class="attachment-preview-close" (click)="closeAttachmentPreview()" aria-label="Close preview">&times;</button>
+    </div>
+
+    <div class="attachment-preview-body">
+      <button *ngIf="selectedAttachmentUrls.length > 1" type="button" class="attachment-nav-btn left" (click)="showPreviousAttachment()" aria-label="Previous image">
+        <span class="material-symbols-outlined">chevron_left</span>
+      </button>
+
+      <img [src]="selectedAttachmentUrl" alt="Attachment preview" class="attachment-preview-image">
+
+      <button *ngIf="selectedAttachmentUrls.length > 1" type="button" class="attachment-nav-btn right" (click)="showNextAttachment()" aria-label="Next image">
+        <span class="material-symbols-outlined">chevron_right</span>
+      </button>
+    </div>
   </div>
 </div>
 

@@ -1,8 +1,24 @@
 const express = require('express');
+const multer = require('multer');
+const path = require('path');
 const { query, queryOne, transaction } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
+const storageService = require('../services/supabase-storage');
 
 const router = express.Router();
+
+// Multer memory storage for message uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 8 * 1024 * 1024 }, // 8MB
+  fileFilter: (req, file, cb) => {
+    const allowed = /jpeg|jpg|png|gif|webp/;
+    const ext = allowed.test(path.extname(file.originalname).toLowerCase());
+    const mime = allowed.test(file.mimetype);
+    if (ext && mime) return cb(null, true);
+    cb(new Error('Only image files are allowed'));
+  }
+});
 
 // Get all conversations for the current user
 router.get('/conversations/:userId', authenticateToken, async (req, res) => {
@@ -276,7 +292,7 @@ router.post('/conversations/create', authenticateToken, async (req, res) => {
 // Send a message
 router.post('/send', authenticateToken, async (req, res) => {
   try {
-    const { receiverId, content, conversationId } = req.body;
+    const { receiverId, content, conversationId, attachmentUrl, attachmentUrls } = req.body;
     const senderId = req.user.id;
 
     // Check if sender is currently restricted from sending messages
@@ -302,7 +318,9 @@ router.post('/send', authenticateToken, async (req, res) => {
       console.warn('Restriction check failed (non-blocking):', e?.message || e);
     }
 
-    if (!content || content.trim() === '') {
+    // Allow messages that are purely attachments
+    const attachmentsArray = Array.isArray(attachmentUrls) ? attachmentUrls : (attachmentUrl ? [attachmentUrl] : []);
+    if ((!content || content.trim() === '') && attachmentsArray.length === 0) {
       return res.status(400).json({
         status: 'error',
         message: 'Message content is required'
@@ -348,10 +366,17 @@ router.post('/send', authenticateToken, async (req, res) => {
       });
     }
 
+    // Prepare content to store. If there are attachments, store a JSON payload.
+    let contentToStore = content ? content.trim() : '';
+    if (attachmentsArray.length > 0) {
+      const payload = { text: contentToStore || null, attachments: attachmentsArray };
+      contentToStore = JSON.stringify(payload);
+    }
+
     // Insert message
     const insertedMessage = await queryOne(
       'INSERT INTO message (content, "conversationId", "authorId", "receiverId", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id',
-      [content.trim(), finalConversationId, senderId, receiverId]
+      [contentToStore, finalConversationId, senderId, receiverId]
     );
     if (!insertedMessage || !insertedMessage.id) {
       console.error('Failed to insert message: INSERT returned no id');
@@ -389,6 +414,24 @@ router.post('/send', authenticateToken, async (req, res) => {
       status: 'error',
       message: 'Failed to send message'
     });
+  }
+});
+
+// Upload an image for message attachments
+router.post('/upload', authenticateToken, upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ status: 'error', message: 'No file uploaded' });
+    }
+
+    const file = req.file;
+    // Upload to Supabase (messages folder)
+    const uploadResult = await storageService.uploadFile(file.buffer, file.originalname, 'messages', file.mimetype);
+
+    return res.status(201).json({ status: 'success', payload: { url: uploadResult.url, path: uploadResult.path } });
+  } catch (error) {
+    console.error('Message upload error:', error);
+    return res.status(500).json({ status: 'error', message: 'Failed to upload file' });
   }
 });
 
@@ -521,8 +564,55 @@ router.delete('/:messageId', authenticateToken, async (req, res) => {
       });
     }
 
+    const extractStoragePathFromUrl = (url) => {
+      if (!url || typeof url !== 'string') return null;
+      try {
+        const pathname = new URL(url).pathname;
+        const match = pathname.match(/\/storage\/v1\/object\/public\/[^/]+\/(.+)$/);
+        return match ? decodeURIComponent(match[1]) : null;
+      } catch {
+        const match = url.match(/\/storage\/v1\/object\/public\/[^/]+\/(.+)$/);
+        return match ? decodeURIComponent(match[1]) : null;
+      }
+    };
+
+    const collectAttachmentPaths = (messageContent) => {
+      const paths = [];
+
+      try {
+        const parsed = JSON.parse(messageContent);
+        if (parsed) {
+          const attachments = Array.isArray(parsed.attachments)
+            ? parsed.attachments
+            : parsed.attachment
+              ? [parsed.attachment]
+              : [];
+          attachments.forEach((url) => {
+            const storagePath = extractStoragePathFromUrl(url);
+            if (storagePath) paths.push(storagePath);
+          });
+        }
+      } catch {
+        const storagePath = extractStoragePathFromUrl(messageContent);
+        if (storagePath) paths.push(storagePath);
+      }
+
+      return paths;
+    };
+
+    const messageRecord = await queryOne(
+      'SELECT id, content FROM message WHERE id = $1',
+      [messageId]
+    );
+
+    const attachmentPaths = messageRecord ? collectAttachmentPaths(messageRecord.content) : [];
+
     // Delete message
     await query('DELETE FROM message WHERE id = $1', [messageId]);
+
+    if (attachmentPaths.length > 0) {
+      await Promise.all(attachmentPaths.map((filePath) => storageService.deleteFile(filePath)));
+    }
 
     res.json({
       status: 'success',
