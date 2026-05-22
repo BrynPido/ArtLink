@@ -316,12 +316,8 @@ export class RegisterComponent {
     });
   }
 
-  showPasswords() {
-    this.passwordFieldType = 'text';
-  }
-
-  hidePasswords() {
-    this.passwordFieldType = 'password';
+  togglePasswordVisibility() {
+    this.passwordFieldType = this.passwordFieldType === 'password' ? 'text' : 'password';
   }
 
   // Clear server-side errors when user starts typing
