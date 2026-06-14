@@ -898,7 +898,7 @@ router.get('/trending', optionalAuth, async (req, res) => {
       LEFT JOIN save s ON p.id = s."postId"
       ${currentUserId ? 'LEFT JOIN "like" user_likes ON p.id = user_likes."postId" AND user_likes."userId" = $1' : ''}
       ${currentUserId ? 'LEFT JOIN save user_saves ON p.id = user_saves."postId" AND user_saves."userId" = $2' : ''}
-      WHERE p."createdAt" >= CURRENT_DATE - INTERVAL '7 days' AND p.published = true
+      WHERE p."createdAt" >= CURRENT_DATE - INTERVAL '7 days' AND p.published = true AND p.review_status = 'approved'
       GROUP BY p.id, p.title, p.content, p."createdAt", p."updatedAt", p."authorId", u.name, u.username, pr."profilePictureUrl"${currentUserId ? ', user_likes.id, user_saves.id' : ''}
       ORDER BY (COUNT(DISTINCT l.id) * 2 + COUNT(DISTINCT c.id)) DESC, p."createdAt" DESC
       LIMIT 20
